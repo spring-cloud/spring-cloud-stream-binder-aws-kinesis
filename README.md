@@ -1,3 +1,3 @@
-# Spring Cloud Stream binder for AWS Kinesis
+# Spring Cloud Stream Binder for AWS Kinesis
 
-This repository will contain the code for the Spring Cloud Stream binder implementation for AWS Kinesis.
+This repository contains the code for the Spring Cloud Stream Binder implementation for AWS Kinesis.
