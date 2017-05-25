@@ -1,0 +1,2 @@
+kinesis:\
+org.springframework.cloud.stream.binder.kinesis.config.KinesisBinderConfiguration
