@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<artifactId>spring-cloud-stream-binder-kinesis</artifactId>
+	<packaging>jar</packaging>
+	<name>spring-cloud-stream-binder-kinesis</name>
+	<description>Kinesis binder implementation</description>
+
+	<parent>
+		<groupId>org.springframework.cloud</groupId>
+		<artifactId>spring-cloud-stream-binder-kinesis-parent</artifactId>
+		<version>1.0.0.BUILD-SNAPSHOT</version>
+	</parent>
+
+	<properties>
+		<spring-integration-aws-version>1.1.0.M1</spring-integration-aws-version>
+		<spring-cloud-aws-autoconfigure-version>1.2.1.RELEASE</spring-cloud-aws-autoconfigure-version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-stream-binder-kinesis-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-stream-codec</artifactId>
+			<version>${spring-cloud-stream.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-aws</artifactId>
+			<version>${spring-integration-aws-version}</version>
+		</dependency>
+		<!--  <dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-aws-autoconfigure</artifactId>
+			<version>${spring-cloud-aws-autoconfigure-version}</version>
+		</dependency> --> 
+	</dependencies>
+
+</project>
