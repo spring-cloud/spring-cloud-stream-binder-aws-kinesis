@@ -8,7 +8,7 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderC
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
-import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisTopicProvisioner;
+import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
 
@@ -33,7 +33,7 @@ import org.springframework.integration.channel.QueueChannel;
  * @author Peter Oates
  */
 public class KinesisMessageChannelBinder extends
-		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisTopicProvisioner>
+		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
 		implements ExtendedPropertiesBinder<MessageChannel, KinesisConsumerProperties, KinesisProducerProperties> {
 
 	// not using currently but expect to include global properties here if
@@ -47,11 +47,18 @@ public class KinesisMessageChannelBinder extends
 	private AmazonKinesisAsync amazonKinesis;
 
 	public KinesisMessageChannelBinder(KinesisBinderConfigurationProperties configurationProperties,
-			KinesisTopicProvisioner provisioningProvider) {
+			KinesisStreamProvisioner provisioningProvider) {
 		super(false, null, provisioningProvider);
 		this.configurationProperties = configurationProperties;
 
-		this.amazonKinesis = AmazonKinesisAsyncClientBuilder.defaultClient();
+		this.amazonKinesis = AmazonKinesisAsyncClientBuilder
+				.defaultClient();
+		
+		/*this.amazonKinesis = AmazonKinesisAsyncClientBuilder
+				.standard()
+			    .withCredentials(...)
+			    .withRegion(...);*/
+		
 
 	}
 
@@ -89,7 +96,6 @@ public class KinesisMessageChannelBinder extends
 		KinesisMessageDrivenChannelAdapter adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesis,
 				destination.getName());
 
-		adapter.setOutputChannel(kinesisChannel());
 		adapter.setCheckpointStore(checkpointStore());
 
 		// explicitly setting the offset - LATEST is the default but added here
