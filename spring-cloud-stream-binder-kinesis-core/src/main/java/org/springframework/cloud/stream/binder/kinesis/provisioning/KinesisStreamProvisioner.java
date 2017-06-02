@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 
 /**
+ * The {@link ProvisioningProvider} implementation for Amazon Kinesis.
  *
  * @author Peter Oates
  * @author Artem Bilan
