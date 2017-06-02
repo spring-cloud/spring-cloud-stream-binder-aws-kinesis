@@ -16,7 +16,6 @@
 
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
@@ -38,7 +37,7 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
  */
 public class KinesisStreamProvisioner
 		implements ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
-		ExtendedProducerProperties<KinesisProducerProperties>>, InitializingBean {
+		ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final AmazonKinesis amazonKinesis;
 
@@ -50,12 +49,6 @@ public class KinesisStreamProvisioner
 		Assert.notNull(kinesisBinderConfigurationProperties, "'kinesisBinderConfigurationProperties' must not be null");
 		this.amazonKinesis = amazonKinesis;
 		this.configurationProperties = kinesisBinderConfigurationProperties;
-	}
-
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override

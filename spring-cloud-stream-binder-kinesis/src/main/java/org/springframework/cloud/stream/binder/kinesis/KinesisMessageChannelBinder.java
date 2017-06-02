@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 
 /**
- * 
+ *
  * @author Peter Oates
  * @author Artem Bilan
  */
@@ -86,11 +86,11 @@ public class KinesisMessageChannelBinder extends
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties) throws Exception {
 
 		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(this.amazonKinesis);
-
+		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
 		kinesisMessageHandler.setStream(destination.getName());
 		// tidy up partition key
 		kinesisMessageHandler.setPartitionKey("name");
-		kinesisMessageHandler.setBeanFactory(this.getBeanFactory());
+		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
 		return kinesisMessageHandler;
 	}

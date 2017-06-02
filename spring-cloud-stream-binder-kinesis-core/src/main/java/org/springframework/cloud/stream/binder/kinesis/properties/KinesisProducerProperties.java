@@ -23,4 +23,14 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
  */
 public class KinesisProducerProperties {
 
+	private boolean sync;
+
+	public void setSync(boolean sync) {
+		this.sync = sync;
+	}
+
+	public boolean isSync() {
+		return this.sync;
+	}
+
 }
