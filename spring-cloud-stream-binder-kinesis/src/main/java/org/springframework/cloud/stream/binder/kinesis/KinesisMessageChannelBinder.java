@@ -112,6 +112,9 @@ public class KinesisMessageChannelBinder extends
 		adapter.setDescribeStreamRetries(1);
 		adapter.setConcurrency(10);
 
+		// Deffer byte[] conversion to the ReceivingHandler
+		adapter.setConverter(null);
+
 		return adapter;
 	}
 
