@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
@@ -26,8 +28,6 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.cloud.stream.provisioning.ProvisioningProvider;
 import org.springframework.util.Assert;
-
-import com.amazonaws.services.kinesis.AmazonKinesis;
 
 /**
  * The {@link ProvisioningProvider} implementation for Amazon Kinesis.
@@ -40,34 +40,40 @@ public class KinesisStreamProvisioner
 		implements ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
 		ExtendedProducerProperties<KinesisProducerProperties>> {
 
-	private final AmazonKinesis amazonKinesis;
+	private final Log logger = LogFactory.getLog(getClass());
+
+	private final KinesisStreamHandler kinesisStreamHandler;
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
-	public KinesisStreamProvisioner(AmazonKinesis amazonKinesis,
-			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
-		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
+	public KinesisStreamProvisioner(KinesisStreamHandler kinesisStreamHandler,
+									KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+		Assert.notNull(kinesisStreamHandler, "'kinesisStreamHandler' must not be null");
 		Assert.notNull(kinesisBinderConfigurationProperties, "'kinesisBinderConfigurationProperties' must not be null");
-		this.amazonKinesis = amazonKinesis;
+		this.kinesisStreamHandler = kinesisStreamHandler;
 		this.configurationProperties = kinesisBinderConfigurationProperties;
 	}
 
 	@Override
 	public ProducerDestination provisionProducerDestination(String name,
 			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
+		logger.info("Using Kinesis stream for outbound: " + name);
 
-		KinesisProducerDestination producer = new KinesisProducerDestination(name);
+		KinesisStream stream = kinesisStreamHandler.createOrUpdate(name, 1,
+				configurationProperties.getAutoCreateStreams());
 
-		return producer;
+		return new KinesisProducerDestination(stream.getName(), stream.getShards());
 	}
 
 	@Override
 	public ConsumerDestination provisionConsumerDestination(String name, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
+		logger.info("Using Kinesis stream for inbound: " + name);
 
-		KinesisConsumerDestination consumer = new KinesisConsumerDestination(name);
+		KinesisStream stream = kinesisStreamHandler.createOrUpdate(name, 1,
+				configurationProperties.getAutoCreateStreams());
 
-		return consumer;
+		return new KinesisConsumerDestination(stream.getName(), stream.getShards());
 	}
 
 
@@ -76,10 +82,6 @@ public class KinesisStreamProvisioner
 		private final String streamName;
 
 		private final int shards;
-
-		KinesisProducerDestination(String streamName) {
-			this(streamName, 0);
-		}
 
 		KinesisProducerDestination(String streamName, Integer shards) {
 			this.streamName = streamName;
@@ -106,7 +108,6 @@ public class KinesisStreamProvisioner
 
 	}
 
-
 	private static final class KinesisConsumerDestination implements ConsumerDestination {
 
 		private final String streamName;
@@ -114,10 +115,6 @@ public class KinesisStreamProvisioner
 		private final int shards;
 
 		private final String dlqName;
-
-		KinesisConsumerDestination(String streamName) {
-			this(streamName, 0, null);
-		}
 
 		KinesisConsumerDestination(String streamName, int shards) {
 			this(streamName, shards, null);
@@ -142,7 +139,5 @@ public class KinesisStreamProvisioner
 					", dlqName='" + dlqName + '\'' +
 					'}';
 		}
-
 	}
-
 }

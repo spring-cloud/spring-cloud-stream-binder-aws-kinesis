@@ -24,6 +24,7 @@ import org.springframework.cloud.stream.binder.Binder;
 import org.springframework.cloud.stream.binder.kinesis.KinesisMessageChannelBinder;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
+import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamHandler;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,8 +60,13 @@ public class KinesisBinderConfiguration {
 	}
 
 	@Bean
-	public KinesisStreamProvisioner provisioningProvider(AmazonKinesisAsync amazonKinesis) {
-		return new KinesisStreamProvisioner(amazonKinesis, this.configurationProperties);
+	public KinesisStreamHandler kinesisStreamHandler(AmazonKinesisAsync amazonKinesis) {
+		return new KinesisStreamHandler(amazonKinesis);
+	}
+
+	@Bean
+	public KinesisStreamProvisioner provisioningProvider(KinesisStreamHandler kinesisStreamHandler) {
+		return new KinesisStreamProvisioner(kinesisStreamHandler, this.configurationProperties);
 	}
 
 	@Bean

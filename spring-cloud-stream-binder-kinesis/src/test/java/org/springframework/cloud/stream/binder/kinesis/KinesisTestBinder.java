@@ -22,6 +22,7 @@ import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamHandler;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.integration.codec.kryo.PojoCodec;
@@ -37,8 +38,10 @@ public class KinesisTestBinder
 
 	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+		KinesisStreamHandler kinesisStreamHandler = new KinesisStreamHandler(amazonKinesis);
+
 		KinesisStreamProvisioner provisioningProvider =
-				new KinesisStreamProvisioner(amazonKinesis, kinesisBinderConfigurationProperties);
+				new KinesisStreamProvisioner(kinesisStreamHandler, kinesisBinderConfigurationProperties);
 
 		KinesisMessageChannelBinder binder =
 				new KinesisMessageChannelBinder(amazonKinesis, kinesisBinderConfigurationProperties, provisioningProvider);

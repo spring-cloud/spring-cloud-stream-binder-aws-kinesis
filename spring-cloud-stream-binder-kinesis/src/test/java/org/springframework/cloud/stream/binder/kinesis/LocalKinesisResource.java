@@ -16,17 +16,13 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import static org.mockito.Mockito.mock;
-
-import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SDKGlobalConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
 
 /**
  * @author Artem Bilan
@@ -53,7 +49,6 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY, "true");
 
 		this.resource = AmazonKinesisAsyncClientBuilder.standard()
-				.withCredentials(mock(AWSCredentialsProvider.class))
 				.withClientConfiguration(
 						new ClientConfiguration()
 								.withMaxErrorRetry(0)

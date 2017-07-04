@@ -26,4 +26,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
 
+	private boolean autoCreateStreams = true;
+
+	public boolean getAutoCreateStreams() {
+		return autoCreateStreams;
+	}
+
+	public void setAutoCreateStreams(boolean autoCreateStreams) {
+		this.autoCreateStreams = autoCreateStreams;
+	}
 }

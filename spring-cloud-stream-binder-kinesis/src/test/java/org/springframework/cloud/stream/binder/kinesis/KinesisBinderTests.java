@@ -18,13 +18,15 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import org.junit.ClassRule;
 
-import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
-import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
-import org.springframework.cloud.stream.binder.PartitionCapableBinderTests;
-import org.springframework.cloud.stream.binder.Spy;
+import org.junit.Test;
+import org.springframework.cloud.stream.binder.*;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.integration.channel.DirectChannel;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Artem Bilan
@@ -37,6 +39,22 @@ public class KinesisBinderTests
 
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
+
+	@Test
+	public void testAutoCreateStreamEnabledSucceeds() throws Exception {
+		KinesisBinderConfigurationProperties properties = createConfigurationProperties();
+		properties.setAutoCreateStreams(true);
+		Binder binder = getBinder();
+		RetryTemplate metatadataRetrievalRetryOperations = new RetryTemplate();
+		metatadataRetrievalRetryOperations.setRetryPolicy(new SimpleRetryPolicy());
+		FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+		backOffPolicy.setBackOffPeriod(1000);
+		DirectChannel output = new DirectChannel();
+		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		String testTopicName = "nonexisting" + System.currentTimeMillis();
+		Binding<?> binding = binder.bindConsumer(testTopicName, "test", output, consumerProperties);
+		binding.unbind();
+	}
 
 	@Override
 	protected boolean usesExplicitRouting() {
@@ -74,6 +92,10 @@ public class KinesisBinderTests
 				new ExtendedProducerProperties<>(new KinesisProducerProperties());
 		producerProperties.getExtension().setSync(true);
 		return producerProperties;
+	}
+
+	private KinesisBinderConfigurationProperties createConfigurationProperties() {
+		return new KinesisBinderConfigurationProperties();
 	}
 
 	@Override
