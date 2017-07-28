@@ -179,5 +179,5 @@ public class KinesisStreamProvisioner
 			return shards;
 		}
 	}
-	
+
 }

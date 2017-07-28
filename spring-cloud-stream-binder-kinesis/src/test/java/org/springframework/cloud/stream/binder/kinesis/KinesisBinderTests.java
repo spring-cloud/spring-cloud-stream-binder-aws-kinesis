@@ -17,7 +17,6 @@
 package org.springframework.cloud.stream.binder.kinesis;
 
 import org.junit.ClassRule;
-
 import org.junit.Test;
 import org.springframework.cloud.stream.binder.*;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
@@ -41,8 +40,8 @@ public class KinesisBinderTests
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testAutoCreateStreamEnabledSucceeds() throws Exception {
-		KinesisBinderConfigurationProperties properties = createConfigurationProperties();
 		Binder binder = getBinder();
 		RetryTemplate metatadataRetrievalRetryOperations = new RetryTemplate();
 		metatadataRetrievalRetryOperations.setRetryPolicy(new SimpleRetryPolicy());
@@ -91,10 +90,6 @@ public class KinesisBinderTests
 				new ExtendedProducerProperties<>(new KinesisProducerProperties());
 		producerProperties.getExtension().setSync(true);
 		return producerProperties;
-	}
-
-	private KinesisBinderConfigurationProperties createConfigurationProperties() {
-		return new KinesisBinderConfigurationProperties();
 	}
 
 	@Override
