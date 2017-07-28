@@ -16,6 +16,11 @@
 
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
+import java.util.Collections;
+import java.util.List;
+
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.model.*;
 import org.junit.Test;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
@@ -35,83 +40,94 @@ import static org.mockito.Mockito.*;
 public class KinesisStreamProvisionerTests {
 
 	@Test
-	public void testProvisionProducerSuccessful() {
-		String name = "test-stream";
-		Boolean autoCreateStream = true;
-
-		KinesisStreamHandler kinesisStreamHandlerMock = mock(KinesisStreamHandler.class);
+	public void testProvisionProducerSuccessfulWithExistingStream() {
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
-		binderProperties.setAutoCreateStreams(true);
-		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(kinesisStreamHandlerMock, binderProperties);
+		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
+		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties
+				= new ExtendedProducerProperties<>(new KinesisProducerProperties());
+		String name = "test-stream";
 
-		when(kinesisStreamHandlerMock.createOrUpdate(name, 1, autoCreateStream))
-				.thenReturn(new KinesisStream(name, 1));
+		DescribeStreamResult describeStreamResult =
+				describeStreamResultWithShards(Collections.singletonList(new Shard()));
 
-		ProducerDestination destination = provisioner.provisionProducerDestination(name,
-						new ExtendedProducerProperties<>(new KinesisProducerProperties()));
+		when(amazonKinesisMock.describeStream(name)).thenReturn(describeStreamResult);
 
-		verify(kinesisStreamHandlerMock, times(1)).createOrUpdate(name, 1, autoCreateStream);
+		ProducerDestination destination = provisioner.provisionProducerDestination(name, extendedProducerProperties);
+
+		verify(amazonKinesisMock, times(1)).describeStream(name);
 		assertThat(destination.getName(), is(name));
-	}
-
-	@Test(expected = RuntimeException.class)
-	public void testProvisionProducerUnsuccessful() {
-		String name = "test-stream";
-		Integer shards = 2;
-		Boolean autoCreateStream = true;
-
-		KinesisStreamHandler kinesisStreamHandlerMock = mock(KinesisStreamHandler.class);
-		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
-		binderProperties.setAutoCreateStreams(true);
-		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(kinesisStreamHandlerMock, binderProperties);
-
-		when(kinesisStreamHandlerMock.createOrUpdate(name, shards, autoCreateStream))
-				.thenThrow(new RuntimeException("oops"));
-
-		provisioner.provisionProducerDestination(name,
-				new ExtendedProducerProperties<>(new KinesisProducerProperties()));
-
-		verify(kinesisStreamHandlerMock, times(1)).createOrUpdate(name, shards, autoCreateStream);
 	}
 
 	@Test
-	public void testProvisionConsumerSuccessful() {
+	public void testProvisionConsumerSuccessfulWithExistingStream() {
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
+		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
+		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties
+				= new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
 		String name = "test-stream";
 		String group = "test-group";
-		Boolean autoCreateStream = true;
 
-		KinesisStreamHandler kinesisStreamHandlerMock = mock(KinesisStreamHandler.class);
-		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
-		binderProperties.setAutoCreateStreams(true);
-		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(kinesisStreamHandlerMock, binderProperties);
+		DescribeStreamResult describeStreamResult =
+				describeStreamResultWithShards(Collections.singletonList(new Shard()));
 
-		when(kinesisStreamHandlerMock.createOrUpdate(name, 1, autoCreateStream))
-				.thenReturn(new KinesisStream(name, 1));
+		when(amazonKinesisMock.describeStream(name)).thenReturn(describeStreamResult);
 
-		ConsumerDestination destination = provisioner.provisionConsumerDestination(name, group,
-				new ExtendedConsumerProperties<>(new KinesisConsumerProperties()));
+		ConsumerDestination destination =
+				provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
 
-		verify(kinesisStreamHandlerMock, times(1)).createOrUpdate(name, 1, autoCreateStream);
+		verify(amazonKinesisMock, times(1)).describeStream(name);
 		assertThat(destination.getName(), is(name));
 	}
 
-	@Test(expected = RuntimeException.class)
-	public void testProvisionConsumerUnsuccessful() {
+	@Test
+	public void testProvisionProducerSuccessfulWithNewStream() {
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
+		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
+		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
+		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties
+				= new ExtendedProducerProperties<>(new KinesisProducerProperties());
+		String name = "test-stream";
+		Integer shards = 1;
+
+		when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
+		when(amazonKinesisMock.createStream(name, shards)).thenReturn(new CreateStreamResult());
+
+		ProducerDestination destination = provisioner.provisionProducerDestination(name, extendedProducerProperties);
+
+		verify(amazonKinesisMock, times(1)).describeStream(name);
+		verify(amazonKinesisMock, times(1)).createStream(name, shards);
+		assertThat(destination.getName(), is(name));
+	}
+
+	@Test
+	public void testProvisionConsumerSuccessfulWithNewStream() {
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
+		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
+		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties
+				= new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
 		String name = "test-stream";
 		String group = "test-group";
-		Boolean autoCreateStream = true;
+		Integer shards = 1;
 
-		KinesisStreamHandler kinesisStreamHandlerMock = mock(KinesisStreamHandler.class);
-		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
-		binderProperties.setAutoCreateStreams(true);
-		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(kinesisStreamHandlerMock, binderProperties);
+		when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
+		when(amazonKinesisMock.createStream(name, shards)).thenReturn(new CreateStreamResult());
 
-		when(kinesisStreamHandlerMock.createOrUpdate(name, 1, autoCreateStream))
-				.thenThrow(new RuntimeException("oops"));
+		ConsumerDestination destination = provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
 
-		provisioner.provisionConsumerDestination(name, group,
-				new ExtendedConsumerProperties<>(new KinesisConsumerProperties()));
-
-		verify(kinesisStreamHandlerMock, times(1)).createOrUpdate(name, 1, autoCreateStream);
+		verify(amazonKinesisMock, times(1)).describeStream(name);
+		verify(amazonKinesisMock, times(1)).createStream(name, shards);
+		assertThat(destination.getName(), is(name));
 	}
+
+	private static DescribeStreamResult describeStreamResultWithShards(List<Shard> shards) {
+		return new DescribeStreamResult()
+				.withStreamDescription(
+						new StreamDescription()
+								.withShards(shards)
+				);
+	}
+
 }

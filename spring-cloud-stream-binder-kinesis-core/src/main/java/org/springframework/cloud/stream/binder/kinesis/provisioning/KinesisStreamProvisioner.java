@@ -16,6 +16,9 @@
 
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.model.DescribeStreamResult;
+import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
@@ -34,6 +37,7 @@ import org.springframework.util.Assert;
  *
  * @author Peter Oates
  * @author Artem Bilan
+ * @author Jacob Severson
  *
  */
 public class KinesisStreamProvisioner
@@ -42,15 +46,15 @@ public class KinesisStreamProvisioner
 
 	private final Log logger = LogFactory.getLog(getClass());
 
-	private final KinesisStreamHandler kinesisStreamHandler;
+	private final AmazonKinesis amazonKinesis;
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
-	public KinesisStreamProvisioner(KinesisStreamHandler kinesisStreamHandler,
+	public KinesisStreamProvisioner(AmazonKinesis amazonKinesis,
 									KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
-		Assert.notNull(kinesisStreamHandler, "'kinesisStreamHandler' must not be null");
+		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
 		Assert.notNull(kinesisBinderConfigurationProperties, "'kinesisBinderConfigurationProperties' must not be null");
-		this.kinesisStreamHandler = kinesisStreamHandler;
+		this.amazonKinesis = amazonKinesis;
 		this.configurationProperties = kinesisBinderConfigurationProperties;
 	}
 
@@ -59,8 +63,7 @@ public class KinesisStreamProvisioner
 			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
 		logger.info("Using Kinesis stream for outbound: " + name);
 
-		KinesisStream stream = kinesisStreamHandler.createOrUpdate(name, 1,
-				configurationProperties.getAutoCreateStreams());
+		KinesisStream stream = createOrUpdate(name, 1);
 
 		return new KinesisProducerDestination(stream.getName(), stream.getShards());
 	}
@@ -70,10 +73,26 @@ public class KinesisStreamProvisioner
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
 		logger.info("Using Kinesis stream for inbound: " + name);
 
-		KinesisStream stream = kinesisStreamHandler.createOrUpdate(name, 1,
-				configurationProperties.getAutoCreateStreams());
+		KinesisStream stream = createOrUpdate(name, 1);
 
 		return new KinesisConsumerDestination(stream.getName(), stream.getShards());
+	}
+
+	private KinesisStream createOrUpdate(String name, Integer shards) {
+		try {
+			DescribeStreamResult streamResult = amazonKinesis.describeStream(name);
+			logger.info("Stream found, using existing stream");
+
+			return new KinesisStream(name, streamResult.getStreamDescription().getShards().size());
+
+		} catch (ResourceNotFoundException e) {
+			logger.info("Stream not found");
+		}
+
+		logger.info("Attempting to create stream");
+		amazonKinesis.createStream(name, shards);
+
+		return new KinesisStream(name, shards);
 	}
 
 
@@ -140,4 +159,25 @@ public class KinesisStreamProvisioner
 					'}';
 		}
 	}
+
+	private static class KinesisStream {
+
+		private final String name;
+
+		private final Integer shards;
+
+		KinesisStream(String name, Integer shards) {
+			this.name = name;
+			this.shards = shards;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public Integer getShards() {
+			return shards;
+		}
+	}
+	
 }

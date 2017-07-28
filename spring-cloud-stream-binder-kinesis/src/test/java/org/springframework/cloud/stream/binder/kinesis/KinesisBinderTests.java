@@ -43,7 +43,6 @@ public class KinesisBinderTests
 	@Test
 	public void testAutoCreateStreamEnabledSucceeds() throws Exception {
 		KinesisBinderConfigurationProperties properties = createConfigurationProperties();
-		properties.setAutoCreateStreams(true);
 		Binder binder = getBinder();
 		RetryTemplate metatadataRetrievalRetryOperations = new RetryTemplate();
 		metatadataRetrievalRetryOperations.setRetryPolicy(new SimpleRetryPolicy());
