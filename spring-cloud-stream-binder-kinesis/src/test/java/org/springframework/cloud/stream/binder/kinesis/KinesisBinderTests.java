@@ -18,7 +18,12 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.springframework.cloud.stream.binder.*;
+import org.springframework.cloud.stream.binder.Spy;
+import org.springframework.cloud.stream.binder.Binder;
+import org.springframework.cloud.stream.binder.Binding;
+import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
+import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
+import org.springframework.cloud.stream.binder.PartitionCapableBinderTests;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
@@ -29,6 +34,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Artem Bilan
+ * @author Jacob Severson
  *
  */
 public class KinesisBinderTests
@@ -41,7 +47,7 @@ public class KinesisBinderTests
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testAutoCreateStreamEnabledSucceeds() throws Exception {
+	public void testAutoCreateStreamForNonExistingStream() throws Exception {
 		Binder binder = getBinder();
 		RetryTemplate metatadataRetrievalRetryOperations = new RetryTemplate();
 		metatadataRetrievalRetryOperations.setRetryPolicy(new SimpleRetryPolicy());

@@ -32,7 +32,10 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 /**
  * @author Jacob Severson
@@ -64,8 +67,10 @@ public class KinesisStreamProvisionerTests {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
+
 		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties
 				= new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
+
 		String name = "test-stream";
 		String group = "test-group";
 
@@ -106,19 +111,24 @@ public class KinesisStreamProvisionerTests {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
+		int instanceCount = 1;
+		int concurrency = 1;
+
 		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties
 				= new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
+		extendedConsumerProperties.setInstanceCount(instanceCount);
+		extendedConsumerProperties.setConcurrency(concurrency);
+
 		String name = "test-stream";
 		String group = "test-group";
-		Integer shards = 1;
 
 		when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
-		when(amazonKinesisMock.createStream(name, shards)).thenReturn(new CreateStreamResult());
+		when(amazonKinesisMock.createStream(name, instanceCount * concurrency)).thenReturn(new CreateStreamResult());
 
 		ConsumerDestination destination = provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
 
 		verify(amazonKinesisMock, times(1)).describeStream(name);
-		verify(amazonKinesisMock, times(1)).createStream(name, shards);
+		verify(amazonKinesisMock, times(1)).createStream(name, instanceCount * concurrency);
 		assertThat(destination.getName(), is(name));
 	}
 

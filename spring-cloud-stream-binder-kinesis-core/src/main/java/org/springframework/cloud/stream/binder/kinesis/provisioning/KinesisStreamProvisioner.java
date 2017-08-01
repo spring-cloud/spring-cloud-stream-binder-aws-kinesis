@@ -63,7 +63,7 @@ public class KinesisStreamProvisioner
 			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
 		logger.info("Using Kinesis stream for outbound: " + name);
 
-		KinesisStream stream = createOrUpdate(name, 1);
+		KinesisStream stream = createOrUpdate(name, properties.getPartitionCount());
 
 		return new KinesisProducerDestination(stream.getName(), stream.getShards());
 	}
@@ -73,7 +73,9 @@ public class KinesisStreamProvisioner
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
 		logger.info("Using Kinesis stream for inbound: " + name);
 
-		KinesisStream stream = createOrUpdate(name, 1);
+		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
+
+		KinesisStream stream = createOrUpdate(name, shardCount);
 
 		return new KinesisConsumerDestination(stream.getName(), stream.getShards());
 	}
@@ -171,11 +173,11 @@ public class KinesisStreamProvisioner
 			this.shards = shards;
 		}
 
-		public String getName() {
+		String getName() {
 			return name;
 		}
 
-		public Integer getShards() {
+		Integer getShards() {
 			return shards;
 		}
 	}

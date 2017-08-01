@@ -26,6 +26,7 @@ import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestS
 
 /**
  * @author Artem Bilan
+ * @author Jacob Severson
  *
  */
 public class LocalKinesisResource extends AbstractExternalResourceTestSupport<AmazonKinesisAsync> {
