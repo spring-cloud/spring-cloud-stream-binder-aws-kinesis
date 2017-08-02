@@ -61,42 +61,52 @@ public class KinesisStreamProvisioner
 	@Override
 	public ProducerDestination provisionProducerDestination(String name,
 			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
-		logger.info("Using Kinesis stream for outbound: " + name);
 
-		KinesisStream stream = createOrUpdate(name, properties.getPartitionCount());
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for outbound: " + name);
+		}
 
-		return new KinesisProducerDestination(stream.getName(), stream.getShards());
+		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
 	}
 
 	@Override
 	public ConsumerDestination provisionConsumerDestination(String name, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
-		logger.info("Using Kinesis stream for inbound: " + name);
+
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for inbound: " + name);
+		}
 
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
 
-		KinesisStream stream = createOrUpdate(name, shardCount);
-
-		return new KinesisConsumerDestination(stream.getName(), stream.getShards());
+		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
 	}
 
-	private KinesisStream createOrUpdate(String name, Integer shards) {
+	private Integer createOrUpdate(String name, Integer shards) {
+
 		try {
 			DescribeStreamResult streamResult = amazonKinesis.describeStream(name);
-			logger.info("Stream found, using existing stream");
 
-			return new KinesisStream(name, streamResult.getStreamDescription().getShards().size());
+			if (logger.isInfoEnabled()) {
+				logger.info("Stream found, using existing stream");
+			}
+
+			return streamResult.getStreamDescription().getShards().size();
 
 		} catch (ResourceNotFoundException e) {
-			logger.info("Stream not found");
+			if (logger.isInfoEnabled()) {
+				logger.info("Stream not found");
+			}
 		}
 
-		logger.info("Attempting to create stream");
+		if (logger.isInfoEnabled()) {
+			logger.info("Attempting to create stream");
+		}
+
 		amazonKinesis.createStream(name, shards);
 
-		return new KinesisStream(name, shards);
+		return shards;
 	}
-
 
 	private static final class KinesisProducerDestination implements ProducerDestination {
 
@@ -159,26 +169,6 @@ public class KinesisStreamProvisioner
 					", shards=" + shards +
 					", dlqName='" + dlqName + '\'' +
 					'}';
-		}
-	}
-
-	private static class KinesisStream {
-
-		private final String name;
-
-		private final Integer shards;
-
-		KinesisStream(String name, Integer shards) {
-			this.name = name;
-			this.shards = shards;
-		}
-
-		String getName() {
-			return name;
-		}
-
-		Integer getShards() {
-			return shards;
 		}
 	}
 

@@ -20,7 +20,11 @@ import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.model.*;
+import com.amazonaws.services.kinesis.model.DescribeStreamResult;
+import com.amazonaws.services.kinesis.model.CreateStreamResult;
+import com.amazonaws.services.kinesis.model.Shard;
+import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
+import com.amazonaws.services.kinesis.model.StreamDescription;
 import org.junit.Test;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
