@@ -18,6 +18,8 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SDKGlobalConfiguration;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
@@ -57,6 +59,7 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 				.withEndpointConfiguration(
 						new AwsClientBuilder.EndpointConfiguration("http://localhost:" + this.port,
 								Regions.DEFAULT_REGION.getName()))
+				.withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")))
 				.build();
 
 		// Check connection
