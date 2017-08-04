@@ -16,10 +16,6 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import static org.mockito.Mockito.mock;
-
-import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -27,6 +23,10 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+
+import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Artem Bilan

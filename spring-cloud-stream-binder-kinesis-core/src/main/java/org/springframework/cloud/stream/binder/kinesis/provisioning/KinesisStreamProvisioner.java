@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
+import com.amazonaws.services.kinesis.AmazonKinesis;
+
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
@@ -27,8 +29,6 @@ import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.cloud.stream.provisioning.ProvisioningProvider;
 import org.springframework.util.Assert;
 
-import com.amazonaws.services.kinesis.AmazonKinesis;
-
 /**
  * The {@link ProvisioningProvider} implementation for Amazon Kinesis.
  *
@@ -37,8 +37,8 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
  *
  */
 public class KinesisStreamProvisioner
-		implements ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
-		ExtendedProducerProperties<KinesisProducerProperties>> {
+		implements
+		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final AmazonKinesis amazonKinesis;
 
@@ -69,7 +69,6 @@ public class KinesisStreamProvisioner
 
 		return consumer;
 	}
-
 
 	private static final class KinesisProducerDestination implements ProducerDestination {
 
@@ -105,7 +104,6 @@ public class KinesisStreamProvisioner
 		}
 
 	}
-
 
 	private static final class KinesisConsumerDestination implements ConsumerDestination {
 

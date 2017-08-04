@@ -16,6 +16,10 @@
 
 package org.springframework.cloud.stream.binder.kinesis.config;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,10 +32,6 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.codec.Codec;
-
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 
 /**
  *
