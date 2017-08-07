@@ -24,13 +24,24 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
  */
 public class KinesisConsumerProperties {
 
-	private int connectTimeout = 60000;
+	private int startTimeout = 60000;
 
-	public int getConnectTimeout() {
-		return connectTimeout;
+	private int describeStreamRetries = 50;
+
+	public int getStartTimeout() {
+		return this.startTimeout;
 	}
 
-	public void setConnectTimeout(int connectTimeout) {
-		this.connectTimeout = connectTimeout;
+	public void setStartTimeout(int startTimeout) {
+		this.startTimeout = startTimeout;
 	}
+
+	public int getDescribeStreamRetries() {
+		return this.describeStreamRetries;
+	}
+
+	public void setDescribeStreamRetries(int describeStreamRetries) {
+		this.describeStreamRetries = describeStreamRetries;
+	}
+
 }
