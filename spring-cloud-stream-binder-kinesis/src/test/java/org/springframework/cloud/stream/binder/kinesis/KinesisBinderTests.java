@@ -17,9 +17,6 @@
 package org.springframework.cloud.stream.binder.kinesis;
 
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
-import org.hamcrest.Matchers;
-import org.hamcrest.core.Is;
-import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -33,6 +30,9 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderC
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.integration.channel.DirectChannel;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Artem Bilan
@@ -63,9 +63,9 @@ public class KinesisBinderTests
 		int createdShards = streamResult.getStreamDescription().getShards().size();
 		String createdStreamStatus = streamResult.getStreamDescription().getStreamStatus();
 
-		Assert.assertThat(createdStreamName, Is.is(testStreamName));
-		Assert.assertThat(createdShards, Is.is(Matchers.greaterThan(0)));
-		Assert.assertThat(createdStreamStatus, Is.is("ACTIVE"));
+		assertThat(createdStreamName, is(testStreamName));
+		assertThat(createdShards, is(consumerProperties.getInstanceCount() * consumerProperties.getConcurrency()));
+		assertThat(createdStreamStatus, is("ACTIVE"));
 	}
 
 	@Override

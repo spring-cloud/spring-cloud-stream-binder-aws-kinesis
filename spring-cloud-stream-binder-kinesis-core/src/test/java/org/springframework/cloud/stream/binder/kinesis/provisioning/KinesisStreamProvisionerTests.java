@@ -25,10 +25,8 @@ import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.StreamDescription;
-import org.hamcrest.core.Is;
-import org.junit.Assert;
+
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
@@ -38,6 +36,13 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProduce
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 /**
  * @author Jacob Severson
  */
@@ -45,7 +50,7 @@ public class KinesisStreamProvisionerTests {
 
 	@Test
 	public void testProvisionProducerSuccessfulWithExistingStream() {
-		AmazonKinesis amazonKinesisMock = Mockito.mock(AmazonKinesis.class);
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
 		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties
@@ -55,17 +60,17 @@ public class KinesisStreamProvisionerTests {
 		DescribeStreamResult describeStreamResult =
 				describeStreamResultWithShards(Collections.singletonList(new Shard()));
 
-		Mockito.when(amazonKinesisMock.describeStream(name)).thenReturn(describeStreamResult);
+		when(amazonKinesisMock.describeStream(name)).thenReturn(describeStreamResult);
 
 		ProducerDestination destination = provisioner.provisionProducerDestination(name, extendedProducerProperties);
 
-		Mockito.verify(amazonKinesisMock, Mockito.times(1)).describeStream(name);
-		Assert.assertThat(destination.getName(), Is.is(name));
+		verify(amazonKinesisMock, times(1)).describeStream(name);
+		assertThat(destination.getName(), is(name));
 	}
 
 	@Test
 	public void testProvisionConsumerSuccessfulWithExistingStream() {
-		AmazonKinesis amazonKinesisMock = Mockito.mock(AmazonKinesis.class);
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
 
@@ -78,18 +83,18 @@ public class KinesisStreamProvisionerTests {
 		DescribeStreamResult describeStreamResult =
 				describeStreamResultWithShards(Collections.singletonList(new Shard()));
 
-		Mockito.when(amazonKinesisMock.describeStream(name)).thenReturn(describeStreamResult);
+		when(amazonKinesisMock.describeStream(name)).thenReturn(describeStreamResult);
 
 		ConsumerDestination destination =
 				provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
 
-		Mockito.verify(amazonKinesisMock, Mockito.times(1)).describeStream(name);
-		Assert.assertThat(destination.getName(), Is.is(name));
+		verify(amazonKinesisMock, times(1)).describeStream(name);
+		assertThat(destination.getName(), is(name));
 	}
 
 	@Test
 	public void testProvisionProducerSuccessfulWithNewStream() {
-		AmazonKinesis amazonKinesisMock = Mockito.mock(AmazonKinesis.class);
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
 		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties
@@ -97,19 +102,19 @@ public class KinesisStreamProvisionerTests {
 		String name = "test-stream";
 		Integer shards = 1;
 
-		Mockito.when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
-		Mockito.when(amazonKinesisMock.createStream(name, shards)).thenReturn(new CreateStreamResult());
+		when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
+		when(amazonKinesisMock.createStream(name, shards)).thenReturn(new CreateStreamResult());
 
 		ProducerDestination destination = provisioner.provisionProducerDestination(name, extendedProducerProperties);
 
-		Mockito.verify(amazonKinesisMock, Mockito.times(1)).describeStream(name);
-		Mockito.verify(amazonKinesisMock, Mockito.times(1)).createStream(name, shards);
-		Assert.assertThat(destination.getName(), Is.is(name));
+		verify(amazonKinesisMock, times(1)).describeStream(name);
+		verify(amazonKinesisMock, times(1)).createStream(name, shards);
+		assertThat(destination.getName(), is(name));
 	}
 
 	@Test
 	public void testProvisionConsumerSuccessfulWithNewStream() {
-		AmazonKinesis amazonKinesisMock = Mockito.mock(AmazonKinesis.class);
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
 		int instanceCount = 1;
@@ -123,14 +128,14 @@ public class KinesisStreamProvisionerTests {
 		String name = "test-stream";
 		String group = "test-group";
 
-		Mockito.when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
-		Mockito.when(amazonKinesisMock.createStream(name, instanceCount * concurrency)).thenReturn(new CreateStreamResult());
+		when(amazonKinesisMock.describeStream(name)).thenThrow(new ResourceNotFoundException("I got nothing"));
+		when(amazonKinesisMock.createStream(name, instanceCount * concurrency)).thenReturn(new CreateStreamResult());
 
 		ConsumerDestination destination = provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
 
-		Mockito.verify(amazonKinesisMock, Mockito.times(1)).describeStream(name);
-		Mockito.verify(amazonKinesisMock, Mockito.times(1)).createStream(name, instanceCount * concurrency);
-		Assert.assertThat(destination.getName(), Is.is(name));
+		verify(amazonKinesisMock, times(1)).describeStream(name);
+		verify(amazonKinesisMock, times(1)).createStream(name, instanceCount * concurrency);
+		assertThat(destination.getName(), is(name));
 	}
 
 	private static DescribeStreamResult describeStreamResultWithShards(List<Shard> shards) {
