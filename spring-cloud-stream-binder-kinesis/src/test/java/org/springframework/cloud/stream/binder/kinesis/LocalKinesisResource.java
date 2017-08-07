@@ -24,6 +24,7 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+
 import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
 
 /**

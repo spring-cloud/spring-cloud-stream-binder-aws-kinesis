@@ -1,0 +1,60 @@
+[partintro]
+--
+This guide describes the AWS Kinesis implementation of the Spring Cloud Stream Binder.
+It contains information about its design, usage and configuration options, as well as information on how the Stream Cloud Stream concepts map into AWS Kinesis specific constructs.
+--
+
+== Usage
+
+For using the AWS Kinesis Binder, you just need to add it to your Spring Cloud Stream application, using the following Maven coordinates:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-stream-binder-kinesis</artifactId>
+</dependency>
+----
+
+Alternatively, you can also use the Spring Cloud Stream Kinesis Starter.
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-stream-kinesis</artifactId>
+</dependency>
+----
+
+== Kinesis Binder Overview
+
+A simplified diagram of how the Kinesis binder operates can be seen below.
+
+.Kinesis Binder
+image::kinesis-binder.png[width=300,scaledwidth="50%"]
+
+The Kinesis Binder implementation maps each destination to a `Stream`.
+
+== Configuration Options
+
+This section contains settings specific to the Kinesis Binder and bound channels.
+
+For general binding configuration options and properties, please refer to the https://github.com/spring-cloud/spring-cloud-stream/blob/master/spring-cloud-stream-core-docs/src/main/asciidoc/spring-cloud-stream-overview.adoc#configuration-options[Spring Cloud Stream core documentation].
+
+[[kinesis-binder-properties]]
+=== Kinesis Binder Properties
+
+=== Kinesis Consumer Properties
+
+The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.`.
+connectTimeout::
+The amount of time to wait for the consumer to make a connection to Kinesis on startup, in milliseconds.
++
+Default: `60000`.
+
+
+=== Kinesis Producer Properties
+
+The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.producer.`.
+
+

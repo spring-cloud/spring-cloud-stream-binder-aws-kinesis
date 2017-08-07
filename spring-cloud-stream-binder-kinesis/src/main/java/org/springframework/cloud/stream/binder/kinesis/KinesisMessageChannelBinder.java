@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
@@ -36,8 +38,6 @@ import org.springframework.integration.core.MessageProducer;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
-
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 
 /**
  *

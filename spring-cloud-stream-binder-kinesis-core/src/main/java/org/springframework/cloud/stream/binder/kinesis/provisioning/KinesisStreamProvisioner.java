@@ -21,6 +21,7 @@ import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
@@ -41,8 +42,8 @@ import org.springframework.util.Assert;
  *
  */
 public class KinesisStreamProvisioner
-		implements ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
-		ExtendedProducerProperties<KinesisProducerProperties>> {
+		implements
+		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final Log logger = LogFactory.getLog(getClass());
 

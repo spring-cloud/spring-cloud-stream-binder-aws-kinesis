@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
@@ -25,8 +27,6 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProduce
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.integration.codec.kryo.PojoCodec;
-
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 
 /**
  * @author Artem Bilan
