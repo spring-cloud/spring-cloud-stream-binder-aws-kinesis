@@ -16,6 +16,10 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import com.amazonaws.services.kinesis.model.DescribeStreamResult;
+import org.hamcrest.Matchers;
+import org.hamcrest.core.Is;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -29,9 +33,6 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderC
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.integration.channel.DirectChannel;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Artem Bilan
@@ -39,7 +40,8 @@ import org.springframework.retry.support.RetryTemplate;
  *
  */
 public class KinesisBinderTests
-		extends PartitionCapableBinderTests<KinesisTestBinder, ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
+		extends PartitionCapableBinderTests<KinesisTestBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
+		ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final String CLASS_UNDER_TEST_NAME = KinesisBinderTests.class.getSimpleName();
 
@@ -50,15 +52,20 @@ public class KinesisBinderTests
 	@SuppressWarnings("unchecked")
 	public void testAutoCreateStreamForNonExistingStream() throws Exception {
 		Binder binder = getBinder();
-		RetryTemplate metatadataRetrievalRetryOperations = new RetryTemplate();
-		metatadataRetrievalRetryOperations.setRetryPolicy(new SimpleRetryPolicy());
-		FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
-		backOffPolicy.setBackOffPeriod(1000);
 		DirectChannel output = new DirectChannel();
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
-		String testTopicName = "nonexisting" + System.currentTimeMillis();
-		Binding<?> binding = binder.bindConsumer(testTopicName, "test", output, consumerProperties);
+		String testStreamName = "nonexisting" + System.currentTimeMillis();
+		Binding<?> binding = binder.bindConsumer(testStreamName, "test", output, consumerProperties);
 		binding.unbind();
+
+		DescribeStreamResult streamResult = localKinesisResource.getResource().describeStream(testStreamName);
+		String createdStreamName = streamResult.getStreamDescription().getStreamName();
+		int createdShards = streamResult.getStreamDescription().getShards().size();
+		String createdStreamStatus = streamResult.getStreamDescription().getStreamStatus();
+
+		Assert.assertThat(createdStreamName, Is.is(testStreamName));
+		Assert.assertThat(createdShards, Is.is(Matchers.greaterThan(0)));
+		Assert.assertThat(createdStreamStatus, Is.is("ACTIVE"));
 	}
 
 	@Override
