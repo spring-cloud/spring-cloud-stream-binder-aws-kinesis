@@ -19,8 +19,18 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
 /**
  * 
  * @author Peter Oates
+ * @author Jacob Severson
  *
  */
 public class KinesisConsumerProperties {
 
+	private int connectTimeout = 60000;
+
+	public int getConnectTimeout() {
+		return connectTimeout;
+	}
+
+	public void setConnectTimeout(int connectTimeout) {
+		this.connectTimeout = connectTimeout;
+	}
 }

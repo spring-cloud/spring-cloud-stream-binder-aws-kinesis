@@ -108,8 +108,9 @@ public class KinesisMessageChannelBinder extends
 		// need to move these properties to the appropriate properties class
 		adapter.setCheckpointMode(CheckpointMode.record);
 		adapter.setListenerMode(ListenerMode.record);
-		adapter.setStartTimeout(10000);
-		adapter.setDescribeStreamRetries(1);
+		adapter.setStartTimeout(properties.getExtension().getConnectTimeout());
+		// Let the start timeout interrupt startup instead of eating the ResourceNotFoundException
+		adapter.setDescribeStreamRetries(properties.getExtension().getConnectTimeout() + 10);
 		adapter.setConcurrency(10);
 
 		// Deffer byte[] conversion to the ReceivingHandler
