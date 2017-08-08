@@ -108,8 +108,8 @@ public class KinesisMessageChannelBinder extends
 		// need to move these properties to the appropriate properties class
 		adapter.setCheckpointMode(CheckpointMode.record);
 		adapter.setListenerMode(ListenerMode.record);
-		adapter.setStartTimeout(10000);
-		adapter.setDescribeStreamRetries(1);
+		adapter.setStartTimeout(properties.getExtension().getStartTimeout());
+		adapter.setDescribeStreamRetries(properties.getExtension().getDescribeStreamRetries());
 		adapter.setConcurrency(10);
 
 		// Deffer byte[] conversion to the ReceivingHandler

@@ -17,6 +17,11 @@
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.model.DescribeStreamResult;
+import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
@@ -34,11 +39,14 @@ import org.springframework.util.Assert;
  *
  * @author Peter Oates
  * @author Artem Bilan
+ * @author Jacob Severson
  *
  */
 public class KinesisStreamProvisioner
 		implements
 		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
+
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final AmazonKinesis amazonKinesis;
 
@@ -56,18 +64,51 @@ public class KinesisStreamProvisioner
 	public ProducerDestination provisionProducerDestination(String name,
 			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
 
-		KinesisProducerDestination producer = new KinesisProducerDestination(name);
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for outbound: " + name);
+		}
 
-		return producer;
+		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
 	}
 
 	@Override
 	public ConsumerDestination provisionConsumerDestination(String name, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
 
-		KinesisConsumerDestination consumer = new KinesisConsumerDestination(name);
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for inbound: " + name);
+		}
 
-		return consumer;
+		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
+
+		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
+	}
+
+	private Integer createOrUpdate(String name, Integer shards) {
+
+		try {
+			DescribeStreamResult streamResult = amazonKinesis.describeStream(name);
+
+			if (logger.isInfoEnabled()) {
+				logger.info("Stream found, using existing stream");
+			}
+
+			return streamResult.getStreamDescription().getShards().size();
+
+		}
+		catch (ResourceNotFoundException e) {
+			if (logger.isInfoEnabled()) {
+				logger.info("Stream not found");
+			}
+		}
+
+		if (logger.isInfoEnabled()) {
+			logger.info("Attempting to create stream");
+		}
+
+		amazonKinesis.createStream(name, shards);
+
+		return shards;
 	}
 
 	private static final class KinesisProducerDestination implements ProducerDestination {
@@ -75,10 +116,6 @@ public class KinesisStreamProvisioner
 		private final String streamName;
 
 		private final int shards;
-
-		KinesisProducerDestination(String streamName) {
-			this(streamName, 0);
-		}
 
 		KinesisProducerDestination(String streamName, Integer shards) {
 			this.streamName = streamName;
@@ -113,10 +150,6 @@ public class KinesisStreamProvisioner
 
 		private final String dlqName;
 
-		KinesisConsumerDestination(String streamName) {
-			this(streamName, 0, null);
-		}
-
 		KinesisConsumerDestination(String streamName, int shards) {
 			this(streamName, shards, null);
 		}
@@ -140,7 +173,6 @@ public class KinesisStreamProvisioner
 					", dlqName='" + dlqName + '\'' +
 					'}';
 		}
-
 	}
 
 }

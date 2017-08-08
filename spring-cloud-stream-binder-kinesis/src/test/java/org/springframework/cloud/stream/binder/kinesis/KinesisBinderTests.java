@@ -16,8 +16,13 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import org.junit.ClassRule;
+import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import org.springframework.cloud.stream.binder.Binder;
+import org.springframework.cloud.stream.binder.Binding;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.PartitionCapableBinderTests;
@@ -25,9 +30,14 @@ import org.springframework.cloud.stream.binder.Spy;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.integration.channel.DirectChannel;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Artem Bilan
+ * @author Jacob Severson
  *
  */
 public class KinesisBinderTests
@@ -37,6 +47,26 @@ public class KinesisBinderTests
 
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testAutoCreateStreamForNonExistingStream() throws Exception {
+		Binder binder = getBinder();
+		DirectChannel output = new DirectChannel();
+		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		String testStreamName = "nonexisting" + System.currentTimeMillis();
+		Binding<?> binding = binder.bindConsumer(testStreamName, "test", output, consumerProperties);
+		binding.unbind();
+
+		DescribeStreamResult streamResult = localKinesisResource.getResource().describeStream(testStreamName);
+		String createdStreamName = streamResult.getStreamDescription().getStreamName();
+		int createdShards = streamResult.getStreamDescription().getShards().size();
+		String createdStreamStatus = streamResult.getStreamDescription().getStreamStatus();
+
+		assertThat(createdStreamName, is(testStreamName));
+		assertThat(createdShards, is(consumerProperties.getInstanceCount() * consumerProperties.getConcurrency()));
+		assertThat(createdStreamStatus, is("ACTIVE"));
+	}
 
 	@Override
 	protected boolean usesExplicitRouting() {
@@ -51,16 +81,15 @@ public class KinesisBinderTests
 	@Override
 	protected KinesisTestBinder getBinder() throws Exception {
 		if (this.testBinder == null) {
-			this.testBinder =
-					new KinesisTestBinder(localKinesisResource.getResource(),
-							new KinesisBinderConfigurationProperties());
+			this.testBinder = new KinesisTestBinder(localKinesisResource.getResource(),
+					new KinesisBinderConfigurationProperties());
 		}
 		return this.testBinder;
 	}
 
 	@Override
 	protected ExtendedConsumerProperties<KinesisConsumerProperties> createConsumerProperties() {
-		final ExtendedConsumerProperties<KinesisConsumerProperties> kafkaConsumerProperties =
+		ExtendedConsumerProperties<KinesisConsumerProperties> kafkaConsumerProperties =
 				new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
 		// set the default values that would normally be propagated by Spring Cloud Stream
 		kafkaConsumerProperties.setInstanceCount(1);
