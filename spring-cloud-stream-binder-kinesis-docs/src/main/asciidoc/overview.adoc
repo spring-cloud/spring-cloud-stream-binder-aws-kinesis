@@ -48,6 +48,14 @@ For general binding configuration options and properties, please refer to the ht
 
 The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.`.
 
+startTimeout::
+  The amount of time to wait for the consumer to start, in milliseconds.
++
+Default: `60000`.
+describeStreamRetries::
+  The amount of times the consumer will retry a `DescribeStream` operation waiting for the stream to be in `ACTIVE` state.
++
+Default: `50`.
 
 
 === Kinesis Producer Properties

@@ -37,6 +37,7 @@ public class KinesisTestBinder
 
 	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+
 		KinesisStreamProvisioner provisioningProvider =
 				new KinesisStreamProvisioner(amazonKinesis, kinesisBinderConfigurationProperties);
 
