@@ -16,7 +16,11 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.List;
+
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.model.ListStreamsRequest;
+import com.amazonaws.services.kinesis.model.ListStreamsResult;
 
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
@@ -35,8 +39,11 @@ import org.springframework.integration.codec.kryo.PojoCodec;
 public class KinesisTestBinder
 		extends AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
 
+	private final AmazonKinesisAsync amazonKinesis;
+
 	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+		this.amazonKinesis = amazonKinesis;
 
 		KinesisStreamProvisioner provisioningProvider =
 				new KinesisStreamProvisioner(amazonKinesis, kinesisBinderConfigurationProperties);
@@ -54,7 +61,22 @@ public class KinesisTestBinder
 
 	@Override
 	public void cleanup() {
+		ListStreamsRequest listStreamsRequest = new ListStreamsRequest();
+		ListStreamsResult listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
 
+		List<String> streamNames = listStreamsResult.getStreamNames();
+
+		while (listStreamsResult.getHasMoreStreams()) {
+			if (streamNames.size() > 0) {
+				listStreamsRequest.setExclusiveStartStreamName(streamNames.get(streamNames.size() - 1));
+			}
+			listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
+			streamNames.addAll(listStreamsResult.getStreamNames());
+		}
+
+		for (String stream : streamNames) {
+			this.amazonKinesis.deleteStream(stream);
+		}
 	}
 
 }

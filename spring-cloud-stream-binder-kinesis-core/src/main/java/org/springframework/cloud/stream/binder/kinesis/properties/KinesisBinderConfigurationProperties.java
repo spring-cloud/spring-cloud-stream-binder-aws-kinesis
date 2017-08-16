@@ -19,11 +19,40 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 
+ *
  * @author Peter Oates
  *
  */
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
 
+	private String[] headers = new String[] {};
+
+	private int describeStreamBackoff = 1000;
+
+	private int describeStreamRetries = 50;
+
+	public String[] getHeaders() {
+		return this.headers;
+	}
+
+	public void setHeaders(String... headers) {
+		this.headers = headers;
+	}
+
+	public int getDescribeStreamBackoff() {
+		return this.describeStreamBackoff;
+	}
+
+	public void setDescribeStreamBackoff(int describeStreamBackoff) {
+		this.describeStreamBackoff = describeStreamBackoff;
+	}
+
+	public int getDescribeStreamRetries() {
+		return this.describeStreamRetries;
+	}
+
+	public void setDescribeStreamRetries(int describeStreamRetries) {
+		this.describeStreamRetries = describeStreamRetries;
+	}
 }

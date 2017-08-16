@@ -26,22 +26,12 @@ public class KinesisConsumerProperties {
 
 	private int startTimeout = 60000;
 
-	private int describeStreamRetries = 50;
-
 	public int getStartTimeout() {
 		return this.startTimeout;
 	}
 
 	public void setStartTimeout(int startTimeout) {
 		this.startTimeout = startTimeout;
-	}
-
-	public int getDescribeStreamRetries() {
-		return this.describeStreamRetries;
-	}
-
-	public void setDescribeStreamRetries(int describeStreamRetries) {
-		this.describeStreamRetries = describeStreamRetries;
 	}
 
 }

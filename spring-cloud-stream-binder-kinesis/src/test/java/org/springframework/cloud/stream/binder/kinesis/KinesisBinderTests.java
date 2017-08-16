@@ -17,6 +17,7 @@
 package org.springframework.cloud.stream.binder.kinesis;
 
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
+import com.amazonaws.services.kinesis.model.StreamStatus;
 
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -30,6 +31,7 @@ import org.springframework.cloud.stream.binder.Spy;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.channel.DirectChannel;
 
 import static org.hamcrest.Matchers.is;
@@ -48,6 +50,10 @@ public class KinesisBinderTests
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
 
+	@Override
+	public void testClean() throws Exception {
+	}
+
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testAutoCreateStreamForNonExistingStream() throws Exception {
@@ -65,7 +71,7 @@ public class KinesisBinderTests
 
 		assertThat(createdStreamName, is(testStreamName));
 		assertThat(createdShards, is(consumerProperties.getInstanceCount() * consumerProperties.getConcurrency()));
-		assertThat(createdStreamStatus, is("ACTIVE"));
+		assertThat(createdStreamStatus, is(StreamStatus.ACTIVE.toString()));
 	}
 
 	@Override
@@ -83,6 +89,7 @@ public class KinesisBinderTests
 		if (this.testBinder == null) {
 			this.testBinder = new KinesisTestBinder(localKinesisResource.getResource(),
 					new KinesisBinderConfigurationProperties());
+			this.timeoutMultiplier = 20;
 		}
 		return this.testBinder;
 	}
@@ -101,6 +108,7 @@ public class KinesisBinderTests
 	protected ExtendedProducerProperties<KinesisProducerProperties> createProducerProperties() {
 		ExtendedProducerProperties<KinesisProducerProperties> producerProperties =
 				new ExtendedProducerProperties<>(new KinesisProducerProperties());
+		producerProperties.setPartitionKeyExpression(new LiteralExpression("1"));
 		producerProperties.getExtension().setSync(true);
 		return producerProperties;
 	}
