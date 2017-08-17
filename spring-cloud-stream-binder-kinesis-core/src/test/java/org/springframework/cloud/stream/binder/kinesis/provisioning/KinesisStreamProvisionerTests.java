@@ -28,7 +28,6 @@ import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.StreamStatus;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
@@ -39,10 +38,10 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProduce
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,7 +70,7 @@ public class KinesisStreamProvisionerTests {
 
 		verify(amazonKinesisMock)
 				.describeStream(any(DescribeStreamRequest.class));
-		assertThat(destination.getName(), is(name));
+		assertThat(destination.getName()).isEqualTo(name);
 	}
 
 	@Test
@@ -92,43 +91,47 @@ public class KinesisStreamProvisionerTests {
 		when(amazonKinesisMock.describeStream(any(DescribeStreamRequest.class)))
 				.thenReturn(describeStreamResult);
 
-		ConsumerDestination destination = provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
+		ConsumerDestination destination =
+				provisioner.provisionConsumerDestination(name, group, extendedConsumerProperties);
 
 		verify(amazonKinesisMock)
 				.describeStream(any(DescribeStreamRequest.class));
-		assertThat(destination.getName(), is(name));
+		assertThat(destination.getName()).isEqualTo(name);
 	}
 
 	@Test
-	@Ignore
 	public void testProvisionProducerSuccessfulWithNewStream() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(amazonKinesisMock, binderProperties);
 		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties =
 				new ExtendedProducerProperties<>(new KinesisProducerProperties());
+
 		String name = "test-stream";
 		Integer shards = 1;
 
+		DescribeStreamResult describeStreamResult =
+				describeStreamResultWithShards(Collections.singletonList(new Shard()));
+
 		when(amazonKinesisMock.describeStream(any(DescribeStreamRequest.class)))
-				.thenThrow(new ResourceNotFoundException("I got nothing"));
+				.thenThrow(new ResourceNotFoundException("I got nothing"))
+				.thenReturn(describeStreamResult);
 
 		when(amazonKinesisMock.createStream(name, shards))
 				.thenReturn(new CreateStreamResult());
 
 		ProducerDestination destination = provisioner.provisionProducerDestination(name, extendedProducerProperties);
 
-		verify(amazonKinesisMock)
+		verify(amazonKinesisMock, times(2))
 				.describeStream(any(DescribeStreamRequest.class));
 
 		verify(amazonKinesisMock)
 				.createStream(name, shards);
 
-		assertThat(destination.getName(), is(name));
+		assertThat(destination.getName()).isEqualTo(name);
 	}
 
 	@Test
-	@Ignore
 	public void testProvisionConsumerSuccessfulWithNewStream() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
@@ -144,8 +147,13 @@ public class KinesisStreamProvisionerTests {
 		String name = "test-stream";
 		String group = "test-group";
 
+		DescribeStreamResult describeStreamResult =
+				describeStreamResultWithShards(Collections.singletonList(new Shard()));
+
+
 		when(amazonKinesisMock.describeStream(any(DescribeStreamRequest.class)))
-				.thenThrow(new ResourceNotFoundException("I got nothing"));
+				.thenThrow(new ResourceNotFoundException("I got nothing"))
+				.thenReturn(describeStreamResult);;
 
 		when(amazonKinesisMock.createStream(name, instanceCount * concurrency))
 				.thenReturn(new CreateStreamResult());
@@ -153,11 +161,13 @@ public class KinesisStreamProvisionerTests {
 		ConsumerDestination destination = provisioner.provisionConsumerDestination(name, group,
 				extendedConsumerProperties);
 
-		verify(amazonKinesisMock)
-				.describeStream(name);
+		verify(amazonKinesisMock, times(2))
+				.describeStream(any(DescribeStreamRequest.class));
+
 		verify(amazonKinesisMock)
 				.createStream(name, instanceCount * concurrency);
-		assertThat(destination.getName(), is(name));
+
+		assertThat(destination.getName()).isEqualTo(name);
 	}
 
 	private static DescribeStreamResult describeStreamResultWithShards(List<Shard> shards) {

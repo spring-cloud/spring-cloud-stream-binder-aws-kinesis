@@ -21,6 +21,7 @@ import java.util.List;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.ListStreamsRequest;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
+import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
@@ -76,6 +77,21 @@ public class KinesisTestBinder
 
 		for (String stream : streamNames) {
 			this.amazonKinesis.deleteStream(stream);
+			while (true) {
+				try {
+					this.amazonKinesis.describeStream(stream);
+					try {
+						Thread.sleep(100);
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						throw new IllegalStateException(e);
+					}
+				}
+				catch (ResourceNotFoundException e) {
+					break;
+				}
+			}
 		}
 	}
 

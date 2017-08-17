@@ -17,9 +17,13 @@
 package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.model.Shard;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
@@ -30,6 +34,7 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderC
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsumerDestination;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
@@ -75,21 +80,17 @@ public class KinesisMessageChannelBinder extends
 
 	private static String[] headersToMap(KinesisBinderConfigurationProperties configurationProperties) {
 		Assert.notNull(configurationProperties, "'configurationProperties' must not be null");
-		String[] headersToMap;
 		if (ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
-			headersToMap = BinderHeaders.STANDARD_HEADERS;
+			return BinderHeaders.STANDARD_HEADERS;
 		}
 		else {
 			String[] combinedHeadersToMap = Arrays.copyOfRange(BinderHeaders.STANDARD_HEADERS, 0,
 					BinderHeaders.STANDARD_HEADERS.length + configurationProperties.getHeaders().length);
 			System.arraycopy(configurationProperties.getHeaders(), 0, combinedHeadersToMap,
-					BinderHeaders.STANDARD_HEADERS.length,
-					configurationProperties.getHeaders().length);
-			headersToMap = combinedHeadersToMap;
+					BinderHeaders.STANDARD_HEADERS.length, configurationProperties.getHeaders().length);
+			return combinedHeadersToMap;
 		}
-		return headersToMap;
 	}
-
 
 	@Override
 	public KinesisConsumerProperties getExtendedConsumerProperties(String channelName) {
@@ -111,7 +112,9 @@ public class KinesisMessageChannelBinder extends
 		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(this.amazonKinesis);
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
 		kinesisMessageHandler.setStream(destination.getName());
-		kinesisMessageHandler.setPartitionKeyExpression(producerProperties.getPartitionKeyExpression());
+		if (producerProperties.isPartitioned()) {
+			kinesisMessageHandler.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
+		}
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
 		return kinesisMessageHandler;
@@ -121,13 +124,33 @@ public class KinesisMessageChannelBinder extends
 	protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws Exception {
 
-		KinesisMessageDrivenChannelAdapter adapter =
-				new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
+		Set<KinesisShardOffset> shardOffsets = null;
+
+		if (properties.getInstanceCount() > 1) {
+			shardOffsets = new HashSet<>();
+			KinesisConsumerDestination kinesisConsumerDestination = (KinesisConsumerDestination) destination;
+			List<Shard> shards = kinesisConsumerDestination.getShards();
+			for (int i = 0; i < shards.size(); i++) {
+				// divide shards across instances
+				if ((i % properties.getInstanceCount()) == properties.getInstanceIndex()) {
+					shardOffsets.add(KinesisShardOffset.latest(destination.getName(), shards.get(i).getShardId()));
+				}
+			}
+		}
+
+		KinesisMessageDrivenChannelAdapter adapter;
+
+		if (shardOffsets == null) {
+			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
+		}
+		else {
+			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis,
+					shardOffsets.toArray(new KinesisShardOffset[shardOffsets.size()]));
+		}
 
 		boolean anonymous = !StringUtils.hasText(group);
 		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID().toString() : group;
 		adapter.setConsumerGroup(consumerGroup);
-
 
 		adapter.setStreamInitialSequence(anonymous ? KinesisShardOffset.latest() : KinesisShardOffset.trimHorizon());
 		// need to move these properties to the appropriate properties class

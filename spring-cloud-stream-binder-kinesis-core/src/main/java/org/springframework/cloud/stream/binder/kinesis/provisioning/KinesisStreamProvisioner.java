@@ -16,6 +16,7 @@
 
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
@@ -91,8 +92,8 @@ public class KinesisStreamProvisioner
 		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
 	}
 
-	private int createOrUpdate(String stream, int shards) {
-		int shardsCount = 0;
+	private List<Shard> createOrUpdate(String stream, int shards) {
+		List<Shard> shardList = new ArrayList<>();
 
 		int describeStreamRetries = 0;
 
@@ -110,8 +111,7 @@ public class KinesisStreamProvisioner
 				describeStreamResult = this.amazonKinesis.describeStream(describeStreamRequest);
 				StreamDescription streamDescription = describeStreamResult.getStreamDescription();
 				if (StreamStatus.ACTIVE.toString().equals(streamDescription.getStreamStatus())) {
-					List<Shard> shardList = streamDescription.getShards();
-					shardsCount += shardList.size();
+					shardList.addAll(streamDescription.getShards());
 
 					if (streamDescription.getHasMoreShards()) {
 						exclusiveStartShardId = shardList.get(shardList.size() - 1).getShardId();
@@ -155,71 +155,7 @@ public class KinesisStreamProvisioner
 			}
 		}
 
-		return shardsCount;
-	}
-
-	private static final class KinesisProducerDestination implements ProducerDestination {
-
-		private final String streamName;
-
-		private final int shards;
-
-		KinesisProducerDestination(String streamName, Integer shards) {
-			this.streamName = streamName;
-			this.shards = shards;
-		}
-
-		@Override
-		public String getName() {
-			return this.streamName;
-		}
-
-		@Override
-		public String getNameForPartition(int shard) {
-			return this.streamName;
-		}
-
-		@Override
-		public String toString() {
-			return "KinesisProducerDestination{" +
-					"streamName='" + this.streamName + '\'' +
-					", shards=" + this.shards +
-					'}';
-		}
-
-	}
-
-	private static final class KinesisConsumerDestination implements ConsumerDestination {
-
-		private final String streamName;
-
-		private final int shards;
-
-		private final String dlqName;
-
-		KinesisConsumerDestination(String streamName, int shards) {
-			this(streamName, shards, null);
-		}
-
-		KinesisConsumerDestination(String streamName, Integer shards, String dlqName) {
-			this.streamName = streamName;
-			this.shards = shards;
-			this.dlqName = dlqName;
-		}
-
-		@Override
-		public String getName() {
-			return this.streamName;
-		}
-
-		@Override
-		public String toString() {
-			return "KinesisConsumerDestination{" +
-					"streamName='" + streamName + '\'' +
-					", shards=" + shards +
-					", dlqName='" + dlqName + '\'' +
-					'}';
-		}
+		return shardList;
 	}
 
 }

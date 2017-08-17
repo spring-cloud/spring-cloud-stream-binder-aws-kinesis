@@ -1,6 +1,6 @@
 [partintro]
 --
-This guide describes the AWS Kinesis implementation of the Spring Cloud Stream Binder.
+This guide describes the https://aws.amazon.com/kinesis/[AWS Kinesis] implementation of the Spring Cloud Stream Binder.
 It contains information about its design, usage and configuration options, as well as information on how the Stream Cloud Stream concepts map into AWS Kinesis specific constructs.
 --
 
@@ -34,6 +34,21 @@ A simplified diagram of how the Kinesis binder operates can be seen below.
 image::kinesis-binder.png[width=300,scaledwidth="50%"]
 
 The Kinesis Binder implementation maps each destination to a `Stream`.
+
+Unlike https://kafka.apache.org/[Apache Kafka] the AWS Kinesis doesn't provide out-of-the-box support for consumer groups.
+The support of this feature is implemented as a part of `MetadataStore` key for shard checkpoints in the `KinesisMessageDrivenChannelAdapter` - `[CONSUMER_GROUP]:[STREAM]:[SHARD_ID]`.
+This way all the `ShardConsumer` s in the same consumer group may receive the same records from the same shard but they will be filtered according the latest stored `sequenceNumber` after performing checkpoint.
+
+The partitioning logic in AWS Kinesis is similar to the Apache Kafka support, but with slightly different logic.
+The `partitionKey` on the producer side determines which shard in the stream the data record is assigned to.
+Partition keys are Unicode strings with a maximum length limit of 256 characters for each key.
+AWS Kinesis uses the partition key as input to a hash function that maps the partition key and associated data to a specific shard.
+Specifically, an MD5 hash function is used to map partition keys to 128-bit integer values and to map associated data records to shards.
+As a result of this hashing mechanism, all data records with the same partition key map to the same shard within the stream.
+But at the same time we can't select target shard to send explicitly.
+Although calculation the hash manually (and use `explicitHashKeyExpression` for producer, respectively), we may track the target shard by inclusion into its `HashKeyRange`.
+
+On the consumer side the `instanceCount` and `instanceIndex` are used to distribute shards between consumers in group evenly.
 
 == Configuration Options
 
