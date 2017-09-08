@@ -106,7 +106,8 @@ public class KinesisMessageChannelBinder extends
 	// to put and consume messages
 	@Override
 	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
-			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel) throws Exception {
+			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel)
+			throws Exception {
 
 		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(this.amazonKinesis);
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
