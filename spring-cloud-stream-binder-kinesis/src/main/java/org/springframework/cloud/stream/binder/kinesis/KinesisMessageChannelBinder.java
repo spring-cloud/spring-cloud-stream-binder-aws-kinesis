@@ -44,6 +44,7 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.metadata.MetadataStore;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
@@ -59,15 +60,13 @@ public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
 		implements ExtendedPropertiesBinder<MessageChannel, KinesisConsumerProperties, KinesisProducerProperties> {
 
-	// not using currently but expect to include global properties here if
-	// required
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
-	// not currently utilising any extended properties - not sure if I will need
-	// these
 	private KinesisExtendedBindingProperties extendedBindingProperties = new KinesisExtendedBindingProperties();
 
 	private final AmazonKinesisAsync amazonKinesis;
+
+	private MetadataStore metadataStore;
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
@@ -114,7 +113,8 @@ public class KinesisMessageChannelBinder extends
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
 		kinesisMessageHandler.setStream(destination.getName());
 		if (producerProperties.isPartitioned()) {
-			kinesisMessageHandler.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
+			kinesisMessageHandler
+					.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
 		}
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
@@ -154,9 +154,10 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerGroup(consumerGroup);
 
 		adapter.setStreamInitialSequence(anonymous ? KinesisShardOffset.latest() : KinesisShardOffset.trimHorizon());
-		// need to move these properties to the appropriate properties class
-		adapter.setCheckpointMode(CheckpointMode.record);
+
 		adapter.setListenerMode(ListenerMode.record);
+		adapter.setCheckpointMode(CheckpointMode.record);
+		adapter.setCheckpointStore(metadataStore);
 
 		adapter.setConcurrency(properties.getConcurrency());
 		adapter.setStartTimeout(properties.getExtension().getStartTimeout());
@@ -167,6 +168,10 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConverter(null);
 
 		return adapter;
+	}
+
+	public void setMetadataStore(MetadataStore metadataStore) {
+		this.metadataStore = metadataStore;
 	}
 
 }
