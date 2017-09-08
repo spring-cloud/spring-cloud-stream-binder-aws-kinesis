@@ -17,6 +17,8 @@
 package org.springframework.cloud.stream.binder.kinesis.config;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 
@@ -31,7 +33,10 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtende
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
 import org.springframework.integration.codec.Codec;
+import org.springframework.integration.metadata.MetadataStore;
+import org.springframework.integration.metadata.SimpleMetadataStore;
 
 /**
  *
@@ -67,14 +72,44 @@ public class KinesisBinderConfiguration {
 	KinesisMessageChannelBinder kinesisMessageChannelBinder(
 			AmazonKinesisAsync amazonKinesis,
 			KinesisStreamProvisioner provisioningProvider,
-			Codec codec) {
+			Codec codec, MetadataStore kinesisCheckpointStore) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder =
 				new KinesisMessageChannelBinder(amazonKinesis, this.configurationProperties, provisioningProvider);
 		kinesisMessageChannelBinder.setCodec(codec);
+		kinesisMessageChannelBinder.setMetaDataStore(kinesisCheckpointStore);
 
 		return kinesisMessageChannelBinder;
 	}
 
+	
+	@Bean
+	public AmazonDynamoDBAsync dynamoDB(AWSCredentialsProvider awsCredentialsProvider,
+			RegionProvider regionProvider) {
+		
+		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(regionProvider.getRegion().getName())
+				.build();
+
+		return dynamoDB;
+	}
+	
+	
+	@Bean
+	MetadataStore kinesisCheckpointStore(AmazonDynamoDBAsync dynamoDB) {
+		
+		String tableName = this.configurationProperties.getCheckpointName();
+
+		MetadataStore kinesisCheckpointStore;
+		if(tableName != null) {
+			kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
+		} else {
+			kinesisCheckpointStore = new SimpleMetadataStore();
+		}
+		
+		return kinesisCheckpointStore;
+	}
+	
 
 }

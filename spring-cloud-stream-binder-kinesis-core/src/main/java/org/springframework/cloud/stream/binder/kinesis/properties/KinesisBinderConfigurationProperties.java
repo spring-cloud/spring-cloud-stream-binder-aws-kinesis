@@ -31,6 +31,8 @@ public class KinesisBinderConfigurationProperties {
 	private int describeStreamBackoff = 1000;
 
 	private int describeStreamRetries = 50;
+	
+	private String checkpointName = null;
 
 	public String[] getHeaders() {
 		return this.headers;
@@ -54,5 +56,13 @@ public class KinesisBinderConfigurationProperties {
 
 	public void setDescribeStreamRetries(int describeStreamRetries) {
 		this.describeStreamRetries = describeStreamRetries;
+	}
+
+	public String getCheckpointName() {
+		return checkpointName;
+	}
+
+	public void setCheckpointName(String checkpointName) {
+		this.checkpointName = checkpointName;
 	}
 }

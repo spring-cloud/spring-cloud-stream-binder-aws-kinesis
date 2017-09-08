@@ -44,6 +44,7 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.metadata.MetadataStore;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
@@ -59,15 +60,13 @@ public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
 		implements ExtendedPropertiesBinder<MessageChannel, KinesisConsumerProperties, KinesisProducerProperties> {
 
-	// not using currently but expect to include global properties here if
-	// required
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
-	// not currently utilising any extended properties - not sure if I will need
-	// these
 	private KinesisExtendedBindingProperties extendedBindingProperties = new KinesisExtendedBindingProperties();
 
 	private final AmazonKinesisAsync amazonKinesis;
+	
+	private MetadataStore metaDataStore;
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
@@ -107,7 +106,7 @@ public class KinesisMessageChannelBinder extends
 	// to put and consume messages
 	@Override
 	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
-			ExtendedProducerProperties<KinesisProducerProperties> producerProperties) throws Exception {
+			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel) throws Exception {
 
 		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(this.amazonKinesis);
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
@@ -153,10 +152,11 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerGroup(consumerGroup);
 
 		adapter.setStreamInitialSequence(anonymous ? KinesisShardOffset.latest() : KinesisShardOffset.trimHorizon());
-		// need to move these properties to the appropriate properties class
-		adapter.setCheckpointMode(CheckpointMode.record);
+		
 		adapter.setListenerMode(ListenerMode.record);
-
+		adapter.setCheckpointMode(CheckpointMode.record); 		
+		adapter.setCheckpointStore(metaDataStore);
+		
 		adapter.setConcurrency(properties.getConcurrency());
 		adapter.setStartTimeout(properties.getExtension().getStartTimeout());
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());
@@ -166,6 +166,14 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConverter(null);
 
 		return adapter;
+	}
+
+	public MetadataStore getMetaDataStore() {
+		return metaDataStore;
+	}
+
+	public void setMetaDataStore(MetadataStore metaDataStore) {
+		this.metaDataStore = metaDataStore;
 	}
 
 }
