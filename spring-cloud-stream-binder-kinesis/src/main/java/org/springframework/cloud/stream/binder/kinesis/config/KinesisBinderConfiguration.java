@@ -53,14 +53,11 @@ public class KinesisBinderConfiguration {
 	private KinesisBinderConfigurationProperties configurationProperties;
 
 	@Bean
-	public AmazonKinesisAsync amazonKinesis(
-			AWSCredentialsProvider awsCredentialsProvider,
+	public AmazonKinesisAsync amazonKinesis(AWSCredentialsProvider awsCredentialsProvider,
 			RegionProvider regionProvider) {
 
-		return AmazonKinesisAsyncClientBuilder.standard()
-				.withCredentials(awsCredentialsProvider)
-				.withRegion(regionProvider.getRegion().getName())
-				.build();
+		return AmazonKinesisAsyncClientBuilder.standard().withCredentials(awsCredentialsProvider)
+				.withRegion(regionProvider.getRegion().getName()).build();
 	}
 
 	@Bean
@@ -69,47 +66,40 @@ public class KinesisBinderConfiguration {
 	}
 
 	@Bean
-	KinesisMessageChannelBinder kinesisMessageChannelBinder(
-			AmazonKinesisAsync amazonKinesis,
-			KinesisStreamProvisioner provisioningProvider,
-			Codec codec, MetadataStore kinesisCheckpointStore) {
+	KinesisMessageChannelBinder kinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
+			KinesisStreamProvisioner provisioningProvider, Codec codec, MetadataStore kinesisCheckpointStore) {
 
-		KinesisMessageChannelBinder kinesisMessageChannelBinder =
-				new KinesisMessageChannelBinder(amazonKinesis, this.configurationProperties, provisioningProvider);
+		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(amazonKinesis,
+				this.configurationProperties, provisioningProvider);
 		kinesisMessageChannelBinder.setCodec(codec);
-		kinesisMessageChannelBinder.setMetaDataStore(kinesisCheckpointStore);
+		kinesisMessageChannelBinder.setMetadataStore(kinesisCheckpointStore);
 
 		return kinesisMessageChannelBinder;
 	}
 
-	
 	@Bean
-	public AmazonDynamoDBAsync dynamoDB(AWSCredentialsProvider awsCredentialsProvider,
-			RegionProvider regionProvider) {
-		
-		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
-				.withCredentials(awsCredentialsProvider)
-				.withRegion(regionProvider.getRegion().getName())
-				.build();
+	@ConditionalOnMissingBean
+	MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
 
-		return dynamoDB;
-	}
-	
-	
-	@Bean
-	MetadataStore kinesisCheckpointStore(AmazonDynamoDBAsync dynamoDB) {
-		
-		String tableName = this.configurationProperties.getCheckpointName();
+		String tableName = this.configurationProperties.getCheckpointTable();
 
 		MetadataStore kinesisCheckpointStore;
-		if(tableName != null) {
+		if (tableName != null) {
+			AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
+					.withCredentials(awsCredentialsProvider)
+					.withRegion(regionProvider.getRegion().getName())
+					.build();
+
 			kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
+			((DynamoDbMetaDataStore) kinesisCheckpointStore)
+					.setReadCapacity(configurationProperties.getDynamoDbReadCapacity());
+			((DynamoDbMetaDataStore) kinesisCheckpointStore)
+					.setWriteCapacity(configurationProperties.getDynamoDbWriteCapacity());
 		} else {
 			kinesisCheckpointStore = new SimpleMetadataStore();
 		}
-		
+
 		return kinesisCheckpointStore;
 	}
-	
 
 }

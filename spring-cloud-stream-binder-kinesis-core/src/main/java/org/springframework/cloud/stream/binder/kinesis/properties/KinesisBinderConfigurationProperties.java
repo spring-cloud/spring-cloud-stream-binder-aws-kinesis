@@ -31,8 +31,12 @@ public class KinesisBinderConfigurationProperties {
 	private int describeStreamBackoff = 1000;
 
 	private int describeStreamRetries = 50;
-	
-	private String checkpointName = null;
+
+	private String checkpointTable = null;
+
+	private Long dynamoDbReadCapacity = 1L;
+
+	private Long dynamoDbWriteCapacity = 1L;
 
 	public String[] getHeaders() {
 		return this.headers;
@@ -58,11 +62,27 @@ public class KinesisBinderConfigurationProperties {
 		this.describeStreamRetries = describeStreamRetries;
 	}
 
-	public String getCheckpointName() {
-		return checkpointName;
+	public String getCheckpointTable() {
+		return checkpointTable;
 	}
 
-	public void setCheckpointName(String checkpointName) {
-		this.checkpointName = checkpointName;
+	public void setCheckpointTable(String checkpointTable) {
+		this.checkpointTable = checkpointTable;
+	}
+
+	public Long getDynamoDbReadCapacity() {
+		return dynamoDbReadCapacity;
+	}
+
+	public void setDynamoDbReadCapacity(Long dynamoDbReadCapacity) {
+		this.dynamoDbReadCapacity = dynamoDbReadCapacity;
+	}
+
+	public Long getDynamoDbWriteCapacity() {
+		return dynamoDbWriteCapacity;
+	}
+
+	public void setDynamoDbWriteCapacity(Long dynamoDbWriteCapacity) {
+		this.dynamoDbWriteCapacity = dynamoDbWriteCapacity;
 	}
 }

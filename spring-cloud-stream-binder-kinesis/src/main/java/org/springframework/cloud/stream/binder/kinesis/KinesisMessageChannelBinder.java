@@ -65,8 +65,8 @@ public class KinesisMessageChannelBinder extends
 	private KinesisExtendedBindingProperties extendedBindingProperties = new KinesisExtendedBindingProperties();
 
 	private final AmazonKinesisAsync amazonKinesis;
-	
-	private MetadataStore metaDataStore;
+
+	private MetadataStore metadataStore;
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
@@ -81,8 +81,7 @@ public class KinesisMessageChannelBinder extends
 		Assert.notNull(configurationProperties, "'configurationProperties' must not be null");
 		if (ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
 			return BinderHeaders.STANDARD_HEADERS;
-		}
-		else {
+		} else {
 			String[] combinedHeadersToMap = Arrays.copyOfRange(BinderHeaders.STANDARD_HEADERS, 0,
 					BinderHeaders.STANDARD_HEADERS.length + configurationProperties.getHeaders().length);
 			System.arraycopy(configurationProperties.getHeaders(), 0, combinedHeadersToMap,
@@ -113,7 +112,8 @@ public class KinesisMessageChannelBinder extends
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
 		kinesisMessageHandler.setStream(destination.getName());
 		if (producerProperties.isPartitioned()) {
-			kinesisMessageHandler.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
+			kinesisMessageHandler
+					.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
 		}
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
@@ -142,8 +142,7 @@ public class KinesisMessageChannelBinder extends
 
 		if (shardOffsets == null) {
 			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
-		}
-		else {
+		} else {
 			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis,
 					shardOffsets.toArray(new KinesisShardOffset[shardOffsets.size()]));
 		}
@@ -153,11 +152,11 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerGroup(consumerGroup);
 
 		adapter.setStreamInitialSequence(anonymous ? KinesisShardOffset.latest() : KinesisShardOffset.trimHorizon());
-		
+
 		adapter.setListenerMode(ListenerMode.record);
-		adapter.setCheckpointMode(CheckpointMode.record); 		
-		adapter.setCheckpointStore(metaDataStore);
-		
+		adapter.setCheckpointMode(CheckpointMode.record);
+		adapter.setCheckpointStore(metadataStore);
+
 		adapter.setConcurrency(properties.getConcurrency());
 		adapter.setStartTimeout(properties.getExtension().getStartTimeout());
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());
@@ -169,12 +168,8 @@ public class KinesisMessageChannelBinder extends
 		return adapter;
 	}
 
-	public MetadataStore getMetaDataStore() {
-		return metaDataStore;
-	}
-
-	public void setMetaDataStore(MetadataStore metaDataStore) {
-		this.metaDataStore = metaDataStore;
+	public void setMetadataStore(MetadataStore metadataStore) {
+		this.metadataStore = metadataStore;
 	}
 
 }
