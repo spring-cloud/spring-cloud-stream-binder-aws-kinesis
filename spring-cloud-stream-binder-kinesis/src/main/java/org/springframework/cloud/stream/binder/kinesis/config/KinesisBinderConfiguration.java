@@ -36,7 +36,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
 import org.springframework.integration.codec.Codec;
 import org.springframework.integration.metadata.MetadataStore;
-import org.springframework.integration.metadata.SimpleMetadataStore;
 
 /**
  *
@@ -81,23 +80,20 @@ public class KinesisBinderConfiguration {
 	@ConditionalOnMissingBean
 	MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
 
-		String tableName = this.configurationProperties.getCheckpointTable();
+		String tableName = this.configurationProperties.getCheckpoint().getCheckpointTable();
 
 		MetadataStore kinesisCheckpointStore;
-		if (tableName != null) {
-			AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
+		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
 					.withCredentials(awsCredentialsProvider)
 					.withRegion(regionProvider.getRegion().getName())
 					.build();
 
-			kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
-			((DynamoDbMetaDataStore) kinesisCheckpointStore)
-					.setReadCapacity(configurationProperties.getDynamoDbReadCapacity());
-			((DynamoDbMetaDataStore) kinesisCheckpointStore)
-					.setWriteCapacity(configurationProperties.getDynamoDbWriteCapacity());
-		} else {
-			kinesisCheckpointStore = new SimpleMetadataStore();
-		}
+		kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
+		((DynamoDbMetaDataStore) kinesisCheckpointStore)
+				.setReadCapacity(configurationProperties.getCheckpoint().getDynamoDbReadCapacity());
+		((DynamoDbMetaDataStore) kinesisCheckpointStore)
+				.setWriteCapacity(configurationProperties.getCheckpoint().getDynamoDbWriteCapacity());
+
 
 		return kinesisCheckpointStore;
 	}

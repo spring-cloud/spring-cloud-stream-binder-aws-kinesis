@@ -81,7 +81,8 @@ public class KinesisMessageChannelBinder extends
 		Assert.notNull(configurationProperties, "'configurationProperties' must not be null");
 		if (ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
 			return BinderHeaders.STANDARD_HEADERS;
-		} else {
+		}
+		else {
 			String[] combinedHeadersToMap = Arrays.copyOfRange(BinderHeaders.STANDARD_HEADERS, 0,
 					BinderHeaders.STANDARD_HEADERS.length + configurationProperties.getHeaders().length);
 			System.arraycopy(configurationProperties.getHeaders(), 0, combinedHeadersToMap,
@@ -142,7 +143,8 @@ public class KinesisMessageChannelBinder extends
 
 		if (shardOffsets == null) {
 			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
-		} else {
+		}
+		else {
 			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis,
 					shardOffsets.toArray(new KinesisShardOffset[shardOffsets.size()]));
 		}
