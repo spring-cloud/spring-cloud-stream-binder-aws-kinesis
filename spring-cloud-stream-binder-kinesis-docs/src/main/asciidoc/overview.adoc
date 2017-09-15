@@ -59,6 +59,21 @@ For general binding configuration options and properties, please refer to the ht
 [[kinesis-binder-properties]]
 === Kinesis Binder Properties
 
+Checkpoint properties prefixed with `spring.cloud.strea.kinesis.binder.checkpoint` 
+
+checkpointTable::
+	The name to give the DynamoDb table 
++            
+Default: `checkpoint`
+dynamoDbReadCapacity::
+	The Read capacity of the DynamoDb table. See [AWS docunmentation](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html)
++
+Default: `1`
+dynamoDbWriteCapacity::
+	The write capacity of the DynamoDb table. See [AWS docunmentation](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html)
++
+Default: `1`
+
 === Kinesis Consumer Properties
 
 The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.`.
