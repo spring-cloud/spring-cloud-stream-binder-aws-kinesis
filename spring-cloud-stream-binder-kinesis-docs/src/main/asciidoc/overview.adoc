@@ -59,38 +59,46 @@ For general binding configuration options and properties, please refer to the ht
 [[kinesis-binder-properties]]
 === Kinesis Binder Properties
 
-Checkpoint properties prefixed with `spring.cloud.strea.kinesis.binder.checkpoint` 
+The following properties are available for Kinesis Binder configuration
 
-checkpointTable::
-	The name to give the DynamoDb table 
-+            
+describeStreamBackoff::
+  The amount of time in milliseconds in between retries for the `DescribeStream` operation
++
+Default: `1000`.
+describeStreamRetries::
+  The amount of times the consumer will retry a `DescribeStream` operation waiting for the stream to be in `ACTIVE` state
++
+Default: `50`.
+
+The based on the DynamoDB Checkpoint properties prefixed with `spring.cloud.stream.kinesis.binder.checkpoint`
+
+table::
+	The name to give the DynamoDb table
++
 Default: `checkpoint`
-dynamoDbReadCapacity::
-	The Read capacity of the DynamoDb table. See [AWS docunmentation](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html)
+readCapacity::
+	The Read capacity of the DynamoDb table.
+See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 +
 Default: `1`
-dynamoDbWriteCapacity::
-	The write capacity of the DynamoDb table. See [AWS docunmentation](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html)
+writeCapacity::
+	The write capacity of the DynamoDb table.
+See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 +
 Default: `1`
 
 === Kinesis Consumer Properties
 
-The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.`.
+The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.`
 
 startTimeout::
   The amount of time to wait for the consumer to start, in milliseconds.
 +
 Default: `60000`.
-describeStreamRetries::
-  The amount of times the consumer will retry a `DescribeStream` operation waiting for the stream to be in `ACTIVE` state.
-+
-Default: `50`.
-
 
 
 === Kinesis Producer Properties
 
-The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.producer.`.
+The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.producer.`
 
 

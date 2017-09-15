@@ -26,7 +26,7 @@ public class KinesisBindingProperties {
 	private KinesisProducerProperties producer = new KinesisProducerProperties();
 
 	public KinesisConsumerProperties getConsumer() {
-		return consumer;
+		return this.consumer;
 	}
 
 	public void setConsumer(KinesisConsumerProperties consumer) {
@@ -34,10 +34,11 @@ public class KinesisBindingProperties {
 	}
 
 	public KinesisProducerProperties getProducer() {
-		return producer;
+		return this.producer;
 	}
 
 	public void setProducer(KinesisProducerProperties producer) {
 		this.producer = producer;
 	}
+
 }

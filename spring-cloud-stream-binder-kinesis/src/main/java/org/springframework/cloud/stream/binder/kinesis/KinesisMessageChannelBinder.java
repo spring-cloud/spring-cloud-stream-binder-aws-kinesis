@@ -66,11 +66,12 @@ public class KinesisMessageChannelBinder extends
 
 	private final AmazonKinesisAsync amazonKinesis;
 
-	private MetadataStore metadataStore;
+	private MetadataStore checkpointStore;
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
 			KinesisStreamProvisioner provisioningProvider) {
+
 		super(false, headersToMap(configurationProperties), provisioningProvider);
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
 		this.configurationProperties = configurationProperties;
@@ -157,8 +158,10 @@ public class KinesisMessageChannelBinder extends
 
 		adapter.setListenerMode(ListenerMode.record);
 		adapter.setCheckpointMode(CheckpointMode.record);
-		adapter.setCheckpointStore(metadataStore);
 
+		if (this.checkpointStore != null) {
+			adapter.setCheckpointStore(this.checkpointStore);
+		}
 		adapter.setConcurrency(properties.getConcurrency());
 		adapter.setStartTimeout(properties.getExtension().getStartTimeout());
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());
@@ -170,8 +173,8 @@ public class KinesisMessageChannelBinder extends
 		return adapter;
 	}
 
-	public void setMetadataStore(MetadataStore metadataStore) {
-		this.metadataStore = metadataStore;
+	public void setCheckpointStore(MetadataStore checkpointStore) {
+		this.checkpointStore = checkpointStore;
 	}
 
 }

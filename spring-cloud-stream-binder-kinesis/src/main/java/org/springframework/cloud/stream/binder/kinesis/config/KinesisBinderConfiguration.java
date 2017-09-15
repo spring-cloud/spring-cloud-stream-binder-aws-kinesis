@@ -55,8 +55,12 @@ public class KinesisBinderConfiguration {
 	public AmazonKinesisAsync amazonKinesis(AWSCredentialsProvider awsCredentialsProvider,
 			RegionProvider regionProvider) {
 
-		return AmazonKinesisAsyncClientBuilder.standard().withCredentials(awsCredentialsProvider)
-				.withRegion(regionProvider.getRegion().getName()).build();
+		return AmazonKinesisAsyncClientBuilder.standard()
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(
+						regionProvider.getRegion()
+								.getName())
+				.build();
 	}
 
 	@Bean
@@ -71,7 +75,7 @@ public class KinesisBinderConfiguration {
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(amazonKinesis,
 				this.configurationProperties, provisioningProvider);
 		kinesisMessageChannelBinder.setCodec(codec);
-		kinesisMessageChannelBinder.setMetadataStore(kinesisCheckpointStore);
+		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
 
 		return kinesisMessageChannelBinder;
 	}
@@ -79,21 +83,16 @@ public class KinesisBinderConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
+		String tableName = this.configurationProperties.getCheckpoint().getTable();
 
-		String tableName = this.configurationProperties.getCheckpoint().getCheckpointTable();
-
-		MetadataStore kinesisCheckpointStore;
 		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
-					.withCredentials(awsCredentialsProvider)
-					.withRegion(regionProvider.getRegion().getName())
-					.build();
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(regionProvider.getRegion().getName())
+				.build();
 
-		kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
-		((DynamoDbMetaDataStore) kinesisCheckpointStore)
-				.setReadCapacity(configurationProperties.getCheckpoint().getDynamoDbReadCapacity());
-		((DynamoDbMetaDataStore) kinesisCheckpointStore)
-				.setWriteCapacity(configurationProperties.getCheckpoint().getDynamoDbWriteCapacity());
-
+		DynamoDbMetaDataStore kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
+		kinesisCheckpointStore.setReadCapacity(this.configurationProperties.getCheckpoint().getReadCapacity());
+		kinesisCheckpointStore.setWriteCapacity(this.configurationProperties.getCheckpoint().getWriteCapacity());
 
 		return kinesisCheckpointStore;
 	}
