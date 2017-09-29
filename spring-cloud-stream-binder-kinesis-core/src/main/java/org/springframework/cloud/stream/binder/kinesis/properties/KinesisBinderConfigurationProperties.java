@@ -71,9 +71,9 @@ public class KinesisBinderConfigurationProperties {
 
 		private String table = "checkpoint";
 
-		private Long readCapacity = 1L;
+		private long readCapacity = 1L;
 
-		private Long writeCapacity = 1L;
+		private long writeCapacity = 1L;
 
 		public String getTable() {
 			return this.table;
@@ -83,19 +83,19 @@ public class KinesisBinderConfigurationProperties {
 			this.table = table;
 		}
 
-		public Long getReadCapacity() {
+		public long getReadCapacity() {
 			return this.readCapacity;
 		}
 
-		public void setReadCapacity(Long readCapacity) {
+		public void setReadCapacity(long readCapacity) {
 			this.readCapacity = readCapacity;
 		}
 
-		public Long getWriteCapacity() {
+		public long getWriteCapacity() {
 			return this.writeCapacity;
 		}
 
-		public void setWriteCapacity(Long writeCapacity) {
+		public void setWriteCapacity(long writeCapacity) {
 			this.writeCapacity = writeCapacity;
 		}
 
