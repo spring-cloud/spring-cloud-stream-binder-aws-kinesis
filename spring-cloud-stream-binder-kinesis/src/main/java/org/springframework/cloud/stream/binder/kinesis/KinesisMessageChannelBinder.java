@@ -55,6 +55,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Peter Oates
  * @author Artem Bilan
+ *
  */
 public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
