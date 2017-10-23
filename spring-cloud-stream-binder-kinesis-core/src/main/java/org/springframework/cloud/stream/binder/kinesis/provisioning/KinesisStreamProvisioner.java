@@ -56,7 +56,7 @@ public class KinesisStreamProvisioner
 		implements
 		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
 
-	private final Log logger = LogFactory.getLog(getClass());
+	private static final Log logger = LogFactory.getLog(KinesisStreamProvisioner.class);
 
 	private final AmazonKinesis amazonKinesis;
 
@@ -74,8 +74,8 @@ public class KinesisStreamProvisioner
 	public ProducerDestination provisionProducerDestination(String name,
 			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
 
-		if (this.logger.isInfoEnabled()) {
-			this.logger.info("Using Kinesis stream for outbound: " + name);
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for outbound: " + name);
 		}
 
 		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
@@ -85,8 +85,8 @@ public class KinesisStreamProvisioner
 	public ConsumerDestination provisionConsumerDestination(String name, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
 
-		if (this.logger.isInfoEnabled()) {
-			this.logger.info("Using Kinesis stream for inbound: " + name);
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for inbound: " + name);
 		}
 
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
@@ -177,7 +177,7 @@ public class KinesisStreamProvisioner
 				.withTargetShardCount(targetCount)
 				.withScalingType(ScalingType.UNIFORM_SCALING);
 
-		amazonKinesis.updateShardCount(updateShardCountRequest);
+		this.amazonKinesis.updateShardCount(updateShardCountRequest);
 
 		// Wait for stream to become active again after resharding
 		List<Shard> shardList = new ArrayList<>();

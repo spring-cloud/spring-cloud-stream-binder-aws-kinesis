@@ -73,7 +73,7 @@ public class KinesisBinderConfigurationProperties {
 	}
 
 	public int getMinShardCount() {
-		return minShardCount;
+		return this.minShardCount;
 	}
 
 	public void setMinShardCount(int minShardCount) {
@@ -96,9 +96,9 @@ public class KinesisBinderConfigurationProperties {
 
 		private long writeCapacity = 1L;
 
-		private int createTableDelay = 1;
+		private int createDelay = 1;
 
-		private int createTableRetries = 25;
+		private int createRetries = 25;
 
 		public String getTable() {
 			return this.table;
@@ -124,21 +124,22 @@ public class KinesisBinderConfigurationProperties {
 			this.writeCapacity = writeCapacity;
 		}
 
-		public int getCreateTableDelay() {
-			return createTableDelay;
+		public int getCreateDelay() {
+			return this.createDelay;
 		}
 
-		public void setCreateTableDelay(int createTableDelay) {
-			this.createTableDelay = createTableDelay;
+		public void setCreateDelay(int createDelay) {
+			this.createDelay = createDelay;
 		}
 
-		public int getCreateTableRetries() {
-			return createTableRetries;
+		public int getCreateRetries() {
+			return this.createRetries;
 		}
 
-		public void setCreateTableRetries(int createTableRetries) {
-			this.createTableRetries = createTableRetries;
+		public void setCreateRetries(int createRetries) {
+			this.createRetries = createRetries;
 		}
+
 	}
 
 }

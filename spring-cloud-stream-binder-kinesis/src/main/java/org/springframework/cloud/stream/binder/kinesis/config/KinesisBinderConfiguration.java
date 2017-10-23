@@ -83,18 +83,18 @@ public class KinesisBinderConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
-		String tableName = this.configurationProperties.getCheckpoint().getTable();
-
 		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
 				.withCredentials(awsCredentialsProvider)
 				.withRegion(regionProvider.getRegion().getName())
 				.build();
 
-		DynamoDbMetaDataStore kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
-		kinesisCheckpointStore.setReadCapacity(this.configurationProperties.getCheckpoint().getReadCapacity());
-		kinesisCheckpointStore.setWriteCapacity(this.configurationProperties.getCheckpoint().getWriteCapacity());
-		kinesisCheckpointStore.setCreateTableDelay(this.configurationProperties.getCheckpoint().getCreateTableDelay());
-		kinesisCheckpointStore.setCreateTableRetries(this.configurationProperties.getCheckpoint().getCreateTableRetries());
+		KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
+
+		DynamoDbMetaDataStore kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, checkpoint.getTable());
+		kinesisCheckpointStore.setReadCapacity(checkpoint.getReadCapacity());
+		kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
+		kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());
+		kinesisCheckpointStore.setCreateTableRetries(checkpoint.getCreateRetries());
 
 		return kinesisCheckpointStore;
 	}
