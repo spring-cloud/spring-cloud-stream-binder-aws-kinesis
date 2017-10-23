@@ -24,9 +24,11 @@ import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.LimitExceededException;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
+import com.amazonaws.services.kinesis.model.ScalingType;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.StreamStatus;
+import com.amazonaws.services.kinesis.model.UpdateShardCountRequest;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -126,7 +128,7 @@ public class KinesisStreamProvisioner
 					logger.info("Stream '" + stream + " ' not found. Create one...");
 				}
 
-				this.amazonKinesis.createStream(stream, shards);
+				this.amazonKinesis.createStream(stream, Math.max(this.configurationProperties.getMinShardCount(), shards));
 				continue;
 			}
 			catch (LimitExceededException e) {
@@ -155,6 +157,82 @@ public class KinesisStreamProvisioner
 			}
 		}
 
+		int effectiveShardCount = Math.max(this.configurationProperties.getMinShardCount(), shards);
+
+		if ((shardList.size() < effectiveShardCount) && this.configurationProperties.isAutoAddShards()) {
+			return updateShardCount(stream, shardList.size(), effectiveShardCount);
+		}
+
+		return shardList;
+	}
+
+	private List<Shard> updateShardCount(String streamName, int shardCount, int targetCount) {
+		if (logger.isInfoEnabled()) {
+			logger.info("Stream [" + streamName + "] has ["+ shardCount +"] shards compared to a target " +
+					"configuration of [" + targetCount + "], creating shards...");
+		}
+
+		UpdateShardCountRequest updateShardCountRequest = new UpdateShardCountRequest()
+				.withStreamName(streamName)
+				.withTargetShardCount(targetCount)
+				.withScalingType(ScalingType.UNIFORM_SCALING);
+
+		amazonKinesis.updateShardCount(updateShardCountRequest);
+
+		// Wait for stream to become active again after resharding
+		List<Shard> shardList = new ArrayList<>();
+
+		int describeStreamRetries = 0;
+
+		String exclusiveStartShardId = null;
+
+		DescribeStreamRequest describeStreamRequest =
+				new DescribeStreamRequest()
+						.withStreamName(streamName);
+
+		while (true) {
+			DescribeStreamResult describeStreamResult = null;
+
+			try {
+				describeStreamRequest.withExclusiveStartShardId(exclusiveStartShardId);
+				describeStreamResult = this.amazonKinesis.describeStream(describeStreamRequest);
+				StreamDescription streamDescription = describeStreamResult.getStreamDescription();
+				if (StreamStatus.ACTIVE.toString().equals(streamDescription.getStreamStatus())) {
+					shardList.addAll(streamDescription.getShards());
+
+					if (streamDescription.getHasMoreShards()) {
+						exclusiveStartShardId = shardList.get(shardList.size() - 1).getShardId();
+					}
+					else {
+						break;
+					}
+				}
+
+			} catch (LimitExceededException e) {
+				logger.info("Got LimitExceededException when describing stream [" + streamName + "]. " +
+						"Backing off for [" + this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
+			}
+
+			if (describeStreamResult == null ||
+					!StreamStatus.ACTIVE.toString()
+							.equals(describeStreamResult.getStreamDescription().getStreamStatus())) {
+				if (describeStreamRetries++ > this.configurationProperties.getDescribeStreamRetries()) {
+					ResourceNotFoundException resourceNotFoundException =
+							new ResourceNotFoundException("The stream [" + streamName +
+									"] isn't ACTIVE or doesn't exist.");
+					resourceNotFoundException.setServiceName("Kinesis");
+					throw new ProvisioningException("Kinesis provisioning error", resourceNotFoundException);
+				}
+				try {
+					Thread.sleep(this.configurationProperties.getDescribeStreamBackoff());
+				}
+				catch (InterruptedException e) {
+					Thread.interrupted();
+					throw new ProvisioningException("The [describeStream] thread for the stream ["
+							+ streamName + "] has been interrupted.", e);
+				}
+			}
+		}
 		return shardList;
 	}
 

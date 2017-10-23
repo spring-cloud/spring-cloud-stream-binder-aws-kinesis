@@ -69,6 +69,14 @@ describeStreamRetries::
   The amount of times the consumer will retry a `DescribeStream` operation waiting for the stream to be in `ACTIVE` state
 +
 Default: `50`.
+autoAddShards::
+    If set to `true`, the binder will create new shards automatically. If set to `false`, the binder will rely on the shard size of the stream being already configured. If the shard count of the target stream is smaller than the expected value, the binder will ignore that value.
++
+Default: `false`
+minShardCount::
+    Effective only if `autoAddShards` is set to `true`. The minimum number of shards that the binder will configure on the stream from which it produces/consumes data. It can be superseded by the partitionCount setting of the producer or by the value of instanceCount * concurrency settings of the producer (if either is larger).
++
+Default: `1`
 
 The based on the DynamoDB Checkpoint properties prefixed with `spring.cloud.stream.kinesis.binder.checkpoint`
 
@@ -76,6 +84,14 @@ table::
 	The name to give the DynamoDb table
 +
 Default: `checkpoint`
+createTableDelay::
+    The amount of time in seconds between each polling attempt while waiting for the checkpoint DynamoDB table to be created
++
+Default: `1`
+createTableRetries::
+    The amount of times the consumer will poll DynamoDB while waiting for the checkpoint table to be created.
++
+Default: `25`
 readCapacity::
 	The Read capacity of the DynamoDb table.
 See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]

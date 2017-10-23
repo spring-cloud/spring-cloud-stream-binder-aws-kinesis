@@ -22,6 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @author Peter Oates
  * @author Artem Bilan
+ * @author Jacob Severson
  *
  */
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
@@ -32,6 +33,10 @@ public class KinesisBinderConfigurationProperties {
 	private int describeStreamBackoff = 1000;
 
 	private int describeStreamRetries = 50;
+
+	private boolean autoAddShards = false;
+
+	private int minShardCount = 1;
 
 	private Checkpoint checkpoint = new Checkpoint();
 
@@ -59,6 +64,22 @@ public class KinesisBinderConfigurationProperties {
 		this.describeStreamRetries = describeStreamRetries;
 	}
 
+	public boolean isAutoAddShards() {
+		return this.autoAddShards;
+	}
+
+	public void setAutoAddShards(boolean autoAddShards) {
+		this.autoAddShards = autoAddShards;
+	}
+
+	public int getMinShardCount() {
+		return minShardCount;
+	}
+
+	public void setMinShardCount(int minShardCount) {
+		this.minShardCount = minShardCount;
+	}
+
 	public Checkpoint getCheckpoint() {
 		return this.checkpoint;
 	}
@@ -74,6 +95,10 @@ public class KinesisBinderConfigurationProperties {
 		private long readCapacity = 1L;
 
 		private long writeCapacity = 1L;
+
+		private int createTableDelay = 1;
+
+		private int createTableRetries = 25;
 
 		public String getTable() {
 			return this.table;
@@ -99,6 +124,21 @@ public class KinesisBinderConfigurationProperties {
 			this.writeCapacity = writeCapacity;
 		}
 
+		public int getCreateTableDelay() {
+			return createTableDelay;
+		}
+
+		public void setCreateTableDelay(int createTableDelay) {
+			this.createTableDelay = createTableDelay;
+		}
+
+		public int getCreateTableRetries() {
+			return createTableRetries;
+		}
+
+		public void setCreateTableRetries(int createTableRetries) {
+			this.createTableRetries = createTableRetries;
+		}
 	}
 
 }

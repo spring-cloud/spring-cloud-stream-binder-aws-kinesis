@@ -93,6 +93,8 @@ public class KinesisBinderConfiguration {
 		DynamoDbMetaDataStore kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, tableName);
 		kinesisCheckpointStore.setReadCapacity(this.configurationProperties.getCheckpoint().getReadCapacity());
 		kinesisCheckpointStore.setWriteCapacity(this.configurationProperties.getCheckpoint().getWriteCapacity());
+		kinesisCheckpointStore.setCreateTableDelay(this.configurationProperties.getCheckpoint().getCreateTableDelay());
+		kinesisCheckpointStore.setCreateTableRetries(this.configurationProperties.getCheckpoint().getCreateTableRetries());
 
 		return kinesisCheckpointStore;
 	}
