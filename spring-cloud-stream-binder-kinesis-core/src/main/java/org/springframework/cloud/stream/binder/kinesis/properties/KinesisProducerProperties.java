@@ -19,11 +19,14 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
 /**
  * 
  * @author Peter Oates
+ * @author Jacob Severson
  *
  */
 public class KinesisProducerProperties {
 
 	private boolean sync;
+
+	private long sendTimeout = 10000;
 
 	public void setSync(boolean sync) {
 		this.sync = sync;
@@ -33,4 +36,11 @@ public class KinesisProducerProperties {
 		return this.sync;
 	}
 
+	public long getSendTimeout() {
+		return sendTimeout;
+	}
+
+	public void setSendTimeout(long sendTimeout) {
+		this.sendTimeout = sendTimeout;
+	}
 }

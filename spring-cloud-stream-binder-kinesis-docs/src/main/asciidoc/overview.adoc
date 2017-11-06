@@ -115,10 +115,44 @@ startTimeout::
   The amount of time to wait for the consumer to start, in milliseconds.
 +
 Default: `60000`.
+listenerMode::
+  The mode in which records are processed. If `record`, each `Message` will be converted from a single `Record`. If `batch`,
+  each `Message` will container a `List<Record>`.
++
+Default: `record`
+checkpointMode::
+  The mode in which checkpoints are updated. If `record`, checkpoints occur after each record is processed (but this option
+  is only effective if `listenerMode` is set to `record`). If `batch`, checkpoints occur after each batch of records is
+  processed. If `manual`, checkpoints occur on demand via the `Checkpointer` callback.
++
+Default: `batch`
+recordsLimit::
+  The maximum number of records to poll per `GetRecords` request. Must not be greater than `10000`.
++
+Default: `10000`
+idleBetweenPolls::
+  The sleep interval used in the main loop between shards polling cycles, in milliseconds. Must not be less than `250`
++
+Default: `1000`
+consumerBackoff::
+  The amount of time the consumer will wait to attempt another `GetRecords` operation after a read with no results, in milliseconds.
++
+Default: `1000`
 
 
 === Kinesis Producer Properties
 
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.producer.`
+
+sync::
+  Whether the producer should act in a synchronous manner with respect to writing records into a stream. If true, the producer will
+  wait for a response from Kinesis after a `PutRecord` operation.
++
+Default: `false`
+sendTimeout::
+  Effective only if `sync` is set to `true`. The amount of time to wait for a response from Kinesis after a `PutRecord` operation, in milliseconds.
++
+Default: `10000`
+
 
 

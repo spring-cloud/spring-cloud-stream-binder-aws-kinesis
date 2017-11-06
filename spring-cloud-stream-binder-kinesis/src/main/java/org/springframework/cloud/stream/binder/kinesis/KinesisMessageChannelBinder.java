@@ -38,10 +38,8 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsu
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
-import org.springframework.integration.aws.inbound.kinesis.CheckpointMode;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
-import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.metadata.MetadataStore;
@@ -113,6 +111,7 @@ public class KinesisMessageChannelBinder extends
 
 		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(this.amazonKinesis);
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
+		kinesisMessageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
 		kinesisMessageHandler.setStream(destination.getName());
 		if (producerProperties.isPartitioned()) {
 			kinesisMessageHandler
@@ -157,8 +156,11 @@ public class KinesisMessageChannelBinder extends
 
 		adapter.setStreamInitialSequence(anonymous ? KinesisShardOffset.latest() : KinesisShardOffset.trimHorizon());
 
-		adapter.setListenerMode(ListenerMode.record);
-		adapter.setCheckpointMode(CheckpointMode.record);
+		adapter.setListenerMode(properties.getExtension().getListenerMode());
+		adapter.setCheckpointMode(properties.getExtension().getCheckpointMode());
+		adapter.setRecordsLimit(properties.getExtension().getRecordsLimit());
+		adapter.setIdleBetweenPolls(properties.getExtension().getIdleBetweenPolls());
+		adapter.setConsumerBackoff(properties.getExtension().getConsumerBackoff());
 
 		if (this.checkpointStore != null) {
 			adapter.setCheckpointStore(this.checkpointStore);
