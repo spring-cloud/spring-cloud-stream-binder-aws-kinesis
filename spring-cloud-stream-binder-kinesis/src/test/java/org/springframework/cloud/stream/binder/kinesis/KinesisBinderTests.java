@@ -19,11 +19,16 @@ package org.springframework.cloud.stream.binder.kinesis;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
+import com.amazonaws.services.kinesis.model.PutRecordRequest;
+import com.amazonaws.services.kinesis.model.PutRecordResult;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.StreamStatus;
@@ -33,6 +38,11 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.mockito.BDDMockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.binder.BinderHeaders;
 import org.springframework.cloud.stream.binder.Binding;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
@@ -40,11 +50,14 @@ import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.PartitionCapableBinderTests;
 import org.springframework.cloud.stream.binder.PartitionTestSupport;
 import org.springframework.cloud.stream.binder.Spy;
+import org.springframework.cloud.stream.binder.TestUtils;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.IntegrationMessageHeaderAccessor;
+import org.springframework.integration.aws.support.AwsRequestFailureException;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.FixedSubscriberChannel;
 import org.springframework.integration.channel.NullChannel;
@@ -53,9 +66,13 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessagingException;
+import org.springframework.messaging.SubscribableChannel;
+import org.springframework.messaging.support.ErrorMessage;
 import org.springframework.messaging.support.GenericMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Artem Bilan
@@ -258,6 +275,59 @@ public class KinesisBinderTests
 		input1Binding.unbind();
 		input2Binding.unbind();
 		outputBinding.unbind();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testProducerErrorChannel() throws Exception {
+		KinesisTestBinder binder = getBinder();
+
+		final RuntimeException putRecordException = new RuntimeException("putRecordRequestEx");
+		final AtomicReference<Object> sent = new AtomicReference<>();
+		AmazonKinesisAsync amazonKinesisMock = mock(AmazonKinesisAsync.class);
+		BDDMockito.given(amazonKinesisMock.putRecordAsync(any(PutRecordRequest.class), any(AsyncHandler.class)))
+				.willAnswer(new Answer<Future<PutRecordResult>>() {
+					@Override
+					public Future<PutRecordResult> answer(InvocationOnMock invocation) throws Throwable {
+						PutRecordRequest request = invocation.getArgumentAt(0, PutRecordRequest.class);
+						sent.set(request.getData());
+						AsyncHandler<?, ?> handler = invocation.getArgumentAt(1, AsyncHandler.class);
+						handler.onError(putRecordException);
+						return mock(Future.class);
+					}
+				});
+
+		new DirectFieldAccessor(binder.getBinder()).setPropertyValue("amazonKinesis", amazonKinesisMock);
+
+		ExtendedProducerProperties<KinesisProducerProperties> producerProps = createProducerProperties();
+		producerProps.setErrorChannelEnabled(true);
+		DirectChannel moduleOutputChannel =
+				createBindableChannel("output", createProducerBindingProperties(producerProps));
+		Binding<MessageChannel> producerBinding = binder.bindProducer("ec.0", moduleOutputChannel, producerProps);
+
+		ApplicationContext applicationContext = TestUtils.getPropertyValue(binder.getBinder(),
+				"applicationContext", ApplicationContext.class);
+		SubscribableChannel ec = applicationContext.getBean("ec.0.errors", SubscribableChannel.class);
+		final AtomicReference<Message<?>> errorMessage = new AtomicReference<>();
+		final CountDownLatch latch = new CountDownLatch(1);
+		ec.subscribe(new MessageHandler() {
+			@Override
+			public void handleMessage(Message<?> message) throws MessagingException {
+				errorMessage.set(message);
+				latch.countDown();
+			}
+		});
+
+		String messagePayload = "oops";
+		moduleOutputChannel.send(new GenericMessage<>(messagePayload.getBytes()));
+
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(errorMessage.get()).isInstanceOf(ErrorMessage.class);
+		assertThat(errorMessage.get().getPayload()).isInstanceOf(AwsRequestFailureException.class);
+		AwsRequestFailureException exception = (AwsRequestFailureException) errorMessage.get().getPayload();
+		assertThat(exception.getCause()).isSameAs(putRecordException);
+		assertThat(((PutRecordRequest) exception.getRequest()).getData()).isSameAs(sent.get());
+		producerBinding.unbind();
 	}
 
 	@Test

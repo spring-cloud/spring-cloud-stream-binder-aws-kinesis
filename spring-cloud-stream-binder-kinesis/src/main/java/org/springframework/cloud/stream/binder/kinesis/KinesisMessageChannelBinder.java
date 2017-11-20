@@ -117,6 +117,7 @@ public class KinesisMessageChannelBinder extends
 			kinesisMessageHandler
 					.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
 		}
+		kinesisMessageHandler.setFailureChannel(errorChannel);
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
 		return kinesisMessageHandler;

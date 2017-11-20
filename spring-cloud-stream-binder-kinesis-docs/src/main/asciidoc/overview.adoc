@@ -155,4 +155,15 @@ sendTimeout::
 Default: `10000`
 
 
+[[kinesis-error-channels]]
+== Error Channels
+
+The binder can be configured to send producer exceptions to an error channel. See https://docs.spring.io/spring-cloud-stream/docs/current/reference/htmlsingle/#_spring_integration_error_channel_support[the section on Spring Cloud error channel support] for more information.
+
+The payload of the `ErrorMessage` for a send failure is an `AwsRequestFailureException` with properties:
+
+* `failedMessage` - the spring-messaging `Message<?>` that failed to be sent.
+* `request` - the raw `AmazonWebServiceRequest` (either `PutRecordRequest` or `PutRecordsRequest`) that was created from the `failedMessage`.
+
+There is no automatic handling of these exceptions (such as sending to a dead letter queue), but you can consume these exceptions with your own Spring Integration flow.
 
