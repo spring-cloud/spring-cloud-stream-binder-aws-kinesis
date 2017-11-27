@@ -16,7 +16,6 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +29,6 @@ import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
-import com.amazonaws.services.kinesis.model.PutRecordsRequest;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.StreamStatus;
@@ -40,8 +38,10 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.mockito.BDDMockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.binder.BinderHeaders;
 import org.springframework.cloud.stream.binder.Binding;
@@ -71,7 +71,6 @@ import org.springframework.messaging.support.ErrorMessage;
 import org.springframework.messaging.support.GenericMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 
@@ -286,7 +285,7 @@ public class KinesisBinderTests
 		final RuntimeException putRecordException = new RuntimeException("putRecordRequestEx");
 		final AtomicReference<Object> sent = new AtomicReference<>();
 		AmazonKinesisAsync amazonKinesisMock = mock(AmazonKinesisAsync.class);
-		given(amazonKinesisMock.putRecordAsync(any(PutRecordRequest.class), any(AsyncHandler.class)))
+		BDDMockito.given(amazonKinesisMock.putRecordAsync(any(PutRecordRequest.class), any(AsyncHandler.class)))
 				.willAnswer(new Answer<Future<PutRecordResult>>() {
 					@Override
 					public Future<PutRecordResult> answer(InvocationOnMock invocation) throws Throwable {
