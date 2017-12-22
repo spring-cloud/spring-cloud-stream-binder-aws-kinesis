@@ -71,7 +71,7 @@ public class KinesisMessageChannelBinder extends
 			KinesisBinderConfigurationProperties configurationProperties,
 			KinesisStreamProvisioner provisioningProvider) {
 
-		super(false, headersToMap(configurationProperties), provisioningProvider);
+		super(headersToMap(configurationProperties), provisioningProvider);
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
 		this.configurationProperties = configurationProperties;
 		this.amazonKinesis = amazonKinesis;
@@ -106,8 +106,7 @@ public class KinesisMessageChannelBinder extends
 	// to put and consume messages
 	@Override
 	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
-			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel)
-			throws Exception {
+			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel) {
 
 		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(this.amazonKinesis);
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
@@ -125,7 +124,7 @@ public class KinesisMessageChannelBinder extends
 
 	@Override
 	protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group,
-			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws Exception {
+			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
 		Set<KinesisShardOffset> shardOffsets = null;
 

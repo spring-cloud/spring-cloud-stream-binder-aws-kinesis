@@ -31,14 +31,14 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsume
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.integration.codec.kryo.PojoCodec;
 
 /**
  * @author Artem Bilan
  *
  */
 public class KinesisTestBinder
-		extends AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
+		extends
+		AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final AmazonKinesisAsync amazonKinesis;
 
@@ -46,13 +46,12 @@ public class KinesisTestBinder
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 		this.amazonKinesis = amazonKinesis;
 
-		KinesisStreamProvisioner provisioningProvider =
-				new KinesisStreamProvisioner(amazonKinesis, kinesisBinderConfigurationProperties);
+		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(amazonKinesis,
+				kinesisBinderConfigurationProperties);
 
-		KinesisMessageChannelBinder binder =
-				new KinesisMessageChannelBinder(amazonKinesis, kinesisBinderConfigurationProperties, provisioningProvider);
+		KinesisMessageChannelBinder binder = new KinesisMessageChannelBinder(amazonKinesis,
+				kinesisBinderConfigurationProperties, provisioningProvider);
 
-		binder.setCodec(new PojoCodec());
 		GenericApplicationContext context = new GenericApplicationContext();
 		context.refresh();
 		binder.setApplicationContext(context);

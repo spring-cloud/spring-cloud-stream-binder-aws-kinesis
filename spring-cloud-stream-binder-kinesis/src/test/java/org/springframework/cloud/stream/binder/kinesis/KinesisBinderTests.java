@@ -37,9 +37,7 @@ import org.assertj.core.api.Condition;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.mockito.BDDMockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.beans.DirectFieldAccessor;
@@ -54,24 +52,23 @@ import org.springframework.cloud.stream.binder.TestUtils;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.cloud.stream.config.BindingProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.aws.support.AwsRequestFailureException;
 import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.channel.FixedSubscriberChannel;
 import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
-import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.SubscribableChannel;
 import org.springframework.messaging.support.ErrorMessage;
 import org.springframework.messaging.support.GenericMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -88,15 +85,19 @@ public class KinesisBinderTests
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
 
-	@Test
-	@Override
-	public void testClean() throws Exception {
+	public KinesisBinderTests() {
+		this.timeoutMultiplier = 10D;
 	}
 
 	@Test
-	public void testAutoCreateStreamForNonExistingStream() {
+	@Override
+	public void testClean() {
+	}
+
+	@Test
+	public void testAutoCreateStreamForNonExistingStream() throws Exception {
 		KinesisTestBinder binder = getBinder();
-		DirectChannel output = new DirectChannel();
+		DirectChannel output = createBindableChannel("output", new BindingProperties());
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
 		String testStreamName = "nonexisting" + System.currentTimeMillis();
 		Binding<?> binding = binder.bindConsumer(testStreamName, "test", output, consumerProperties);
@@ -127,29 +128,30 @@ public class KinesisBinderTests
 		final List<Message<?>> results = new ArrayList<>();
 		final CountDownLatch receiveLatch = new CountDownLatch(3);
 
-		MessageHandler receivingHandler = new MessageHandler() {
-
-			@Override
-			public void handleMessage(Message<?> message) throws MessagingException {
-				results.add(message);
-				receiveLatch.countDown();
-			}
-
+		MessageHandler receivingHandler = message -> {
+			results.add(message);
+			receiveLatch.countDown();
 		};
-		FixedSubscriberChannel input0 = new FixedSubscriberChannel(receivingHandler);
-		input0.setBeanName("test.input0J");
+
+		DirectChannel input0 = createBindableChannel("test.input0J", new BindingProperties());
+		input0.subscribe(receivingHandler);
+
 		Binding<MessageChannel> input0Binding = binder.bindConsumer("partJ.0", "testPartitionedModuleJava", input0,
 				consumerProperties);
+
 		consumerProperties.setInstanceIndex(1);
 
-		FixedSubscriberChannel input1 = new FixedSubscriberChannel(receivingHandler);
-		input1.setBeanName("test.input1J");
+		DirectChannel input1 = createBindableChannel("test.input1J", new BindingProperties());
+		input1.subscribe(receivingHandler);
+
 		Binding<MessageChannel> input1Binding = binder.bindConsumer("partJ.0", "testPartitionedModuleJava", input1,
 				consumerProperties);
+
 		consumerProperties.setInstanceIndex(2);
 
-		FixedSubscriberChannel input2 = new FixedSubscriberChannel(receivingHandler);
-		input2.setBeanName("test.input2J");
+		DirectChannel input2 = createBindableChannel("test.input2J", new BindingProperties());
+		input2.subscribe(receivingHandler);
+
 		Binding<MessageChannel> input2Binding = binder.bindConsumer("partJ.0", "testPartitionedModuleJava", input2,
 				consumerProperties);
 
@@ -157,8 +159,10 @@ public class KinesisBinderTests
 		producerProperties.setPartitionKeyExtractorClass(PartitionTestSupport.class);
 		producerProperties.setPartitionSelectorClass(PartitionTestSupport.class);
 		producerProperties.setPartitionCount(3);
-		DirectChannel output = createBindableChannel("output", createProducerBindingProperties(producerProperties));
-		output.setBeanName("test.output");
+
+		DirectChannel output = createBindableChannel("test.output",
+				createProducerBindingProperties(producerProperties));
+
 		Binding<MessageChannel> outputBinding = binder.bindProducer("partJ.0", output, producerProperties);
 		if (usesExplicitRouting()) {
 			Object endpoint = extractEndpoint(outputBinding);
@@ -173,7 +177,7 @@ public class KinesisBinderTests
 
 		assertThat(receiveLatch.await(20, TimeUnit.SECONDS)).isTrue();
 
-		assertThat(results).extracting("payload").containsExactlyInAnyOrder(0, 1, 2);
+		assertThat(results).extracting("payload").containsExactlyInAnyOrder("0", "1", "2");
 
 		input0Binding.unbind();
 		input1Binding.unbind();
@@ -195,30 +199,30 @@ public class KinesisBinderTests
 		final List<Message<?>> results = new ArrayList<>();
 		final CountDownLatch receiveLatch = new CountDownLatch(3);
 
-		MessageHandler receivingHandler = new MessageHandler() {
-
-			@Override
-			public void handleMessage(Message<?> message) throws MessagingException {
-				results.add(message);
-				receiveLatch.countDown();
-			}
-
+		MessageHandler receivingHandler = message -> {
+			results.add(message);
+			receiveLatch.countDown();
 		};
 
-		FixedSubscriberChannel input0 = new FixedSubscriberChannel(receivingHandler);
-		input0.setBeanName("test.input0S");
+		DirectChannel input0 = createBindableChannel("test.input0S", new BindingProperties());
+		input0.subscribe(receivingHandler);
+
 		Binding<MessageChannel> input0Binding = binder.bindConsumer("part.0", "testPartitionedModuleSpEL", input0,
 				consumerProperties);
+
 		consumerProperties.setInstanceIndex(1);
 
-		FixedSubscriberChannel input1 = new FixedSubscriberChannel(receivingHandler);
-		input1.setBeanName("test.input1S");
+		DirectChannel input1 = createBindableChannel("test.input1S", new BindingProperties());
+		input1.subscribe(receivingHandler);
+
 		Binding<MessageChannel> input1Binding = binder.bindConsumer("part.0", "testPartitionedModuleSpEL", input1,
 				consumerProperties);
+
 		consumerProperties.setInstanceIndex(2);
 
-		FixedSubscriberChannel input2 = new FixedSubscriberChannel(receivingHandler);
-		input2.setBeanName("test.input2S");
+		DirectChannel input2 = createBindableChannel("test.input2S", new BindingProperties());
+		input2.subscribe(receivingHandler);
+
 		Binding<MessageChannel> input2Binding = binder.bindConsumer("part.0", "testPartitionedModuleSpEL", input2,
 				consumerProperties);
 
@@ -227,8 +231,9 @@ public class KinesisBinderTests
 		producerProperties.setPartitionSelectorExpression(spelExpressionParser.parseExpression("hashCode()"));
 		producerProperties.setPartitionCount(3);
 
-		DirectChannel output = createBindableChannel("output", createProducerBindingProperties(producerProperties));
-		output.setBeanName("test.output");
+		DirectChannel output = createBindableChannel("test.output",
+				createProducerBindingProperties(producerProperties));
+
 		Binding<MessageChannel> outputBinding = binder.bindProducer("part.0", output, producerProperties);
 		try {
 			Object endpoint = extractEndpoint(outputBinding);
@@ -247,7 +252,7 @@ public class KinesisBinderTests
 
 		assertThat(receiveLatch.await(20, TimeUnit.SECONDS)).isTrue();
 
-		assertThat(results).extracting("payload").containsExactlyInAnyOrder(0, 1, 2);
+		assertThat(results).extracting("payload").containsExactlyInAnyOrder("0", "1", "2");
 
 		Condition<Message<?>> correlationHeadersForPayload2 = new Condition<Message<?>>() {
 
@@ -264,7 +269,7 @@ public class KinesisBinderTests
 
 			@Override
 			public boolean matches(Message<?> value) {
-				return value.getPayload().equals(2);
+				return value.getPayload().equals("2");
 			}
 
 		};
@@ -286,23 +291,20 @@ public class KinesisBinderTests
 		final AtomicReference<Object> sent = new AtomicReference<>();
 		AmazonKinesisAsync amazonKinesisMock = mock(AmazonKinesisAsync.class);
 		BDDMockito.given(amazonKinesisMock.putRecordAsync(any(PutRecordRequest.class), any(AsyncHandler.class)))
-				.willAnswer(new Answer<Future<PutRecordResult>>() {
-					@Override
-					public Future<PutRecordResult> answer(InvocationOnMock invocation) throws Throwable {
-						PutRecordRequest request = invocation.getArgumentAt(0, PutRecordRequest.class);
-						sent.set(request.getData());
-						AsyncHandler<?, ?> handler = invocation.getArgumentAt(1, AsyncHandler.class);
-						handler.onError(putRecordException);
-						return mock(Future.class);
-					}
+				.willAnswer((Answer<Future<PutRecordResult>>) invocation -> {
+					PutRecordRequest request = invocation.getArgument(0);
+					sent.set(request.getData());
+					AsyncHandler<?, ?> handler = invocation.getArgument(1);
+					handler.onError(putRecordException);
+					return mock(Future.class);
 				});
 
 		new DirectFieldAccessor(binder.getBinder()).setPropertyValue("amazonKinesis", amazonKinesisMock);
 
 		ExtendedProducerProperties<KinesisProducerProperties> producerProps = createProducerProperties();
 		producerProps.setErrorChannelEnabled(true);
-		DirectChannel moduleOutputChannel =
-				createBindableChannel("output", createProducerBindingProperties(producerProps));
+		DirectChannel moduleOutputChannel = createBindableChannel("output",
+				createProducerBindingProperties(producerProps));
 		Binding<MessageChannel> producerBinding = binder.bindProducer("ec.0", moduleOutputChannel, producerProps);
 
 		ApplicationContext applicationContext = TestUtils.getPropertyValue(binder.getBinder(),
@@ -310,12 +312,9 @@ public class KinesisBinderTests
 		SubscribableChannel ec = applicationContext.getBean("ec.0.errors", SubscribableChannel.class);
 		final AtomicReference<Message<?>> errorMessage = new AtomicReference<>();
 		final CountDownLatch latch = new CountDownLatch(1);
-		ec.subscribe(new MessageHandler() {
-			@Override
-			public void handleMessage(Message<?> message) throws MessagingException {
-				errorMessage.set(message);
-				latch.countDown();
-			}
+		ec.subscribe(message -> {
+			errorMessage.set(message);
+			latch.countDown();
 		});
 
 		String messagePayload = "oops";

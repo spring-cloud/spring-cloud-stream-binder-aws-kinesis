@@ -35,6 +35,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
+import org.springframework.cloud.stream.binder.HeaderMode;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
@@ -78,6 +79,10 @@ public class KinesisStreamProvisioner
 			logger.info("Using Kinesis stream for outbound: " + name);
 		}
 
+		if (properties.getHeaderMode() == null) {
+			properties.setHeaderMode(HeaderMode.embeddedHeaders);
+		}
+
 		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
 	}
 
@@ -87,6 +92,10 @@ public class KinesisStreamProvisioner
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Using Kinesis stream for inbound: " + name);
+		}
+
+		if (properties.getHeaderMode() == null) {
+			properties.setHeaderMode(HeaderMode.embeddedHeaders);
 		}
 
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
