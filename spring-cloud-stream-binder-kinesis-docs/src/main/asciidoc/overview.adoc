@@ -138,7 +138,11 @@ consumerBackoff::
   The amount of time the consumer will wait to attempt another `GetRecords` operation after a read with no results, in milliseconds.
 +
 Default: `1000`
-
+shardIteratorType::
+  The `com.amazonaws.services.kinesis.model.ShardIteratorType` name with an optional `sequenceNumber` for the `AT_SEQUENCE_NUMBER/AFTER_SEQUENCE_NUMBER` or milliseconds for the `AT_TIMESTAMP` after `:`.
+  For example: `AT_TIMESTAMP:1515090166767`.
++
+Default: `LATEST` for anonymous groups and `TRIM_HORIZON` otherwise.
 
 === Kinesis Producer Properties
 

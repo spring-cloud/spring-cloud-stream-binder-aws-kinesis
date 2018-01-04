@@ -17,6 +17,7 @@
 package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.Shard;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
@@ -126,7 +128,27 @@ public class KinesisMessageChannelBinder extends
 	protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
+		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
+
 		Set<KinesisShardOffset> shardOffsets = null;
+
+		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
+
+		KinesisShardOffset kinesisShardOffset = KinesisShardOffset.latest();
+
+		if (StringUtils.hasText(shardIteratorType)) {
+			String[] typeValue = shardIteratorType.split(":", 2);
+			ShardIteratorType iteratorType = ShardIteratorType.valueOf(typeValue[0]);
+			kinesisShardOffset = new KinesisShardOffset(iteratorType);
+			if (typeValue.length > 1) {
+				if (ShardIteratorType.AT_TIMESTAMP.equals(iteratorType)) {
+					kinesisShardOffset.setTimestamp(new Date(Long.parseLong(typeValue[1])));
+				}
+				else {
+					kinesisShardOffset.setSequenceNumber(typeValue[1]);
+				}
+			}
+		}
 
 		if (properties.getInstanceCount() > 1) {
 			shardOffsets = new HashSet<>();
@@ -135,7 +157,10 @@ public class KinesisMessageChannelBinder extends
 			for (int i = 0; i < shards.size(); i++) {
 				// divide shards across instances
 				if ((i % properties.getInstanceCount()) == properties.getInstanceIndex()) {
-					shardOffsets.add(KinesisShardOffset.latest(destination.getName(), shards.get(i).getShardId()));
+					KinesisShardOffset shardOffset = new KinesisShardOffset(kinesisShardOffset);
+					shardOffset.setStream(destination.getName());
+					shardOffset.setShard(shards.get(i).getShardId());
+					shardOffsets.add(shardOffset);
 				}
 			}
 		}
@@ -154,19 +179,22 @@ public class KinesisMessageChannelBinder extends
 		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID().toString() : group;
 		adapter.setConsumerGroup(consumerGroup);
 
-		adapter.setStreamInitialSequence(anonymous ? KinesisShardOffset.latest() : KinesisShardOffset.trimHorizon());
+		adapter.setStreamInitialSequence(
+				anonymous || StringUtils.hasText(shardIteratorType)
+						? kinesisShardOffset
+						: KinesisShardOffset.trimHorizon());
 
-		adapter.setListenerMode(properties.getExtension().getListenerMode());
-		adapter.setCheckpointMode(properties.getExtension().getCheckpointMode());
-		adapter.setRecordsLimit(properties.getExtension().getRecordsLimit());
-		adapter.setIdleBetweenPolls(properties.getExtension().getIdleBetweenPolls());
-		adapter.setConsumerBackoff(properties.getExtension().getConsumerBackoff());
+		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
+		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
+		adapter.setRecordsLimit(kinesisConsumerProperties.getRecordsLimit());
+		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
+		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 
 		if (this.checkpointStore != null) {
 			adapter.setCheckpointStore(this.checkpointStore);
 		}
 		adapter.setConcurrency(properties.getConcurrency());
-		adapter.setStartTimeout(properties.getExtension().getStartTimeout());
+		adapter.setStartTimeout(kinesisConsumerProperties.getStartTimeout());
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());
 		adapter.setDescribeStreamRetries(this.configurationProperties.getDescribeStreamRetries());
 

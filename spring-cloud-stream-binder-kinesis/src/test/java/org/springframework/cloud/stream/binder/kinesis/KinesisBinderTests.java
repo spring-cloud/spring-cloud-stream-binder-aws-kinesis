@@ -17,6 +17,7 @@
 package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -30,6 +31,7 @@ import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
 import com.amazonaws.services.kinesis.model.Shard;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.StreamStatus;
 
@@ -56,6 +58,7 @@ import org.springframework.cloud.stream.config.BindingProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.IntegrationMessageHeaderAccessor;
+import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.support.AwsRequestFailureException;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.NullChannel;
@@ -99,6 +102,9 @@ public class KinesisBinderTests
 		KinesisTestBinder binder = getBinder();
 		DirectChannel output = createBindableChannel("output", new BindingProperties());
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		Date testDate = new Date();
+		consumerProperties.getExtension()
+				.setShardIteratorType(ShardIteratorType.AT_TIMESTAMP.name() + ":" + testDate.getTime());
 		String testStreamName = "nonexisting" + System.currentTimeMillis();
 		Binding<?> binding = binder.bindConsumer(testStreamName, "test", output, consumerProperties);
 		binding.unbind();
@@ -112,6 +118,11 @@ public class KinesisBinderTests
 		assertThat(createdShards)
 				.isEqualTo(consumerProperties.getInstanceCount() * consumerProperties.getConcurrency());
 		assertThat(createdStreamStatus).isEqualTo(StreamStatus.ACTIVE.toString());
+
+		KinesisShardOffset shardOffset =
+				TestUtils.getPropertyValue(binding, "lifecycle.streamInitialSequence", KinesisShardOffset.class);
+		assertThat(shardOffset.getIteratorType()).isEqualTo(ShardIteratorType.AT_TIMESTAMP);
+		assertThat(shardOffset.getTimestamp()).isEqualTo(testDate);
 	}
 
 	@Test
