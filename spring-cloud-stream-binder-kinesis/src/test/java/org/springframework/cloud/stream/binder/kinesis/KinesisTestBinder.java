@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,18 @@ import com.amazonaws.services.kinesis.model.ListStreamsRequest;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 
+import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
+import org.springframework.cloud.stream.binder.PartitionTestSupport;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
+import org.springframework.cloud.stream.provisioning.ConsumerDestination;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
 
 /**
@@ -42,21 +47,41 @@ public class KinesisTestBinder
 
 	private final AmazonKinesisAsync amazonKinesis;
 
+	private final GenericApplicationContext applicationContext;
+
 	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+
+		this.applicationContext = new AnnotationConfigApplicationContext(Config.class);
+
 		this.amazonKinesis = amazonKinesis;
 
 		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(amazonKinesis,
 				kinesisBinderConfigurationProperties);
 
 		KinesisMessageChannelBinder binder = new KinesisMessageChannelBinder(amazonKinesis,
-				kinesisBinderConfigurationProperties, provisioningProvider);
+				kinesisBinderConfigurationProperties, provisioningProvider) {
 
-		GenericApplicationContext context = new GenericApplicationContext();
-		context.refresh();
-		binder.setApplicationContext(context);
+			/*
+			 * Some tests use multiple instance indexes for the same topic; we need to make the error
+			 * infrastructure beans unique.
+			 */
+			@Override
+			protected String errorsBaseName(ConsumerDestination destination, String group,
+					ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties) {
+				return super.errorsBaseName(destination, group, consumerProperties) + "-"
+						+ consumerProperties.getInstanceIndex();
+			}
+
+		};
+
+		binder.setApplicationContext(this.applicationContext);
 
 		setBinder(binder);
+	}
+
+	public GenericApplicationContext getApplicationContext() {
+		return this.applicationContext;
 	}
 
 	@Override
@@ -92,6 +117,16 @@ public class KinesisTestBinder
 				}
 			}
 		}
+	}
+
+	@EnableBinding
+	static class Config {
+
+		@Bean
+		public PartitionTestSupport partitionSupport() {
+			return new PartitionTestSupport();
+		}
+
 	}
 
 }

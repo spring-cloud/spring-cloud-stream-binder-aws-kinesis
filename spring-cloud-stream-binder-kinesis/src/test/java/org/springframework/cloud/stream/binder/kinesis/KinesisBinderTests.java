@@ -19,6 +19,7 @@ package org.springframework.cloud.stream.binder.kinesis;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -62,13 +63,16 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.support.AwsRequestFailureException;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.NullChannel;
+import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.SubscribableChannel;
 import org.springframework.messaging.support.ErrorMessage;
 import org.springframework.messaging.support.GenericMessage;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -119,14 +123,87 @@ public class KinesisBinderTests
 				.isEqualTo(consumerProperties.getInstanceCount() * consumerProperties.getConcurrency());
 		assertThat(createdStreamStatus).isEqualTo(StreamStatus.ACTIVE.toString());
 
-		KinesisShardOffset shardOffset =
-				TestUtils.getPropertyValue(binding, "lifecycle.streamInitialSequence", KinesisShardOffset.class);
+		KinesisShardOffset shardOffset = TestUtils.getPropertyValue(binding, "lifecycle.streamInitialSequence",
+				KinesisShardOffset.class);
 		assertThat(shardOffset.getIteratorType()).isEqualTo(ShardIteratorType.AT_TIMESTAMP);
 		assertThat(shardOffset.getTimestamp()).isEqualTo(testDate);
 	}
 
 	@Test
 	@Override
+	@SuppressWarnings("unchecked")
+	public void testAnonymousGroup() throws Exception {
+		KinesisTestBinder binder = getBinder();
+		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
+		DirectChannel output = createBindableChannel("output", createProducerBindingProperties(producerProperties));
+
+		Binding<MessageChannel> producerBinding = binder.bindProducer(String.format("defaultGroup%s0",
+				getDestinationNameDelimiter()), output, producerProperties);
+
+		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		consumerProperties.setConcurrency(2);
+		consumerProperties.setInstanceCount(3);
+		consumerProperties.setInstanceIndex(0);
+
+		QueueChannel input1 = new QueueChannel();
+		Binding<MessageChannel> binding1 = binder.bindConsumer(String.format("defaultGroup%s0",
+				getDestinationNameDelimiter()), null, input1, consumerProperties);
+
+		consumerProperties.setInstanceIndex(1);
+
+		QueueChannel input2 = new QueueChannel();
+		Binding<MessageChannel> binding2 = binder.bindConsumer(String.format("defaultGroup%s0",
+				getDestinationNameDelimiter()), null, input2, consumerProperties);
+
+		String testPayload1 = "foo-" + UUID.randomUUID().toString();
+		output.send(
+				MessageBuilder.withPayload(testPayload1)
+						.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN)
+						.build());
+
+		Message<byte[]> receivedMessage1 = (Message<byte[]>) receive(input1);
+		assertThat(receivedMessage1).isNotNull();
+		assertThat(new String(receivedMessage1.getPayload())).isEqualTo(testPayload1);
+
+		Message<byte[]> receivedMessage2 = (Message<byte[]>) receive(input2);
+		assertThat(receivedMessage2).isNotNull();
+		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload1);
+
+		binding2.unbind();
+
+		String testPayload2 = "foo-" + UUID.randomUUID().toString();
+		output.send(
+				MessageBuilder.withPayload(testPayload2)
+						.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN)
+						.build());
+
+		binding2 = binder.bindConsumer(String.format("defaultGroup%s0", getDestinationNameDelimiter()), null, input2,
+				consumerProperties);
+		String testPayload3 = "foo-" + UUID.randomUUID().toString();
+		output.send(
+				MessageBuilder.withPayload(testPayload3)
+						.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN)
+						.build());
+
+		receivedMessage1 = (Message<byte[]>) receive(input1);
+		assertThat(receivedMessage1).isNotNull();
+		assertThat(new String(receivedMessage1.getPayload())).isEqualTo(testPayload2);
+		receivedMessage1 = (Message<byte[]>) receive(input1);
+		assertThat(receivedMessage1).isNotNull();
+		assertThat(new String(receivedMessage1.getPayload())).isNotNull();
+
+		receivedMessage2 = (Message<byte[]>) receive(input2);
+		assertThat(receivedMessage2).isNotNull();
+		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload3);
+
+		producerBinding.unbind();
+		binding1.unbind();
+		binding2.unbind();
+	}
+
+	@Test
+	@Override
+	@SuppressWarnings("deprecation")
 	public void testPartitionedModuleJava() throws Exception {
 		KinesisTestBinder binder = getBinder();
 
@@ -167,6 +244,8 @@ public class KinesisBinderTests
 				consumerProperties);
 
 		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
+
+		// TODO must be fixed via application context
 		producerProperties.setPartitionKeyExtractorClass(PartitionTestSupport.class);
 		producerProperties.setPartitionSelectorClass(PartitionTestSupport.class);
 		producerProperties.setPartitionCount(3);
@@ -378,7 +457,7 @@ public class KinesisBinderTests
 		List<Shard> shardList = new ArrayList<>();
 
 		while (true) {
-			DescribeStreamResult describeStreamResult = null;
+			DescribeStreamResult describeStreamResult;
 
 			describeStreamRequest.withExclusiveStartShardId(exclusiveStartShardId);
 			describeStreamResult = amazonKinesis.describeStream(describeStreamRequest);
@@ -419,7 +498,7 @@ public class KinesisBinderTests
 		return getBinder(new KinesisBinderConfigurationProperties());
 	}
 
-	protected KinesisTestBinder getBinder(KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+	private KinesisTestBinder getBinder(KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 		if (this.testBinder == null) {
 			this.testBinder = new KinesisTestBinder(localKinesisResource.getResource(),
 					kinesisBinderConfigurationProperties);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,16 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
+import org.springframework.integration.aws.inbound.kinesis.KinesisMessageHeaderErrorMessageStrategy;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.metadata.MetadataStore;
+import org.springframework.integration.support.ErrorMessageStrategy;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -60,6 +63,8 @@ import org.springframework.util.StringUtils;
 public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
 		implements ExtendedPropertiesBinder<MessageChannel, KinesisConsumerProperties, KinesisProducerProperties> {
+
+	private static final ErrorMessageStrategy ERROR_MESSAGE_STRATEGY = new KinesisMessageHeaderErrorMessageStrategy();
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
@@ -79,18 +84,8 @@ public class KinesisMessageChannelBinder extends
 		this.amazonKinesis = amazonKinesis;
 	}
 
-	private static String[] headersToMap(KinesisBinderConfigurationProperties configurationProperties) {
-		Assert.notNull(configurationProperties, "'configurationProperties' must not be null");
-		if (ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
-			return BinderHeaders.STANDARD_HEADERS;
-		}
-		else {
-			String[] combinedHeadersToMap = Arrays.copyOfRange(BinderHeaders.STANDARD_HEADERS, 0,
-					BinderHeaders.STANDARD_HEADERS.length + configurationProperties.getHeaders().length);
-			System.arraycopy(configurationProperties.getHeaders(), 0, combinedHeadersToMap,
-					BinderHeaders.STANDARD_HEADERS.length, configurationProperties.getHeaders().length);
-			return combinedHeadersToMap;
-		}
+	public void setCheckpointStore(MetadataStore checkpointStore) {
+		this.checkpointStore = checkpointStore;
 	}
 
 	@Override
@@ -116,7 +111,7 @@ public class KinesisMessageChannelBinder extends
 		kinesisMessageHandler.setStream(destination.getName());
 		if (producerProperties.isPartitioned()) {
 			kinesisMessageHandler
-					.setPartitionKeyExpressionString("'partitionKey-' + headers." + BinderHeaders.PARTITION_HEADER);
+					.setPartitionKeyExpressionString("'partitionKey-' + headers['" + BinderHeaders.PARTITION_HEADER +"']");
 		}
 		kinesisMessageHandler.setFailureChannel(errorChannel);
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
@@ -167,7 +162,7 @@ public class KinesisMessageChannelBinder extends
 
 		KinesisMessageDrivenChannelAdapter adapter;
 
-		if (shardOffsets == null) {
+		if (CollectionUtils.isEmpty(shardOffsets)) {
 			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
 		}
 		else {
@@ -198,14 +193,33 @@ public class KinesisMessageChannelBinder extends
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());
 		adapter.setDescribeStreamRetries(this.configurationProperties.getDescribeStreamRetries());
 
-		// Deffer byte[] conversion to the ReceivingHandler
+		// Deffer byte[] conversion to the InboundContentTypeConvertingInterceptor
 		adapter.setConverter(null);
+
+		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, group, properties);
+		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
+		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
 
 		return adapter;
 	}
 
-	public void setCheckpointStore(MetadataStore checkpointStore) {
-		this.checkpointStore = checkpointStore;
+	@Override
+	protected ErrorMessageStrategy getErrorMessageStrategy() {
+		return ERROR_MESSAGE_STRATEGY;
+	}
+
+	private static String[] headersToMap(KinesisBinderConfigurationProperties configurationProperties) {
+		Assert.notNull(configurationProperties, "'configurationProperties' must not be null");
+		if (ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
+			return BinderHeaders.STANDARD_HEADERS;
+		}
+		else {
+			String[] combinedHeadersToMap = Arrays.copyOfRange(BinderHeaders.STANDARD_HEADERS, 0,
+					BinderHeaders.STANDARD_HEADERS.length + configurationProperties.getHeaders().length);
+			System.arraycopy(configurationProperties.getHeaders(), 0, combinedHeadersToMap,
+					BinderHeaders.STANDARD_HEADERS.length, configurationProperties.getHeaders().length);
+			return combinedHeadersToMap;
+		}
 	}
 
 }
