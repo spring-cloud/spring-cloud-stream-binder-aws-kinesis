@@ -55,6 +55,7 @@ import org.springframework.cloud.stream.binder.TestUtils;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
+import org.springframework.cloud.stream.binding.MessageConverterConfigurer;
 import org.springframework.cloud.stream.config.BindingProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.expression.common.LiteralExpression;
@@ -203,7 +204,6 @@ public class KinesisBinderTests
 
 	@Test
 	@Override
-	@SuppressWarnings("deprecation")
 	public void testPartitionedModuleJava() throws Exception {
 		KinesisTestBinder binder = getBinder();
 
@@ -245,9 +245,8 @@ public class KinesisBinderTests
 
 		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
 
-		// TODO must be fixed via application context
-		producerProperties.setPartitionKeyExtractorClass(PartitionTestSupport.class);
-		producerProperties.setPartitionSelectorClass(PartitionTestSupport.class);
+		producerProperties.setPartitionKeyExtractorName("partitionSupport");
+		producerProperties.setPartitionSelectorName("partitionSupport");
 		producerProperties.setPartitionCount(3);
 
 		DirectChannel output = createBindableChannel("test.output",
@@ -524,6 +523,24 @@ public class KinesisBinderTests
 		producerProperties.setPartitionKeyExpression(new LiteralExpression("1"));
 		producerProperties.getExtension().setSync(true);
 		return producerProperties;
+	}
+
+	protected DirectChannel createBindableChannel(String channelName,
+			BindingProperties bindingProperties, boolean inputChannel) {
+
+		MessageConverterConfigurer messageConverterConfigurer = getBinder()
+				.getApplicationContext()
+				.getBean(MessageConverterConfigurer.class);
+
+		DirectChannel channel = new DirectChannel();
+		channel.setBeanName(channelName);
+		if (inputChannel) {
+			messageConverterConfigurer.configureInputChannel(channel, channelName);
+		}
+		else {
+			messageConverterConfigurer.configureOutputChannel(channel, channelName);
+		}
+		return channel;
 	}
 
 	@Override
