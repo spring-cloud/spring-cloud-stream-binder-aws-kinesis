@@ -49,7 +49,6 @@ import org.springframework.cloud.stream.binder.Binding;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.PartitionCapableBinderTests;
-import org.springframework.cloud.stream.binder.PartitionTestSupport;
 import org.springframework.cloud.stream.binder.Spy;
 import org.springframework.cloud.stream.binder.TestUtils;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
