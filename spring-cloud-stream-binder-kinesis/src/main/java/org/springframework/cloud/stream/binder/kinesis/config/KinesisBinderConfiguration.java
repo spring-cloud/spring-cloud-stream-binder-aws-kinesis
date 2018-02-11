@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ public class KinesisBinderConfiguration {
 	private KinesisBinderConfigurationProperties configurationProperties;
 
 	@Bean
+	@ConditionalOnMissingBean
 	public AmazonKinesisAsync amazonKinesis(AWSCredentialsProvider awsCredentialsProvider,
 			RegionProvider regionProvider) {
 
@@ -68,7 +69,7 @@ public class KinesisBinderConfiguration {
 	}
 
 	@Bean
-	KinesisMessageChannelBinder kinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
+	public KinesisMessageChannelBinder kinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisStreamProvisioner provisioningProvider, MetadataStore kinesisCheckpointStore) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(amazonKinesis,
@@ -80,7 +81,9 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
+	public MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider,
+			RegionProvider regionProvider) {
+
 		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
 				.withCredentials(awsCredentialsProvider)
 				.withRegion(regionProvider.getRegion().getName())

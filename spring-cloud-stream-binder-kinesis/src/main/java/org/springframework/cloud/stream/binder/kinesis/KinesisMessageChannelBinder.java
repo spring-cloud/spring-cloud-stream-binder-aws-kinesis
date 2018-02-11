@@ -45,8 +45,10 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisMessageHeaderE
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.metadata.MetadataStore;
 import org.springframework.integration.support.ErrorMessageStrategy;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
@@ -111,7 +113,12 @@ public class KinesisMessageChannelBinder extends
 		kinesisMessageHandler.setStream(destination.getName());
 		if (producerProperties.isPartitioned()) {
 			kinesisMessageHandler
-					.setPartitionKeyExpressionString("'partitionKey-' + headers['" + BinderHeaders.PARTITION_HEADER +"']");
+					.setPartitionKeyExpressionString(
+							"'partitionKey-' + headers['" + BinderHeaders.PARTITION_HEADER + "']");
+		}
+		else {
+			kinesisMessageHandler
+					.setPartitionKeyExpression(new FunctionExpression<Message<?>>(m -> m.getPayload().hashCode()));
 		}
 		kinesisMessageHandler.setFailureChannel(errorChannel);
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());

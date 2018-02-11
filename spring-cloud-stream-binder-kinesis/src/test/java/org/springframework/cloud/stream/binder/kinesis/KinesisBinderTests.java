@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,7 +265,8 @@ public class KinesisBinderTests
 
 		assertThat(receiveLatch.await(20, TimeUnit.SECONDS)).isTrue();
 
-		assertThat(results).extracting("payload").containsExactlyInAnyOrder("0", "1", "2");
+		assertThat(results).extracting("payload")
+				.containsExactlyInAnyOrder("0".getBytes(), "1".getBytes(), "2".getBytes());
 
 		input0Binding.unbind();
 		input1Binding.unbind();
@@ -340,7 +341,8 @@ public class KinesisBinderTests
 
 		assertThat(receiveLatch.await(20, TimeUnit.SECONDS)).isTrue();
 
-		assertThat(results).extracting("payload").containsExactlyInAnyOrder("0", "1", "2");
+		assertThat(results).extracting("payload")
+				.containsExactlyInAnyOrder("0".getBytes(), "1".getBytes(), "2".getBytes());
 
 		Condition<Message<?>> correlationHeadersForPayload2 = new Condition<Message<?>>() {
 
@@ -357,7 +359,7 @@ public class KinesisBinderTests
 
 			@Override
 			public boolean matches(Message<?> value) {
-				return value.getPayload().equals("2");
+				return new String((byte[]) value.getPayload()).equals("2");
 			}
 
 		};
