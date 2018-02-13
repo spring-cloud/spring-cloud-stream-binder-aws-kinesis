@@ -28,12 +28,12 @@ Alternatively, you can also use the Spring Cloud Stream Kinesis Starter.
 
 == Kinesis Binder Overview
 
-A simplified diagram of how the Kinesis binder operates can be seen below.
+The Spring Cloud Stream Binder for AWS Kinesis provides the binding implementation for the Spring Cloud Stream.
+This implementation uses Spring Integration AWS Kinesis Channel Adapters at its foundation.
+The following captures how the Kinesis Binder implementation maps each of the configured destination to a AWS Kinesis Streams:
 
 .Kinesis Binder
-image::kinesis-binder.png[width=300,scaledwidth="50%"]
-
-The Kinesis Binder implementation maps each destination to a `Stream`.
+image::images/kinesis-binder.png[width=300,scaledwidth="50%"]
 
 Unlike https://kafka.apache.org/[Apache Kafka] the AWS Kinesis doesn't provide out-of-the-box support for consumer groups.
 The support of this feature is implemented as a part of `MetadataStore` key for shard checkpoints in the `KinesisMessageDrivenChannelAdapter` - `[CONSUMER_GROUP]:[STREAM]:[SHARD_ID]`.
