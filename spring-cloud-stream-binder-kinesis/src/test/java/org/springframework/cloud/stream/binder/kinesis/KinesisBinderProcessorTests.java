@@ -16,6 +16,10 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 
 import org.junit.ClassRule;
@@ -23,6 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.aws.autoconfigure.context.ContextResourceLoaderAutoConfiguration;
@@ -37,6 +42,7 @@ import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.support.AwsHeaders;
+import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.metadata.MetadataStore;
@@ -46,6 +52,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.PollableChannel;
+import org.springframework.messaging.SubscribableChannel;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -56,9 +63,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Artem Bilan
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(
+		webEnvironment = SpringBootTest.WebEnvironment.NONE,
+		properties = "spring.cloud.stream.bindings.input.group = " + KinesisBinderProcessorTests.CONSUMER_GROUP)
 @DirtiesContext
 public class KinesisBinderProcessorTests {
+
+	static final String CONSUMER_GROUP = "testGroup";
 
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
@@ -68,6 +79,13 @@ public class KinesisBinderProcessorTests {
 
 	@Autowired
 	private PollableChannel fromProcessorChannel;
+
+	@Autowired
+	private SubscribableChannel errorChannel;
+
+	@Autowired
+	@Qualifier(Processor.INPUT + "." + CONSUMER_GROUP + ".errors")
+	private SubscribableChannel consumerErrorChannel;
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -85,6 +103,21 @@ public class KinesisBinderProcessorTests {
 				.isEqualTo(MediaType.APPLICATION_JSON_VALUE);
 
 		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM)).isEqualTo(Processor.OUTPUT);
+
+		BlockingQueue<Message<?>> errorMessages = new LinkedBlockingQueue<>();
+
+		this.errorChannel.subscribe(errorMessages::add);
+		this.consumerErrorChannel.subscribe(errorMessages::add);
+
+		this.toProcessorChannel.send(new GenericMessage<>("junk"));
+
+		Message<?> errorMessage1 = errorMessages.poll(10, TimeUnit.SECONDS);
+		Message<?> errorMessage2 = errorMessages.poll(10, TimeUnit.SECONDS);
+		assertThat(errorMessage1).isNotNull();
+		assertThat(errorMessage2).isNotNull();
+		assertThat(errorMessage1).isSameAs(errorMessage2);
+		assertThat(errorMessages).isEmpty();
+
 	}
 
 	@EnableBinding(Processor.class)
@@ -103,7 +136,18 @@ public class KinesisBinderProcessorTests {
 
 		@Transformer(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)
 		public String transform(Message<String> message) {
-			return message.getPayload().toUpperCase();
+			String payload = message.getPayload();
+			if (!"junk".equals(payload)) {
+				return payload.toUpperCase();
+			}
+			else {
+				throw new IllegalStateException("Invalid payload: " + payload);
+			}
+		}
+
+		@Bean(name = Processor.INPUT + "." + CONSUMER_GROUP + ".errors")
+		public SubscribableChannel consumerErrorChannel() {
+			return new PublishSubscribeChannel();
 		}
 
 		@Bean

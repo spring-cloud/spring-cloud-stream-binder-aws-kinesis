@@ -203,7 +203,7 @@ public class KinesisMessageChannelBinder extends
 		// Deffer byte[] conversion to the InboundContentTypeConvertingInterceptor
 		adapter.setConverter(null);
 
-		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, group, properties);
+		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
 
