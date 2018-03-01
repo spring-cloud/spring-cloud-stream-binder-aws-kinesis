@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.cloud</groupId>
 		<artifactId>spring-cloud-build</artifactId>
-		<version>2.0.0.M7</version>
+		<version>2.0.0.RC2</version>
 		<relativePath/>
 	</parent>
 
@@ -15,9 +15,9 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<spring-cloud-stream.version>2.0.0.M4</spring-cloud-stream.version>
-		<spring-cloud-aws.version>2.0.0.M3</spring-cloud-aws.version>
-		<spring-integration-aws-version>2.0.0.M1</spring-integration-aws-version>
+		<spring-cloud-stream.version>2.0.0.RC2</spring-cloud-stream.version>
+		<spring-cloud-aws.version>2.0.0.M4</spring-cloud-aws.version>
+		<spring-integration-aws-version>2.0.0.BUILD-SNAPSHOT</spring-integration-aws-version>
 		<java.version>1.8</java.version>
 	</properties>
 
