@@ -32,15 +32,14 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.aws.autoconfigure.context.ContextResourceLoaderAutoConfiguration;
 import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.cloud.stream.binder.EmbeddedHeaderUtils;
 import org.springframework.cloud.stream.binder.MessageValues;
 import org.springframework.cloud.stream.messaging.Processor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
-import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
-import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.support.AwsHeaders;
 import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.channel.QueueChannel;
@@ -49,7 +48,6 @@ import org.springframework.integration.metadata.MetadataStore;
 import org.springframework.integration.metadata.SimpleMetadataStore;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.PollableChannel;
 import org.springframework.messaging.SubscribableChannel;
@@ -63,9 +61,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Artem Bilan
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-		webEnvironment = SpringBootTest.WebEnvironment.NONE,
-		properties = "spring.cloud.stream.bindings.input.group = " + KinesisBinderProcessorTests.CONSUMER_GROUP)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
+		"spring.cloud.stream.bindings.input.group = " + KinesisBinderProcessorTests.CONSUMER_GROUP,
+		"spring.cloud.stream.bindings." + KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT + ".destination = "
+				+ Processor.INPUT })
 @DirtiesContext
 public class KinesisBinderProcessorTests {
 
@@ -75,7 +74,7 @@ public class KinesisBinderProcessorTests {
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
 
 	@Autowired
-	private MessageChannel toProcessorChannel;
+	private TestSource testSource;
 
 	@Autowired
 	private PollableChannel fromProcessorChannel;
@@ -90,7 +89,7 @@ public class KinesisBinderProcessorTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testProcessorWithKinesisBinder() throws Exception {
-		this.toProcessorChannel.send(new GenericMessage<>("foo"));
+		this.testSource.toProcessorOutput().send(new GenericMessage<>("foo"));
 
 		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel.receive(10_000);
 		assertThat(receive).isNotNull();
@@ -109,7 +108,7 @@ public class KinesisBinderProcessorTests {
 		this.errorChannel.subscribe(errorMessages::add);
 		this.consumerErrorChannel.subscribe(errorMessages::add);
 
-		this.toProcessorChannel.send(new GenericMessage<>("junk"));
+		this.testSource.toProcessorOutput().send(new GenericMessage<>("junk"));
 
 		Message<?> errorMessage1 = errorMessages.poll(10, TimeUnit.SECONDS);
 		Message<?> errorMessage2 = errorMessages.poll(10, TimeUnit.SECONDS);
@@ -120,7 +119,7 @@ public class KinesisBinderProcessorTests {
 
 	}
 
-	@EnableBinding(Processor.class)
+	@EnableBinding({ Processor.class, TestSource.class })
 	@EnableAutoConfiguration(exclude = ContextResourceLoaderAutoConfiguration.class)
 	public static class ProcessorConfiguration {
 
@@ -135,8 +134,8 @@ public class KinesisBinderProcessorTests {
 		}
 
 		@Transformer(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)
-		public String transform(Message<String> message) {
-			String payload = message.getPayload();
+		public String transform(Message<?> message) {
+			String payload = new String((byte[]) message.getPayload());
 			if (!"junk".equals(payload)) {
 				return payload.toUpperCase();
 			}
@@ -148,16 +147,6 @@ public class KinesisBinderProcessorTests {
 		@Bean(name = Processor.INPUT + "." + CONSUMER_GROUP + ".errors")
 		public SubscribableChannel consumerErrorChannel() {
 			return new PublishSubscribeChannel();
-		}
-
-		@Bean
-		@ServiceActivator(inputChannel = "toProcessorChannel")
-		public MessageHandler kinesisMessageHandler() {
-			KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(amazonKinesis());
-			kinesisMessageHandler.setStream(Processor.INPUT);
-			kinesisMessageHandler.setConverter(source -> source.toString().getBytes());
-			kinesisMessageHandler.setPartitionKey("foo");
-			return kinesisMessageHandler;
 		}
 
 		@Bean
@@ -173,6 +162,15 @@ public class KinesisBinderProcessorTests {
 		public PollableChannel fromProcessorChannel() {
 			return new QueueChannel();
 		}
+
+	}
+
+	interface TestSource {
+
+		String TO_PROCESSOR_OUTPUT = "toProcessorOutput";
+
+		@Output(TO_PROCESSOR_OUTPUT)
+		MessageChannel toProcessorOutput();
 
 	}
 
