@@ -86,6 +86,10 @@ public class KinesisMessageChannelBinder extends
 		this.amazonKinesis = amazonKinesis;
 	}
 
+	public void setExtendedBindingProperties(KinesisExtendedBindingProperties extendedBindingProperties) {
+		this.extendedBindingProperties = extendedBindingProperties;
+	}
+
 	public void setCheckpointStore(MetadataStore checkpointStore) {
 		this.checkpointStore = checkpointStore;
 	}

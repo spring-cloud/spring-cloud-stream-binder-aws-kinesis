@@ -70,11 +70,13 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	public KinesisMessageChannelBinder kinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
-			KinesisStreamProvisioner provisioningProvider, MetadataStore kinesisCheckpointStore) {
+			KinesisStreamProvisioner provisioningProvider, MetadataStore kinesisCheckpointStore,
+			KinesisExtendedBindingProperties kinesisExtendedBindingProperties) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(amazonKinesis,
 				this.configurationProperties, provisioningProvider);
 		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
+		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
 
 		return kinesisMessageChannelBinder;
 	}

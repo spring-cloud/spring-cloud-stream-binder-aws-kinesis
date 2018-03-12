@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.List;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -24,6 +26,9 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+import com.amazonaws.services.kinesis.model.ListStreamsRequest;
+import com.amazonaws.services.kinesis.model.ListStreamsResult;
+import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 
 import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
 
@@ -48,7 +53,7 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 	}
 
 	@Override
-	protected void obtainResource() throws Exception {
+	protected void obtainResource() {
 		// See https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk
 		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY, "true");
 
@@ -68,7 +73,39 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 	}
 
 	@Override
-	protected void cleanupResource() throws Exception {
+	protected void cleanupResource() {
+		ListStreamsRequest listStreamsRequest = new ListStreamsRequest();
+		ListStreamsResult listStreamsResult = this.resource.listStreams(listStreamsRequest);
+
+		List<String> streamNames = listStreamsResult.getStreamNames();
+
+		while (listStreamsResult.getHasMoreStreams()) {
+			if (streamNames.size() > 0) {
+				listStreamsRequest.setExclusiveStartStreamName(streamNames.get(streamNames.size() - 1));
+			}
+			listStreamsResult = this.resource.listStreams(listStreamsRequest);
+			streamNames.addAll(listStreamsResult.getStreamNames());
+		}
+
+		for (String stream : streamNames) {
+			this.resource.deleteStream(stream);
+			while (true) {
+				try {
+					this.resource.describeStream(stream);
+					try {
+						Thread.sleep(100);
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						throw new IllegalStateException(e);
+					}
+				}
+				catch (ResourceNotFoundException e) {
+					break;
+				}
+			}
+		}
+
 		System.clearProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY);
 		this.resource.shutdown();
 	}

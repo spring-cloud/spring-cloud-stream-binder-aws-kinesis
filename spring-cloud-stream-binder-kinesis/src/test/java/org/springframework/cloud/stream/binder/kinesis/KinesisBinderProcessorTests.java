@@ -52,6 +52,7 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.PollableChannel;
 import org.springframework.messaging.SubscribableChannel;
 import org.springframework.messaging.support.GenericMessage;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -64,7 +65,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
 		"spring.cloud.stream.bindings.input.group = " + KinesisBinderProcessorTests.CONSUMER_GROUP,
 		"spring.cloud.stream.bindings." + KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT + ".destination = "
-				+ Processor.INPUT })
+				+ Processor.INPUT,
+		"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
+		"spring.cloud.stream.kinesis.binder.headers = foo" })
 @DirtiesContext
 public class KinesisBinderProcessorTests {
 
@@ -89,7 +92,8 @@ public class KinesisBinderProcessorTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testProcessorWithKinesisBinder() throws Exception {
-		this.testSource.toProcessorOutput().send(new GenericMessage<>("foo"));
+		Message<String> testMessage = MessageBuilder.withPayload("foo").setHeader("foo", "BAR").build();
+		this.testSource.toProcessorOutput().send(testMessage);
 
 		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel.receive(10_000);
 		assertThat(receive).isNotNull();
@@ -102,6 +106,7 @@ public class KinesisBinderProcessorTests {
 				.isEqualTo(MediaType.APPLICATION_JSON_VALUE);
 
 		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM)).isEqualTo(Processor.OUTPUT);
+		assertThat(messageValues.getHeaders().get("foo")).isEqualTo("BAR");
 
 		BlockingQueue<Message<?>> errorMessages = new LinkedBlockingQueue<>();
 
