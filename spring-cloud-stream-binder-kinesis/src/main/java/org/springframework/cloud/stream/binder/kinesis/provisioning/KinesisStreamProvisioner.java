@@ -153,7 +153,7 @@ public class KinesisStreamProvisioner
 							new ResourceNotFoundException("The stream [" + stream +
 									"] isn't ACTIVE or doesn't exist.");
 					resourceNotFoundException.setServiceName("Kinesis");
-					throw new ProvisioningException("Kinesis provisioning error", resourceNotFoundException);
+					throw new ProvisioningException("Kinesis org.springframework.cloud.stream.binder.kinesis.provisioning error", resourceNotFoundException);
 				}
 				try {
 					Thread.sleep(this.configurationProperties.getDescribeStreamBackoff());
@@ -230,7 +230,7 @@ public class KinesisStreamProvisioner
 							new ResourceNotFoundException("The stream [" + streamName +
 									"] isn't ACTIVE or doesn't exist.");
 					resourceNotFoundException.setServiceName("Kinesis");
-					throw new ProvisioningException("Kinesis provisioning error", resourceNotFoundException);
+					throw new ProvisioningException("Kinesis org.springframework.cloud.stream.binder.kinesis.provisioning error", resourceNotFoundException);
 				}
 				try {
 					Thread.sleep(this.configurationProperties.getDescribeStreamBackoff());

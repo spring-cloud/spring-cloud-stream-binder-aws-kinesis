@@ -22,10 +22,8 @@
 	</properties>
 
 	<modules>
-		<module>spring-cloud-stream-binder-kinesis-core</module>
 		<module>spring-cloud-stream-binder-kinesis</module>
 		<module>spring-cloud-stream-binder-kinesis-docs</module>
-		<module>spring-cloud-starter-stream-kinesis</module>
 	</modules>
 
 	<dependencyManagement>
@@ -33,11 +31,6 @@
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-stream-binder-kinesis</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-stream-binder-kinesis-core</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
