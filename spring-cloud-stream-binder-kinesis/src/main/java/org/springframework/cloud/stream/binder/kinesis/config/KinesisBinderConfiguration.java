@@ -34,7 +34,7 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
-import org.springframework.integration.metadata.MetadataStore;
+import org.springframework.integration.metadata.ConcurrentMetadataStore;
 
 /**
  *
@@ -70,7 +70,7 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	public KinesisMessageChannelBinder kinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
-			KinesisStreamProvisioner provisioningProvider, MetadataStore kinesisCheckpointStore,
+			KinesisStreamProvisioner provisioningProvider, ConcurrentMetadataStore kinesisCheckpointStore,
 			KinesisExtendedBindingProperties kinesisExtendedBindingProperties) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(amazonKinesis,
@@ -83,7 +83,7 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider,
+	public ConcurrentMetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider,
 			RegionProvider regionProvider) {
 
 		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()

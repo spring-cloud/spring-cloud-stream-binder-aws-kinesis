@@ -46,7 +46,7 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.expression.FunctionExpression;
-import org.springframework.integration.metadata.MetadataStore;
+import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.ErrorMessageStrategy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -74,7 +74,7 @@ public class KinesisMessageChannelBinder extends
 
 	private final AmazonKinesisAsync amazonKinesis;
 
-	private MetadataStore checkpointStore;
+	private ConcurrentMetadataStore checkpointStore;
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
@@ -90,7 +90,7 @@ public class KinesisMessageChannelBinder extends
 		this.extendedBindingProperties = extendedBindingProperties;
 	}
 
-	public void setCheckpointStore(MetadataStore checkpointStore) {
+	public void setCheckpointStore(ConcurrentMetadataStore checkpointStore) {
 		this.checkpointStore = checkpointStore;
 	}
 
