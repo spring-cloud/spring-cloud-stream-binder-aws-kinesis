@@ -51,8 +51,12 @@ For general binding configuration options and properties, please refer to the ht
 [[kinesis-binder-properties]]
 === Kinesis Binder Properties
 
-The following properties are available for Kinesis Binder configuration
+The following properties are available for Kinesis Binder configuration, which start with the `spring.cloud.stream.kinesis.binder.` prefix
 
+headers::
+  The set of custom headers to transfer over AWS Kinesis
++
+Default: "correlationId", "sequenceSize", "sequenceNumber", "contentType", "originalContentType".
 describeStreamBackoff::
   The amount of time in milliseconds in between retries for the `DescribeStream` operation
 +
@@ -74,7 +78,7 @@ It can be superseded by the `partitionCount` setting of the producer or by the v
 +
 Default: `1`
 
-The based on the DynamoDB Checkpoint properties prefixed with `spring.cloud.stream.kinesis.binder.checkpoint`
+The based on the DynamoDB Checkpoint properties prefixed with `spring.cloud.stream.kinesis.binder.checkpoint.`
 
 table::
 	The name to give the DynamoDb table
@@ -136,6 +140,12 @@ shardIteratorType::
 +
 Default: `LATEST` for anonymous groups and `TRIM_HORIZON` otherwise.
 
+NOTE: When `TRIM_HORIZON` shard iterator type is used, we need to take into account the time lag which happens during pointing the `ShardIterator` to the last untrimmed record in the shard in the system (the oldest data record in the shard).
+So the `getRecords()` will move from that point to the last point, which takes time.
+It is by default 1 day and it can be extended to 7 days.
+This happens only for new consumer groups.
+Any subsequent starts of the consumer in the same group are adjusted according the stored checkpoint via `AFTER_SEQUENCE_NUMBER` iterator type.
+
 === Kinesis Producer Properties
 
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.producer.`
@@ -154,7 +164,8 @@ Default: `10000`
 [[kinesis-error-channels]]
 == Error Channels
 
-The binder can be configured to send producer exceptions to an error channel. See https://docs.spring.io/spring-cloud-stream/docs/current/reference/htmlsingle/#_spring_integration_error_channel_support[the section on Spring Cloud error channel support] for more information.
+The binder can be configured to send producer exceptions to an error channel.
+See https://docs.spring.io/spring-cloud-stream/docs/current/reference/htmlsingle/#_spring_integration_error_channel_support[the section on Spring Cloud error channel support] for more information.
 
 The payload of the `ErrorMessage` for a send failure is an `AwsRequestFailureException` with properties:
 
