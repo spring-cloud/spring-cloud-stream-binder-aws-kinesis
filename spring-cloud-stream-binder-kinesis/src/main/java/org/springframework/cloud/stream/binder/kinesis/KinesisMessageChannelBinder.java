@@ -43,6 +43,7 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageHeaderErrorMessageStrategy;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
+import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.expression.FunctionExpression;
@@ -190,7 +191,26 @@ public class KinesisMessageChannelBinder extends
 						? kinesisShardOffset
 						: KinesisShardOffset.trimHorizon());
 
-		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
+		// Defer byte[] conversion to the InboundContentTypeConvertingInterceptor
+		adapter.setConverter(bytes -> bytes);
+
+		switch (kinesisConsumerProperties.getListenerMode()) {
+
+			case record:
+				adapter.setListenerMode(ListenerMode.record);
+				break;
+
+			case batch:
+				adapter.setListenerMode(ListenerMode.batch);
+				break;
+
+			case rawRecords:
+				adapter.setListenerMode(ListenerMode.batch);
+				adapter.setConverter(null);
+				break;
+
+		}
+
 		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
 		adapter.setRecordsLimit(kinesisConsumerProperties.getRecordsLimit());
 		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
@@ -203,9 +223,6 @@ public class KinesisMessageChannelBinder extends
 		adapter.setStartTimeout(kinesisConsumerProperties.getStartTimeout());
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());
 		adapter.setDescribeStreamRetries(this.configurationProperties.getDescribeStreamRetries());
-
-		// Deffer byte[] conversion to the InboundContentTypeConvertingInterceptor
-		adapter.setConverter(null);
 
 		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);

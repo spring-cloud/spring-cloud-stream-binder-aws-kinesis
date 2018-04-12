@@ -17,7 +17,6 @@
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
 import org.springframework.integration.aws.inbound.kinesis.CheckpointMode;
-import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 
 /**
  *
@@ -30,7 +29,7 @@ public class KinesisConsumerProperties {
 
 	private int startTimeout = 60000;
 
-	private ListenerMode listenerMode = ListenerMode.record;
+	private KinesisListenerMode listenerMode = KinesisListenerMode.record;
 
 	private CheckpointMode checkpointMode = CheckpointMode.batch;
 
@@ -50,11 +49,11 @@ public class KinesisConsumerProperties {
 		this.startTimeout = startTimeout;
 	}
 
-	public ListenerMode getListenerMode() {
+	public KinesisListenerMode getListenerMode() {
 		return this.listenerMode;
 	}
 
-	public void setListenerMode(ListenerMode listenerMode) {
+	public void setListenerMode(KinesisListenerMode listenerMode) {
 		this.listenerMode = listenerMode;
 	}
 
@@ -96,6 +95,29 @@ public class KinesisConsumerProperties {
 
 	public void setShardIteratorType(String shardIteratorType) {
 		this.shardIteratorType = shardIteratorType;
+	}
+
+	/**
+	 * @see org.springframework.integration.aws.inbound.kinesis.ListenerMode
+	 */
+	public enum KinesisListenerMode {
+
+		/**
+		 * Each {@code Message} will be converted from a single {@code Record}.
+		 */
+		record,
+
+		/**
+		 * Each {@code Message} will contain {@code List<byte[]>} from {@code Record} list if not
+		 * empty.
+		 */
+		batch,
+
+		/**
+		 * Each {@code Message} will contain {@code List<Record>} if not empty.
+		 */
+		rawRecords
+
 	}
 
 }

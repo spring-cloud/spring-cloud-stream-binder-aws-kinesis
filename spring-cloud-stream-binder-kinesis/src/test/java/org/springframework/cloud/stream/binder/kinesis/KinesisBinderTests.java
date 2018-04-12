@@ -31,6 +31,7 @@ import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
+import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
@@ -417,6 +418,38 @@ public class KinesisBinderTests
 		assertThat(exception.getCause()).isSameAs(putRecordException);
 		assertThat(((PutRecordRequest) exception.getRequest()).getData()).isSameAs(sent.get());
 		producerBinding.unbind();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testBatchListener() throws Exception {
+		KinesisTestBinder binder = getBinder();
+		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
+		DirectChannel output = createBindableChannel("output", createProducerBindingProperties(producerProperties));
+
+		Binding<MessageChannel> outputBinding = binder.bindProducer("testBatchListener", output, producerProperties);
+
+		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		consumerProperties.getExtension().setListenerMode(KinesisConsumerProperties.KinesisListenerMode.rawRecords);
+
+		QueueChannel input = new QueueChannel();
+		Binding<MessageChannel> inputBinding = binder.bindConsumer("testBatchListener", null, input,
+				consumerProperties);
+
+		for (int i = 0; i < 3; i++) {
+			output.send(new GenericMessage<>("i"));
+		}
+
+		Message<List<?>> receivedMessage = (Message<List<?>>) receive(input);
+		assertThat(receivedMessage).isNotNull();
+		assertThat(receivedMessage.getPayload().size()).isEqualTo(3);
+
+		receivedMessage.getPayload().forEach(r -> {
+			assertThat(r).isInstanceOf(Record.class);
+		});
+
+		outputBinding.unbind();
+		inputBinding.unbind();
 	}
 
 	@Test

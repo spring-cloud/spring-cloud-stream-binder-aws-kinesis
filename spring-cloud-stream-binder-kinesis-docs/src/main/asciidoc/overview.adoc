@@ -112,8 +112,10 @@ startTimeout::
 +
 Default: `60000`.
 listenerMode::
-  The mode in which records are processed. If `record`, each `Message` will be converted from a single `Record`. If `batch`,
-  each `Message` will container a `List<Record>`.
+  The mode in which records are processed.
+  If `record`, each `Message` will contain `byte[]` from a single `Record.data`.
+  If `batch`, each `Message` will contain a `List<byte[]>` extracted from the consumed records.
+  If `rawRecords`, each `Message` will non-converted `List<Record>`.
 +
 Default: `record`
 checkpointMode::
