@@ -17,7 +17,7 @@
 	<properties>
 		<spring-cloud-stream.version>2.0.0.RELEASE</spring-cloud-stream.version>
 		<spring-cloud-aws.version>2.0.0.M4</spring-cloud-aws.version>
-		<spring-integration-aws-version>2.0.0.BUILD-SNAPSHOT</spring-integration-aws-version>
+		<spring-integration-aws-version>2.0.0.M2</spring-integration-aws-version>
 		<java.version>1.8</java.version>
 	</properties>
 
@@ -149,6 +149,10 @@
 		<profile>
 			<id>spring</id>
 			<repositories>
+				<!--<repository>
+					<id>spring-staging</id>
+					<url>http://repo.spring.io/libs-staging-local</url>
+				</repository>-->
 				<repository>
 					<id>spring-snapshots</id>
 					<name>Spring Snapshots</name>
