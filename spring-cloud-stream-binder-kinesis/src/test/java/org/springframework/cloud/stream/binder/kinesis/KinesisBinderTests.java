@@ -317,8 +317,7 @@ public class KinesisBinderTests
 				consumerProperties);
 
 		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
-		producerProperties.setPartitionKeyExpression(spelExpressionParser.parseExpression("payload"));
-		producerProperties.setPartitionSelectorExpression(spelExpressionParser.parseExpression("hashCode()"));
+		producerProperties.setPartitionKeyExpression(spelExpressionParser.parseExpression("headers.partitionKey"));
 		producerProperties.setPartitionCount(3);
 
 		DirectChannel output = createBindableChannel("test.output",
@@ -333,12 +332,14 @@ public class KinesisBinderTests
 		}
 
 		Message<Integer> message2 = MessageBuilder.withPayload(2)
+				.setHeader("partitionKey", 2)
 				.setHeader(IntegrationMessageHeaderAccessor.CORRELATION_ID, "foo")
 				.setHeader(IntegrationMessageHeaderAccessor.SEQUENCE_NUMBER, 42)
-				.setHeader(IntegrationMessageHeaderAccessor.SEQUENCE_SIZE, 43).build();
+				.setHeader(IntegrationMessageHeaderAccessor.SEQUENCE_SIZE, 43)
+				.build();
 		output.send(message2);
-		output.send(new GenericMessage<>(1));
-		output.send(new GenericMessage<>(0));
+		output.send(MessageBuilder.withPayload(1).setHeader("partitionKey", 1).build());
+		output.send(MessageBuilder.withPayload(0).setHeader("partitionKey", 0).build());
 
 		assertThat(receiveLatch.await(20, TimeUnit.SECONDS)).isTrue();
 

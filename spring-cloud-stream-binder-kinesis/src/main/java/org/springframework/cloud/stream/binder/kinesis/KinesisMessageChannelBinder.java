@@ -38,13 +38,16 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtende
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsumerDestination;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
+import org.springframework.cloud.stream.binding.MessageConverterConfigurer;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
+import org.springframework.expression.Expression;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageHeaderErrorMessageStrategy;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
+import org.springframework.integration.channel.ChannelInterceptorAware;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
@@ -52,6 +55,7 @@ import org.springframework.integration.support.ErrorMessageStrategy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -105,9 +109,6 @@ public class KinesisMessageChannelBinder extends
 		return this.extendedBindingProperties.getExtendedProducerProperties(channelName);
 	}
 
-	// below are the main methods to implement - these will create the message
-	// handlers used by the application
-	// to put and consume messages
 	@Override
 	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel) {
@@ -116,19 +117,35 @@ public class KinesisMessageChannelBinder extends
 		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
 		kinesisMessageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
 		kinesisMessageHandler.setStream(destination.getName());
-		if (producerProperties.isPartitioned()) {
+		Expression partitionKeyExpression = producerProperties.getPartitionKeyExpression();
+		if (partitionKeyExpression != null) {
 			kinesisMessageHandler
-					.setPartitionKeyExpressionString(
-							"'partitionKey-' + headers['" + BinderHeaders.PARTITION_HEADER + "']");
+					.setPartitionKeyExpression(partitionKeyExpression);
 		}
 		else {
-			kinesisMessageHandler
-					.setPartitionKeyExpression(new FunctionExpression<Message<?>>(m -> m.getPayload().hashCode()));
+			kinesisMessageHandler.setPartitionKeyExpression(
+					new FunctionExpression<Message<?>>(m -> m.getPayload().hashCode()));
 		}
 		kinesisMessageHandler.setFailureChannel(errorChannel);
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
 		return kinesisMessageHandler;
+	}
+
+	@Override
+	protected void postProcessOutputChannel(MessageChannel outputChannel,
+			ExtendedProducerProperties<KinesisProducerProperties> producerProperties) {
+
+		if (outputChannel instanceof ChannelInterceptorAware) {
+			ChannelInterceptorAware channelInterceptorAware = (ChannelInterceptorAware) outputChannel;
+			List<ChannelInterceptor> channelInterceptors = channelInterceptorAware.getChannelInterceptors();
+			for (ChannelInterceptor channelInterceptor : channelInterceptors) {
+				if (channelInterceptor instanceof MessageConverterConfigurer.PartitioningInterceptor) {
+					channelInterceptorAware.removeInterceptor(channelInterceptor);
+					break;
+				}
+			}
+		}
 	}
 
 	@Override
@@ -179,7 +196,7 @@ public class KinesisMessageChannelBinder extends
 		}
 		else {
 			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis,
-					shardOffsets.toArray(new KinesisShardOffset[shardOffsets.size()]));
+					shardOffsets.toArray(new KinesisShardOffset[0]));
 		}
 
 		boolean anonymous = !StringUtils.hasText(group);
@@ -196,18 +213,18 @@ public class KinesisMessageChannelBinder extends
 
 		switch (kinesisConsumerProperties.getListenerMode()) {
 
-			case record:
-				adapter.setListenerMode(ListenerMode.record);
-				break;
+		case record:
+			adapter.setListenerMode(ListenerMode.record);
+			break;
 
-			case batch:
-				adapter.setListenerMode(ListenerMode.batch);
-				break;
+		case batch:
+			adapter.setListenerMode(ListenerMode.batch);
+			break;
 
-			case rawRecords:
-				adapter.setListenerMode(ListenerMode.batch);
-				adapter.setConverter(null);
-				break;
+		case rawRecords:
+			adapter.setListenerMode(ListenerMode.batch);
+			adapter.setConverter(null);
+			break;
 
 		}
 

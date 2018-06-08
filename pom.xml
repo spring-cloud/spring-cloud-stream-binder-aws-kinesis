@@ -15,9 +15,9 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<spring-cloud-stream.version>2.0.0.RELEASE</spring-cloud-stream.version>
-		<spring-cloud-aws.version>2.0.0.M4</spring-cloud-aws.version>
-		<spring-integration-aws-version>2.0.0.M2</spring-integration-aws-version>
+		<spring-cloud-stream.version>2.0.1.BUILD-SNAPSHOT</spring-cloud-stream.version>
+		<spring-cloud-aws.version>2.0.0.RC2</spring-cloud-aws.version>
+		<spring-integration-aws-version>2.0.0.BUILD-SNAPSHOT</spring-integration-aws-version>
 		<java.version>1.8</java.version>
 	</properties>
 

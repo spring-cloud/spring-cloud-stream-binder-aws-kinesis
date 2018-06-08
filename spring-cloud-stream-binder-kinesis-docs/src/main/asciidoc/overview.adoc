@@ -36,9 +36,11 @@ AWS Kinesis uses the partition key as input to a hash function that maps the par
 Specifically, an MD5 hash function is used to map partition keys to 128-bit integer values and to map associated data records to shards.
 As a result of this hashing mechanism, all data records with the same partition key map to the same shard within the stream.
 But at the same time we can't select target shard to send explicitly.
-Although calculation the hash manually (and use `explicitHashKeyExpression` for producer, respectively), we may track the target shard by inclusion into its `HashKeyRange`.
+Although calculating the hash manually (and use `explicitHashKeyExpression` for producer, respectively), we may track the target shard by inclusion into its `HashKeyRange`.
 
 By default partition key is a result of the `Object.hash()` from the message `payload`.
+
+The Spring Cloud Stream partition handling logic is excluded in case of AWS Kinesis Binder since it is out of use and the provided `producer.partitionKeyExpression` is propagated to the `KinesisMessageHandler` directly.
 
 On the consumer side the `instanceCount` and `instanceIndex` are used to distribute shards between consumers in group evenly.
 
