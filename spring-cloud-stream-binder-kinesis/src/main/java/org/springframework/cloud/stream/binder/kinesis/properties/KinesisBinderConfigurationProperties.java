@@ -17,6 +17,8 @@
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
+import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
 
 /**
  *
@@ -38,7 +40,9 @@ public class KinesisBinderConfigurationProperties {
 
 	private int minShardCount = 1;
 
-	private Checkpoint checkpoint = new Checkpoint();
+	private final Checkpoint checkpoint = new Checkpoint();
+
+	private final Locks locks = new Locks();
 
 	public String[] getHeaders() {
 		return this.headers;
@@ -84,13 +88,13 @@ public class KinesisBinderConfigurationProperties {
 		return this.checkpoint;
 	}
 
-	public void setCheckpoint(Checkpoint checkpoint) {
-		this.checkpoint = checkpoint;
+	public Locks getLocks() {
+		return this.locks;
 	}
 
 	public static class Checkpoint {
 
-		private String table = "checkpoint";
+		private String table = DynamoDbMetaDataStore.DEFAULT_TABLE_NAME;
 
 		private long readCapacity = 1L;
 
@@ -99,6 +103,8 @@ public class KinesisBinderConfigurationProperties {
 		private int createDelay = 1;
 
 		private int createRetries = 25;
+
+		private Integer timeToLive;
 
 		public String getTable() {
 			return this.table;
@@ -138,6 +144,108 @@ public class KinesisBinderConfigurationProperties {
 
 		public void setCreateRetries(int createRetries) {
 			this.createRetries = createRetries;
+		}
+
+		public Integer getTimeToLive() {
+			return this.timeToLive;
+		}
+
+		public void setTimeToLive(Integer timeToLive) {
+			this.timeToLive = timeToLive;
+		}
+
+	}
+
+	public static class Locks {
+
+		private String table = DynamoDbLockRegistry.DEFAULT_TABLE_NAME;
+
+		private long readCapacity = 1L;
+
+		private long writeCapacity = 1L;
+
+		private String partitionKey = DynamoDbLockRegistry.DEFAULT_PARTITION_KEY_NAME;
+
+		private String sortKeyName = DynamoDbLockRegistry.DEFAULT_SORT_KEY_NAME;
+
+		private String sortKey = DynamoDbLockRegistry.DEFAULT_SORT_KEY;
+
+		private long refreshPeriod = DynamoDbLockRegistry.DEFAULT_REFRESH_PERIOD_MS;
+
+		private long leaseDuration = 20L;
+
+		private long heartbeatPeriod = 5L;
+
+		public String getTable() {
+			return this.table;
+		}
+
+		public void setTable(String table) {
+			this.table = table;
+		}
+
+		public long getReadCapacity() {
+			return this.readCapacity;
+		}
+
+		public void setReadCapacity(long readCapacity) {
+			this.readCapacity = readCapacity;
+		}
+
+		public long getWriteCapacity() {
+			return this.writeCapacity;
+		}
+
+		public void setWriteCapacity(long writeCapacity) {
+			this.writeCapacity = writeCapacity;
+		}
+
+		public String getPartitionKey() {
+			return this.partitionKey;
+		}
+
+		public void setPartitionKey(String partitionKey) {
+			this.partitionKey = partitionKey;
+		}
+
+		public String getSortKeyName() {
+			return this.sortKeyName;
+		}
+
+		public void setSortKeyName(String sortKeyName) {
+			this.sortKeyName = sortKeyName;
+		}
+
+		public String getSortKey() {
+			return this.sortKey;
+		}
+
+		public void setSortKey(String sortKey) {
+			this.sortKey = sortKey;
+		}
+
+		public long getRefreshPeriod() {
+			return this.refreshPeriod;
+		}
+
+		public void setRefreshPeriod(long refreshPeriod) {
+			this.refreshPeriod = refreshPeriod;
+		}
+
+		public long getLeaseDuration() {
+			return this.leaseDuration;
+		}
+
+		public void setLeaseDuration(long leaseDuration) {
+			this.leaseDuration = leaseDuration;
+		}
+
+		public long getHeartbeatPeriod() {
+			return this.heartbeatPeriod;
+		}
+
+		public void setHeartbeatPeriod(long heartbeatPeriod) {
+			this.heartbeatPeriod = heartbeatPeriod;
 		}
 
 	}

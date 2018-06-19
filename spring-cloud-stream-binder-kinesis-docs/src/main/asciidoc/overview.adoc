@@ -23,11 +23,12 @@ This implementation uses Spring Integration AWS Kinesis Channel Adapters at its 
 The following captures how the Kinesis Binder implementation maps each of the configured destination to a AWS Kinesis Streams:
 
 .Kinesis Binder
-image::images/kinesis-binder.png[width=300,scaledwidth="50%"]
+image::kinesis-binder.png[width=300,scaledwidth="50%"]
 
 Unlike https://kafka.apache.org/[Apache Kafka] the AWS Kinesis doesn't provide out-of-the-box support for consumer groups.
 The support of this feature is implemented as a part of `MetadataStore` key for shard checkpoints in the `KinesisMessageDrivenChannelAdapter` - `[CONSUMER_GROUP]:[STREAM]:[SHARD_ID]`.
-This way all the `ShardConsumer` s in the same consumer group may receive the same records from the same shard but they will be filtered according the latest stored `sequenceNumber` after performing checkpoint.
+In addition the `LockRegistry` is used to ensure exclusive access to each shard.
+This way only one channel adapter in the same consumer group will consumer messages from a single shard in the stream it is configured for.
 
 The partitioning logic in AWS Kinesis is similar to the Apache Kafka support, but with slightly different logic.
 The `partitionKey` on the producer side determines which shard in the stream the data record is assigned to.
@@ -85,7 +86,7 @@ The based on the DynamoDB Checkpoint properties prefixed with `spring.cloud.stre
 table::
 	The name to give the DynamoDb table
 +
-Default: `checkpoint`
+Default: `SpringIntegrationMetadataStore`
 createDelay::
     The amount of time in seconds between each polling attempt while waiting for the checkpoint DynamoDB table to be created
 +
@@ -104,6 +105,53 @@ writeCapacity::
 See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 +
 Default: `1`
+timeToLive::
+	A period in seconds for items expiration.
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html[DynamoDB TTL]
++
+No default - means no records expiration.
+
+
+The based on the DynamoDB `LockRegistry` properties prefixed with `spring.cloud.stream.kinesis.binder.locks.`
+
+table::
+	The name to give the DynamoDb table
++
+Default: `SpringIntegrationLockRegistry`
+readCapacity::
+	The Read capacity of the DynamoDb table.
+See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
++
+Default: `1`
+writeCapacity::
+	The write capacity of the DynamoDb table.
+See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+Default: `1`
+leaseDuration::
+	The length of time that the lease for the lock will be granted for.
+	 If this is set to, for example, 30 seconds, then the lock will expire if the heartbeat is not sent for at least 30 seconds (which would happen if the box or the heartbeat thread dies, for example.)
++
+Default: `20`
+heartbeatPeriod::
+	How often to update DynamoDB to note that the instance is still running (recommendation is to make this at least 3 times smaller than the `leaseDuration` - for example `heartBeatPeriod=1` second, `leaseDuration=10` seconds could be a reasonable configuration, make sure to include a buffer for network latency.)
++
+Default: `5`
+refreshPeriod::
+	How long to wait before trying to get the lock again (if set to 10 seconds, for example, it would attempt to do so every 10 seconds)
++
+Default: `1000`
+partitionKey::
+	The partition key name of the table.
++
+Default: `lockKey`
+sortKeyName::
+	The sort key name for DynamoDB table partitioning.
++
+Default: `sortKey`
+sortKey::
+	The sort key to try and acquire the lock on (specify if and only if the table has sort keys)
++
+Default: `SpringIntegrationLocks`
 
 === Kinesis Consumer Properties
 

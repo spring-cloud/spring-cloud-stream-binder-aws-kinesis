@@ -20,6 +20,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 
 import org.junit.ClassRule;
@@ -46,6 +47,8 @@ import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.metadata.MetadataStore;
 import org.springframework.integration.metadata.SimpleMetadataStore;
+import org.springframework.integration.support.locks.DefaultLockRegistry;
+import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
@@ -57,6 +60,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Artem Bilan
@@ -67,7 +71,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 		"spring.cloud.stream.bindings." + KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT + ".destination = "
 				+ Processor.INPUT,
 		"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
-		"spring.cloud.stream.kinesis.binder.headers = foo" })
+		"spring.cloud.stream.kinesis.binder.headers = foo",
+		"spring.cloud.stream.kinesis.binder.checkpoint.table = fakeTable",
+		"spring.cloud.stream.kinesis.binder.locks.table = fakeTable" })
 @DirtiesContext
 public class KinesisBinderProcessorTests {
 
@@ -129,6 +135,11 @@ public class KinesisBinderProcessorTests {
 	public static class ProcessorConfiguration {
 
 		@Bean
+		public AmazonDynamoDBAsync dynamoDB() {
+			return mock(AmazonDynamoDBAsync.class);
+		}
+
+		@Bean(destroyMethod = "")
 		public AmazonKinesisAsync amazonKinesis() {
 			return localKinesisResource.getResource();
 		}
@@ -136,6 +147,11 @@ public class KinesisBinderProcessorTests {
 		@Bean
 		public MetadataStore kinesisCheckpointStore() {
 			return new SimpleMetadataStore();
+		}
+
+		@Bean
+		public LockRegistry lockRegistry() {
+			return new DefaultLockRegistry();
 		}
 
 		@Transformer(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)

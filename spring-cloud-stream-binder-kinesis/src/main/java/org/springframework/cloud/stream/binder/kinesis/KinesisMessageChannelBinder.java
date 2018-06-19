@@ -52,6 +52,7 @@ import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.ErrorMessageStrategy;
+import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
@@ -81,6 +82,8 @@ public class KinesisMessageChannelBinder extends
 
 	private ConcurrentMetadataStore checkpointStore;
 
+	private LockRegistry lockRegistry;
+
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
 			KinesisStreamProvisioner provisioningProvider) {
@@ -97,6 +100,10 @@ public class KinesisMessageChannelBinder extends
 
 	public void setCheckpointStore(ConcurrentMetadataStore checkpointStore) {
 		this.checkpointStore = checkpointStore;
+	}
+
+	public void setLockRegistry(LockRegistry lockRegistry) {
+		this.lockRegistry = lockRegistry;
 	}
 
 	@Override
@@ -236,6 +243,9 @@ public class KinesisMessageChannelBinder extends
 		if (this.checkpointStore != null) {
 			adapter.setCheckpointStore(this.checkpointStore);
 		}
+
+		adapter.setLockRegistry(this.lockRegistry);
+
 		adapter.setConcurrency(properties.getConcurrency());
 		adapter.setStartTimeout(kinesisConsumerProperties.getStartTimeout());
 		adapter.setDescribeStreamBackoff(this.configurationProperties.getDescribeStreamBackoff());

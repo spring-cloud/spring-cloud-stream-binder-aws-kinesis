@@ -33,8 +33,10 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtende
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
+import org.springframework.integration.support.locks.LockRegistry;
 
 /**
  *
@@ -71,11 +73,13 @@ public class KinesisBinderConfiguration {
 	@Bean
 	public KinesisMessageChannelBinder kinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisStreamProvisioner provisioningProvider, ConcurrentMetadataStore kinesisCheckpointStore,
+			LockRegistry lockRegistry,
 			KinesisExtendedBindingProperties kinesisExtendedBindingProperties) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(amazonKinesis,
 				this.configurationProperties, provisioningProvider);
 		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
+		kinesisMessageChannelBinder.setLockRegistry(lockRegistry);
 		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
 
 		return kinesisMessageChannelBinder;
@@ -83,14 +87,38 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ConcurrentMetadataStore kinesisCheckpointStore(AWSCredentialsProvider awsCredentialsProvider,
+	public AmazonDynamoDBAsync dynamoDB(AWSCredentialsProvider awsCredentialsProvider,
 			RegionProvider regionProvider) {
 
-		AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClientBuilder.standard()
+		return AmazonDynamoDBAsyncClientBuilder.standard()
 				.withCredentials(awsCredentialsProvider)
-				.withRegion(regionProvider.getRegion().getName())
+				.withRegion(
+						regionProvider.getRegion()
+								.getName())
 				.build();
+	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	public LockRegistry dynamoDBLockRegistry(AmazonDynamoDBAsync dynamoDB) {
+		KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
+
+		DynamoDbLockRegistry dynamoDbLockRegistry = new DynamoDbLockRegistry(dynamoDB, locks.getTable());
+		dynamoDbLockRegistry.setRefreshPeriod(locks.getRefreshPeriod());
+		dynamoDbLockRegistry.setHeartbeatPeriod(locks.getHeartbeatPeriod());
+		dynamoDbLockRegistry.setLeaseDuration(locks.getLeaseDuration());
+		dynamoDbLockRegistry.setPartitionKey(locks.getPartitionKey());
+		dynamoDbLockRegistry.setSortKeyName(locks.getSortKeyName());
+		dynamoDbLockRegistry.setSortKey(locks.getSortKey());
+		dynamoDbLockRegistry.setReadCapacity(locks.getReadCapacity());
+		dynamoDbLockRegistry.setWriteCapacity(locks.getWriteCapacity());
+
+		return dynamoDbLockRegistry;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public ConcurrentMetadataStore kinesisCheckpointStore(AmazonDynamoDBAsync dynamoDB) {
 		KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
 
 		DynamoDbMetaDataStore kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, checkpoint.getTable());
@@ -98,6 +126,7 @@ public class KinesisBinderConfiguration {
 		kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
 		kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());
 		kinesisCheckpointStore.setCreateTableRetries(checkpoint.getCreateRetries());
+		kinesisCheckpointStore.setTimeToLive(checkpoint.getTimeToLive());
 
 		return kinesisCheckpointStore;
 	}
