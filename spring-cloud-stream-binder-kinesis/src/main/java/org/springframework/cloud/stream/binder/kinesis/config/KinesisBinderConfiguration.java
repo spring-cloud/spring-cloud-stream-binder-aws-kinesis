@@ -126,7 +126,9 @@ public class KinesisBinderConfiguration {
 		kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
 		kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());
 		kinesisCheckpointStore.setCreateTableRetries(checkpoint.getCreateRetries());
-		kinesisCheckpointStore.setTimeToLive(checkpoint.getTimeToLive());
+		if (checkpoint.getTimeToLive() != null) {
+			kinesisCheckpointStore.setTimeToLive(checkpoint.getTimeToLive());
+		}
 
 		return kinesisCheckpointStore;
 	}
