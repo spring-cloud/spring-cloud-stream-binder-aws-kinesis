@@ -72,7 +72,7 @@ import static org.mockito.Mockito.mock;
 				+ Processor.INPUT,
 		"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
 		"spring.cloud.stream.kinesis.binder.headers = foo",
-		"spring.cloud.stream.kinesis.binder.checkpoint.table = fakeTable",
+		"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
 		"spring.cloud.stream.kinesis.binder.locks.table = fakeTable" })
 @DirtiesContext
 public class KinesisBinderProcessorTests {
@@ -81,6 +81,9 @@ public class KinesisBinderProcessorTests {
 
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
+
+	@ClassRule
+	public static LocalDynamoDbResource localDynamoDbResource = new LocalDynamoDbResource();
 
 	@Autowired
 	private TestSource testSource;
@@ -134,19 +137,14 @@ public class KinesisBinderProcessorTests {
 	@EnableAutoConfiguration(exclude = ContextResourceLoaderAutoConfiguration.class)
 	public static class ProcessorConfiguration {
 
-		@Bean
+		@Bean(destroyMethod = "")
 		public AmazonDynamoDBAsync dynamoDB() {
-			return mock(AmazonDynamoDBAsync.class);
+			return localDynamoDbResource.getResource();
 		}
 
 		@Bean(destroyMethod = "")
 		public AmazonKinesisAsync amazonKinesis() {
 			return localKinesisResource.getResource();
-		}
-
-		@Bean
-		public MetadataStore kinesisCheckpointStore() {
-			return new SimpleMetadataStore();
 		}
 
 		@Bean
