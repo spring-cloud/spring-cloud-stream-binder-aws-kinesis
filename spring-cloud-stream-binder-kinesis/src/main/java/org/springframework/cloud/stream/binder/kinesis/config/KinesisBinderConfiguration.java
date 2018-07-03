@@ -34,7 +34,7 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
-import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
+import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.locks.LockRegistry;
 
@@ -121,7 +121,7 @@ public class KinesisBinderConfiguration {
 	public ConcurrentMetadataStore kinesisCheckpointStore(AmazonDynamoDBAsync dynamoDB) {
 		KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
 
-		DynamoDbMetaDataStore kinesisCheckpointStore = new DynamoDbMetaDataStore(dynamoDB, checkpoint.getTable());
+		DynamoDbMetadataStore kinesisCheckpointStore = new DynamoDbMetadataStore(dynamoDB, checkpoint.getTable());
 		kinesisCheckpointStore.setReadCapacity(checkpoint.getReadCapacity());
 		kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
 		kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());

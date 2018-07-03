@@ -18,7 +18,7 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
-import org.springframework.integration.aws.metadata.DynamoDbMetaDataStore;
+import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 
 /**
  *
@@ -94,7 +94,7 @@ public class KinesisBinderConfigurationProperties {
 
 	public static class Checkpoint {
 
-		private String table = DynamoDbMetaDataStore.DEFAULT_TABLE_NAME;
+		private String table = DynamoDbMetadataStore.DEFAULT_TABLE_NAME;
 
 		private long readCapacity = 1L;
 
