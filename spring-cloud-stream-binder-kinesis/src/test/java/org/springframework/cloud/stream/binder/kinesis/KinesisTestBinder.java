@@ -23,6 +23,7 @@ import com.amazonaws.services.kinesis.model.ListStreamsRequest;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
@@ -36,6 +37,7 @@ import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.integration.core.MessageProducer;
 
 /**
  * @author Artem Bilan
@@ -59,21 +61,9 @@ public class KinesisTestBinder
 		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(amazonKinesis,
 				kinesisBinderConfigurationProperties);
 
-		KinesisMessageChannelBinder binder = new KinesisMessageChannelBinder(amazonKinesis,
-				kinesisBinderConfigurationProperties, provisioningProvider) {
-
-			/*
-			 * Some tests use multiple instance indexes for the same topic; we need to make the error
-			 * infrastructure beans unique.
-			 */
-			@Override
-			protected String errorsBaseName(ConsumerDestination destination, String group,
-					ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties) {
-				return super.errorsBaseName(destination, group, consumerProperties) + "-"
-						+ consumerProperties.getInstanceIndex();
-			}
-
-		};
+		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(amazonKinesis,
+				kinesisBinderConfigurationProperties,
+				provisioningProvider);
 
 		binder.setApplicationContext(this.applicationContext);
 
@@ -125,6 +115,40 @@ public class KinesisTestBinder
 		@Bean
 		public PartitionTestSupport partitionSupport() {
 			return new PartitionTestSupport();
+		}
+
+	}
+
+	private static class TestKinesisMessageChannelBinder extends KinesisMessageChannelBinder {
+
+		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
+				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
+				KinesisStreamProvisioner provisioningProvider) {
+
+			super(amazonKinesis, kinesisBinderConfigurationProperties, provisioningProvider);
+		}
+
+		/*
+		 * Some tests use multiple instance indexes for the same topic; we need to make the error
+		 * infrastructure beans unique.
+		 */
+		@Override
+		protected String errorsBaseName(ConsumerDestination destination, String group,
+				ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties) {
+			return super.errorsBaseName(destination, group, consumerProperties) + "-"
+					+ consumerProperties.getInstanceIndex();
+		}
+
+		@Override
+		protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group,
+				ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
+
+			MessageProducer messageProducer = super.createConsumerEndpoint(destination, group, properties);
+			DirectFieldAccessor dfa = new DirectFieldAccessor(messageProducer);
+			dfa.setPropertyValue("describeStreamBackoff", 10);
+			dfa.setPropertyValue("consumerBackoff", 10);
+			dfa.setPropertyValue("idleBetweenPolls", 1);
+			return messageProducer;
 		}
 
 	}

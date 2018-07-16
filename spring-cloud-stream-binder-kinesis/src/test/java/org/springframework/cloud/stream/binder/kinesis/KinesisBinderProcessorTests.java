@@ -27,6 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -171,6 +172,12 @@ public class KinesisBinderProcessorTests {
 					amazonKinesis(), Processor.OUTPUT);
 			kinesisMessageDrivenChannelAdapter.setOutputChannel(fromProcessorChannel());
 			kinesisMessageDrivenChannelAdapter.setConverter(null);
+
+			DirectFieldAccessor dfa = new DirectFieldAccessor(kinesisMessageDrivenChannelAdapter);
+			dfa.setPropertyValue("describeStreamBackoff", 10);
+			dfa.setPropertyValue("consumerBackoff", 10);
+			dfa.setPropertyValue("idleBetweenPolls", 1);
+
 			return kinesisMessageDrivenChannelAdapter;
 		}
 

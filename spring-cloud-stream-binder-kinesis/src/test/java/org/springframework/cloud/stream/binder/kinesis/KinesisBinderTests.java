@@ -195,6 +195,14 @@ public class KinesisBinderTests
 
 		receivedMessage2 = (Message<byte[]>) receive(input2);
 		assertThat(receivedMessage2).isNotNull();
+		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload1);
+
+		receivedMessage2 = (Message<byte[]>) receive(input2);
+		assertThat(receivedMessage2).isNotNull();
+		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload2);
+
+		receivedMessage2 = (Message<byte[]>) receive(input2);
+		assertThat(receivedMessage2).isNotNull();
 		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload3);
 
 		producerBinding.unbind();
@@ -430,16 +438,16 @@ public class KinesisBinderTests
 
 		Binding<MessageChannel> outputBinding = binder.bindProducer("testBatchListener", output, producerProperties);
 
+		for (int i = 0; i < 3; i++) {
+			output.send(new GenericMessage<>(i));
+		}
+
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
 		consumerProperties.getExtension().setListenerMode(KinesisConsumerProperties.KinesisListenerMode.rawRecords);
 
 		QueueChannel input = new QueueChannel();
 		Binding<MessageChannel> inputBinding = binder.bindConsumer("testBatchListener", null, input,
 				consumerProperties);
-
-		for (int i = 0; i < 3; i++) {
-			output.send(new GenericMessage<>("i"));
-		}
 
 		Message<List<?>> receivedMessage = (Message<List<?>>) receive(input);
 		assertThat(receivedMessage).isNotNull();
@@ -548,6 +556,7 @@ public class KinesisBinderTests
 		// set the default values that would normally be propagated by Spring Cloud Stream
 		kafkaConsumerProperties.setInstanceCount(1);
 		kafkaConsumerProperties.setInstanceIndex(0);
+		kafkaConsumerProperties.getExtension().setShardIteratorType(ShardIteratorType.TRIM_HORIZON.name());
 		return kafkaConsumerProperties;
 	}
 
