@@ -165,21 +165,23 @@ listenerMode::
   The mode in which records are processed.
   If `record`, each `Message` will contain `byte[]` from a single `Record.data`.
   If `batch`, each `Message` will contain a `List<byte[]>` extracted from the consumed records.
-  If `rawRecords`, each `Message` will non-converted `List<Record>`.
+  When `useNativeDecoding = true` is used on the consumer together with the `listenerMode = batch`, there is no any out-of-the-box conversion happened and a result message contains a payload like `List<com.amazonaws.services.kinesis.model.Record>`.
+  It's up to target application to convert those records manually.
 +
 Default: `record`
 checkpointMode::
-  The mode in which checkpoints are updated. If `record`, checkpoints occur after each record is processed (but this option
-  is only effective if `listenerMode` is set to `record`). If `batch`, checkpoints occur after each batch of records is
-  processed. If `manual`, checkpoints occur on demand via the `Checkpointer` callback.
+  The mode in which checkpoints are updated.
+  If `record`, checkpoints occur after each record is processed (but this option is only effective if `listenerMode` is set to `record`). If `batch`, checkpoints occur after each batch of records is processed.
+  If `manual`, checkpoints occur on demand via the `Checkpointer` callback.
 +
 Default: `batch`
 recordsLimit::
-  The maximum number of records to poll per `GetRecords` request. Must not be greater than `10000`.
+  The maximum number of records to poll per `GetRecords` request.
+  Must not be greater than `10000`.
 +
 Default: `10000`
 idleBetweenPolls::
-  The sleep interval used in the main loop between shards polling cycles, in milliseconds. Must not be less than `250`
+  The sleep interval used in the main loop between shards polling cycles, in milliseconds. Must not be less than `250`.
 +
 Default: `1000`
 consumerBackoff::

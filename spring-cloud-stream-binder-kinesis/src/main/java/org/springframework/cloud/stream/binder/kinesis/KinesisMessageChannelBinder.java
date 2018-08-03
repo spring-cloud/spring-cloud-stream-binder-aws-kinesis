@@ -215,24 +215,14 @@ public class KinesisMessageChannelBinder extends
 						? kinesisShardOffset
 						: KinesisShardOffset.trimHorizon());
 
-		// Defer byte[] conversion to the InboundContentTypeConvertingInterceptor
-		adapter.setConverter(bytes -> bytes);
+		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 
-		switch (kinesisConsumerProperties.getListenerMode()) {
-
-		case record:
-			adapter.setListenerMode(ListenerMode.record);
-			break;
-
-		case batch:
-			adapter.setListenerMode(ListenerMode.batch);
-			break;
-
-		case rawRecords:
-			adapter.setListenerMode(ListenerMode.batch);
+		if (properties.isUseNativeDecoding()) {
 			adapter.setConverter(null);
-			break;
-
+		}
+		else {
+			// Defer byte[] conversion to the InboundContentTypeConvertingInterceptor
+			adapter.setConverter(bytes -> bytes);
 		}
 
 		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());

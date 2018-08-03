@@ -71,7 +71,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 		"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
 		"spring.cloud.stream.kinesis.binder.headers = foo",
 		"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
-		"spring.cloud.stream.kinesis.binder.locks.table = fakeTable" })
+		"spring.cloud.stream.kinesis.binder.locks.table = lockTable" })
 @DirtiesContext
 public class KinesisBinderProcessorTests {
 
@@ -143,11 +143,6 @@ public class KinesisBinderProcessorTests {
 		@Bean(destroyMethod = "")
 		public AmazonKinesisAsync amazonKinesis() {
 			return localKinesisResource.getResource();
-		}
-
-		@Bean
-		public LockRegistry lockRegistry() {
-			return new DefaultLockRegistry();
 		}
 
 		@Transformer(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)

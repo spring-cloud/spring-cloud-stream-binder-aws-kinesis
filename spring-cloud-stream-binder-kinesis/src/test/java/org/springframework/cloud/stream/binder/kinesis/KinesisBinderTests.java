@@ -61,6 +61,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
+import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 import org.springframework.integration.aws.support.AwsRequestFailureException;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.NullChannel;
@@ -443,7 +444,8 @@ public class KinesisBinderTests
 		}
 
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
-		consumerProperties.getExtension().setListenerMode(KinesisConsumerProperties.KinesisListenerMode.rawRecords);
+		consumerProperties.getExtension().setListenerMode(ListenerMode.batch);
+		consumerProperties.setUseNativeDecoding(true);
 
 		QueueChannel input = new QueueChannel();
 		Binding<MessageChannel> inputBinding = binder.bindConsumer("testBatchListener", null, input,
