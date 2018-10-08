@@ -34,7 +34,7 @@ import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestS
  */
 public final class LocalDynamoDbResource extends AbstractExternalResourceTestSupport<AmazonDynamoDBAsync> {
 
-	public static final int DEFAULT_PORT = 4568;
+	public static final int DEFAULT_PORT = 4569;
 
 	private final int port;
 
