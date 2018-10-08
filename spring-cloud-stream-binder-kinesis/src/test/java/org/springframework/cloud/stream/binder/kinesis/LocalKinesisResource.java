@@ -39,7 +39,7 @@ import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestS
  */
 public class LocalKinesisResource extends AbstractExternalResourceTestSupport<AmazonKinesisAsync> {
 
-	public static final int DEFAULT_PORT = 4567;
+	public static final int DEFAULT_PORT = 4568;
 
 	private final int port;
 
