@@ -45,6 +45,30 @@ The Spring Cloud Stream partition handling logic is excluded in case of AWS Kine
 
 On the consumer side the `instanceCount` and `instanceIndex` are used to distribute shards between consumers in group evenly.
 
+== Consumer Groups
+Consumer groups are implemented with focus on High availability, Message ordering and guaranteed Message delivery in Spring cloud stream.
+A `single consumer` for the message is ensured by https://docs.spring.io/spring-cloud-stream/docs/Elmhurst.RELEASE/reference/htmlsingle/#consumer-groups[consumer group abstraction].
+
+To have a highly available consumer group for your kinesis stream:
+
+ - Ensure all instances of your consumer applications use a shared `DynamoDbMetadataStore` and `DynamoDbLockRegistry` (See below for configuration options).
+ - Use same group name for the channel in all application instances by using property `spring.cloud.stream.bindings.<channelName>.group`.
+
+These configurations alone guarantee HA, message ordering and guaranteed message delivery.  However, even distribution across instances is not guaranteed as of now.
+There is a very high chance that a single instance in a consumer group will pick up all the shards for consuming.  But, when that instance goes down (couldn't send heartbeat for any reason),
+other instance in the consumer group will start processing from the last checkpoint of the previous consumer (for shardIterator type TRIM_HORIZON).
+
+So, configuring consumer concurrency is important to achieve throughput.  It can be configured using `spring.cloud.stream.bindings.<channelName>.consumer.concurrency`.
+
+=== Static shard distribution within a single consumer group
+It is possible to evenly distribute shard across all instances within a single consumer group.  This done by configuring:
+
+ - `spring.cloud.stream.instanceCount=` to number of instances
+ - `spring.cloud.stream.instanceIndex=` current instance's index
+
+The only way to achieve HA in this case is that, when an instance processing a particular shard goes down,
+another instance must have `spring.cloud.stream.instanceIndex=` to be the same as the failed instance's index to start processing from those shards.
+
 == Configuration Options
 
 This section contains settings specific to the Kinesis Binder and bound channels.
@@ -81,7 +105,10 @@ It can be superseded by the `partitionCount` setting of the producer or by the v
 +
 Default: `1`
 
-The based on the DynamoDB Checkpoint properties prefixed with `spring.cloud.stream.kinesis.binder.checkpoint.`
+=== MetadataStore
+Support for consumer groups is implemented using https://github.com/spring-projects/spring-integration-aws#metadata-store-for-amazon-dynamodb[DynamoDbMetadataStore].
+
+DynamoDB Checkpoint properties are prefixed with `spring.cloud.stream.kinesis.binder.checkpoint.`
 
 table::
 	The name to give the DynamoDb table
@@ -110,9 +137,17 @@ timeToLive::
 See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html[DynamoDB TTL]
 +
 No default - means no records expiration.
+partitionKey::
+	The partition key name of the table.  This is not configurable.
++
+Value: `KEY`
 
+=== LockRegistry
+LockRegistry is used to ensure exclusive access to each shard so that, only one channel adapter in the
+same consumer group will consumer messages from a single shard in the stream.  This is implemented using
+https://github.com/spring-projects/spring-integration-aws#lock-registry-for-amazon-dynamodb[DynamoDbLockRegistry]
 
-The based on the DynamoDB `LockRegistry` properties prefixed with `spring.cloud.stream.kinesis.binder.locks.`
+DynamoDB `LockRegistry` properties are prefixed with `spring.cloud.stream.kinesis.binder.locks.`
 
 table::
 	The name to give the DynamoDb table
