@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.amazonaws.services.kinesis.model.Shard;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 
 /**
+ * The Kinesis-specific {@link ConsumerDestination} implementation.
+ *
  * @author Artem Bilan
  *
  */
@@ -55,11 +57,8 @@ public final class KinesisConsumerDestination implements ConsumerDestination {
 
 	@Override
 	public String toString() {
-		return "KinesisConsumerDestination{" +
-				"streamName='" + this.streamName + '\'' +
-				", shards=" + this.shards +
-				", dlqName='" + this.dlqName + '\'' +
-				'}';
+		return "KinesisConsumerDestination{" + "streamName='" + this.streamName + '\''
+				+ ", shards=" + this.shards + ", dlqName='" + this.dlqName + '\'' + '}';
 	}
 
 }

@@ -20,6 +20,7 @@ import org.springframework.integration.aws.inbound.kinesis.CheckpointMode;
 import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 
 /**
+ * The Kinesis-specific consumer binding configuration properties.
  *
  * @author Peter Oates
  * @author Jacob Severson

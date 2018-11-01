@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 
 /**
+ * The Kinesis Binder specific configuration properties.
  *
  * @author Peter Oates
  * @author Artem Bilan
@@ -92,6 +93,9 @@ public class KinesisBinderConfigurationProperties {
 		return this.locks;
 	}
 
+	/**
+	 * The checkpoint DynamoDB table configuration properties.
+	 */
 	public static class Checkpoint {
 
 		private String table = DynamoDbMetadataStore.DEFAULT_TABLE_NAME;
@@ -156,6 +160,9 @@ public class KinesisBinderConfigurationProperties {
 
 	}
 
+	/**
+	 * The locks DynamoDB table configuration properties.
+	 */
 	public static class Locks {
 
 		private String table = DynamoDbLockRegistry.DEFAULT_TABLE_NAME;

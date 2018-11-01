@@ -33,12 +33,18 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestSupport;
 
 /**
+ * An {@link AbstractExternalResourceTestSupport} implementation for Kinesis local service.
+ *
  * @author Artem Bilan
  * @author Jacob Severson
  *
  */
-public class LocalKinesisResource extends AbstractExternalResourceTestSupport<AmazonKinesisAsync> {
+public class LocalKinesisResource
+		extends AbstractExternalResourceTestSupport<AmazonKinesisAsync> {
 
+	/**
+	 * The default port for the local Kinesis service.
+	 */
 	public static final int DEFAULT_PORT = 4568;
 
 	private final int port;
@@ -55,17 +61,17 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 	@Override
 	protected void obtainResource() {
 		// See https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk
-		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY, "true");
+		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY,
+				"true");
 
 		this.resource = AmazonKinesisAsyncClientBuilder.standard()
-				.withClientConfiguration(
-						new ClientConfiguration()
-								.withMaxErrorRetry(0)
-								.withConnectionTimeout(1000))
-				.withEndpointConfiguration(
-						new AwsClientBuilder.EndpointConfiguration("http://localhost:" + this.port,
-								Regions.DEFAULT_REGION.getName()))
-				.withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")))
+				.withClientConfiguration(new ClientConfiguration().withMaxErrorRetry(0)
+						.withConnectionTimeout(1000))
+				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
+						"http://localhost:" + this.port,
+						Regions.DEFAULT_REGION.getName()))
+				.withCredentials(
+						new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")))
 				.build();
 
 		// Check connection
@@ -75,13 +81,15 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 	@Override
 	protected void cleanupResource() {
 		ListStreamsRequest listStreamsRequest = new ListStreamsRequest();
-		ListStreamsResult listStreamsResult = this.resource.listStreams(listStreamsRequest);
+		ListStreamsResult listStreamsResult = this.resource
+				.listStreams(listStreamsRequest);
 
 		List<String> streamNames = listStreamsResult.getStreamNames();
 
 		while (listStreamsResult.getHasMoreStreams()) {
 			if (streamNames.size() > 0) {
-				listStreamsRequest.setExclusiveStartStreamName(streamNames.get(streamNames.size() - 1));
+				listStreamsRequest.setExclusiveStartStreamName(
+						streamNames.get(streamNames.size() - 1));
 			}
 			listStreamsResult = this.resource.listStreams(listStreamsRequest);
 			streamNames.addAll(listStreamsResult.getStreamNames());
@@ -95,12 +103,12 @@ public class LocalKinesisResource extends AbstractExternalResourceTestSupport<Am
 					try {
 						Thread.sleep(100);
 					}
-					catch (InterruptedException e) {
+					catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
-						throw new IllegalStateException(e);
+						throw new IllegalStateException(ex);
 					}
 				}
-				catch (ResourceNotFoundException e) {
+				catch (ResourceNotFoundException ex) {
 					break;
 				}
 			}

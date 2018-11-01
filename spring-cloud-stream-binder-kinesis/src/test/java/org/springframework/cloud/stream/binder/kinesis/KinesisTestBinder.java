@@ -40,11 +40,12 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.integration.core.MessageProducer;
 
 /**
+ * An {@link AbstractTestBinder} implementation for the {@link KinesisMessageChannelBinder}.
+ *
  * @author Artem Bilan
  *
  */
-public class KinesisTestBinder
-		extends
+public class KinesisTestBinder extends
 		AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final AmazonKinesisAsync amazonKinesis;
@@ -58,11 +59,11 @@ public class KinesisTestBinder
 
 		this.amazonKinesis = amazonKinesis;
 
-		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(amazonKinesis,
-				kinesisBinderConfigurationProperties);
+		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(
+				amazonKinesis, kinesisBinderConfigurationProperties);
 
-		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(amazonKinesis,
-				kinesisBinderConfigurationProperties,
+		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(
+				amazonKinesis, kinesisBinderConfigurationProperties,
 				provisioningProvider);
 
 		binder.setApplicationContext(this.applicationContext);
@@ -77,13 +78,15 @@ public class KinesisTestBinder
 	@Override
 	public void cleanup() {
 		ListStreamsRequest listStreamsRequest = new ListStreamsRequest();
-		ListStreamsResult listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
+		ListStreamsResult listStreamsResult = this.amazonKinesis
+				.listStreams(listStreamsRequest);
 
 		List<String> streamNames = listStreamsResult.getStreamNames();
 
 		while (listStreamsResult.getHasMoreStreams()) {
 			if (streamNames.size() > 0) {
-				listStreamsRequest.setExclusiveStartStreamName(streamNames.get(streamNames.size() - 1));
+				listStreamsRequest.setExclusiveStartStreamName(
+						streamNames.get(streamNames.size() - 1));
 			}
 			listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
 			streamNames.addAll(listStreamsResult.getStreamNames());
@@ -97,18 +100,21 @@ public class KinesisTestBinder
 					try {
 						Thread.sleep(100);
 					}
-					catch (InterruptedException e) {
+					catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
-						throw new IllegalStateException(e);
+						throw new IllegalStateException(ex);
 					}
 				}
-				catch (ResourceNotFoundException e) {
+				catch (ResourceNotFoundException ex) {
 					break;
 				}
 			}
 		}
 	}
 
+	/**
+	 * Test configuration.
+	 */
 	@EnableBinding
 	static class Config {
 
@@ -119,18 +125,20 @@ public class KinesisTestBinder
 
 	}
 
-	private static class TestKinesisMessageChannelBinder extends KinesisMessageChannelBinder {
+	private static class TestKinesisMessageChannelBinder
+			extends KinesisMessageChannelBinder {
 
 		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
 				KinesisStreamProvisioner provisioningProvider) {
 
-			super(amazonKinesis, kinesisBinderConfigurationProperties, provisioningProvider);
+			super(amazonKinesis, kinesisBinderConfigurationProperties,
+					provisioningProvider);
 		}
 
 		/*
-		 * Some tests use multiple instance indexes for the same topic; we need to make the error
-		 * infrastructure beans unique.
+		 * Some tests use multiple instance indexes for the same topic; we need to make
+		 * the error infrastructure beans unique.
 		 */
 		@Override
 		protected String errorsBaseName(ConsumerDestination destination, String group,
@@ -140,10 +148,12 @@ public class KinesisTestBinder
 		}
 
 		@Override
-		protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group,
+		protected MessageProducer createConsumerEndpoint(ConsumerDestination destination,
+				String group,
 				ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
-			MessageProducer messageProducer = super.createConsumerEndpoint(destination, group, properties);
+			MessageProducer messageProducer = super.createConsumerEndpoint(destination,
+					group, properties);
 			DirectFieldAccessor dfa = new DirectFieldAccessor(messageProducer);
 			dfa.setPropertyValue("describeStreamBackoff", 10);
 			dfa.setPropertyValue("consumerBackoff", 10);

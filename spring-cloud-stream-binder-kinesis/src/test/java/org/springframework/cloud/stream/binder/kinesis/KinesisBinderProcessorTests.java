@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,15 +56,18 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 /**
+ * The tests for the processor SCSt application against local Kinesis and DynamoDB.
+ *
  * @author Artem Bilan
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
-		"spring.cloud.stream.bindings.input.group = " + KinesisBinderProcessorTests.CONSUMER_GROUP,
-		"spring.cloud.stream.bindings." + KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT + ".destination = "
-				+ Processor.INPUT,
+		"spring.cloud.stream.bindings.input.group = "
+				+ KinesisBinderProcessorTests.CONSUMER_GROUP,
+		"spring.cloud.stream.bindings."
+				+ KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT
+				+ ".destination = " + Processor.INPUT,
 		"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
 		"spring.cloud.stream.kinesis.binder.headers = foo",
 		"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
@@ -75,9 +77,15 @@ public class KinesisBinderProcessorTests {
 
 	static final String CONSUMER_GROUP = "testGroup";
 
+	/**
+	 * Class rule for the {@link LocalKinesisResource}.
+	 */
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
 
+	/**
+	 * Class rule for the {@link LocalDynamoDbResource}.
+	 */
 	@ClassRule
 	public static LocalDynamoDbResource localDynamoDbResource = new LocalDynamoDbResource();
 
@@ -97,10 +105,12 @@ public class KinesisBinderProcessorTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testProcessorWithKinesisBinder() throws Exception {
-		Message<String> testMessage = MessageBuilder.withPayload("foo").setHeader("foo", "BAR").build();
+		Message<String> testMessage = MessageBuilder.withPayload("foo")
+				.setHeader("foo", "BAR").build();
 		this.testSource.toProcessorOutput().send(testMessage);
 
-		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel.receive(10_000);
+		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel
+				.receive(10_000);
 		assertThat(receive).isNotNull();
 
 		MessageValues messageValues = EmbeddedHeaderUtils.extractHeaders(receive, true);
@@ -110,7 +120,8 @@ public class KinesisBinderProcessorTests {
 		assertThat(messageValues.getHeaders().get(MessageHeaders.CONTENT_TYPE))
 				.isEqualTo(MediaType.APPLICATION_JSON_VALUE);
 
-		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM)).isEqualTo(Processor.OUTPUT);
+		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM))
+				.isEqualTo(Processor.OUTPUT);
 		assertThat(messageValues.getHeaders().get("foo")).isEqualTo("BAR");
 
 		BlockingQueue<Message<?>> errorMessages = new LinkedBlockingQueue<>();
@@ -129,9 +140,12 @@ public class KinesisBinderProcessorTests {
 
 	}
 
+	/**
+	 * Test configuration.
+	 */
 	@EnableBinding({ Processor.class, TestSource.class })
 	@EnableAutoConfiguration(exclude = ContextResourceLoaderAutoConfiguration.class)
-	public static class ProcessorConfiguration {
+	static class ProcessorConfiguration {
 
 		@Bean(destroyMethod = "")
 		public AmazonDynamoDBAsync dynamoDB() {
@@ -166,7 +180,8 @@ public class KinesisBinderProcessorTests {
 			kinesisMessageDrivenChannelAdapter.setOutputChannel(fromProcessorChannel());
 			kinesisMessageDrivenChannelAdapter.setConverter(null);
 
-			DirectFieldAccessor dfa = new DirectFieldAccessor(kinesisMessageDrivenChannelAdapter);
+			DirectFieldAccessor dfa = new DirectFieldAccessor(
+					kinesisMessageDrivenChannelAdapter);
 			dfa.setPropertyValue("describeStreamBackoff", 10);
 			dfa.setPropertyValue("consumerBackoff", 10);
 			dfa.setPropertyValue("idleBetweenPolls", 1);
@@ -181,6 +196,9 @@ public class KinesisBinderProcessorTests {
 
 	}
 
+	/**
+	 * The SCSt contract for testing.
+	 */
 	interface TestSource {
 
 		String TO_PROCESSOR_OUTPUT = "toProcessorOutput";

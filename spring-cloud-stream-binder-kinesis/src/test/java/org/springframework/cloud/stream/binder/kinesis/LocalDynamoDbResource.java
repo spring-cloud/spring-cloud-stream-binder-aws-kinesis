@@ -32,8 +32,12 @@ import org.springframework.cloud.stream.test.junit.AbstractExternalResourceTestS
  *
  * @author Artem Bilan
  */
-public final class LocalDynamoDbResource extends AbstractExternalResourceTestSupport<AmazonDynamoDBAsync> {
+public final class LocalDynamoDbResource
+		extends AbstractExternalResourceTestSupport<AmazonDynamoDBAsync> {
 
+	/**
+	 * The default port for the local DynamoDB service.
+	 */
 	public static final int DEFAULT_PORT = 4569;
 
 	private final int port;
@@ -52,13 +56,12 @@ public final class LocalDynamoDbResource extends AbstractExternalResourceTestSup
 		String url = "http://localhost:" + this.port;
 
 		this.resource = AmazonDynamoDBAsyncClientBuilder.standard()
-				.withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")))
-				.withClientConfiguration(
-						new ClientConfiguration()
-								.withMaxErrorRetry(0)
-								.withConnectionTimeout(1000))
-				.withEndpointConfiguration(
-						new AwsClientBuilder.EndpointConfiguration(url, Regions.DEFAULT_REGION.getName()))
+				.withCredentials(
+						new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")))
+				.withClientConfiguration(new ClientConfiguration().withMaxErrorRetry(0)
+						.withConnectionTimeout(1000))
+				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(url,
+						Regions.DEFAULT_REGION.getName()))
 				.build();
 
 		this.resource.listTables();
@@ -66,9 +69,7 @@ public final class LocalDynamoDbResource extends AbstractExternalResourceTestSup
 
 	@Override
 	protected void cleanupResource() {
-		this.resource.listTables()
-				.getTableNames()
-				.forEach(this.resource::deleteTable);
+		this.resource.listTables().getTableNames().forEach(this.resource::deleteTable);
 
 		this.resource.shutdown();
 	}

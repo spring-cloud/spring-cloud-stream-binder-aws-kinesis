@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
 import org.springframework.cloud.stream.binder.ExtendedBindingProperties;
 
 /**
- * 
+ * The extended Kinesis-specific binding configuration properties.
+ *
  * @author Peter Oates
+ * @author Artem Bilan
  *
  */
 @ConfigurationProperties("spring.cloud.stream.kinesis")
-public class KinesisExtendedBindingProperties 
-		implements ExtendedBindingProperties<KinesisConsumerProperties, KinesisProducerProperties> {
+public class KinesisExtendedBindingProperties implements
+		ExtendedBindingProperties<KinesisConsumerProperties, KinesisProducerProperties> {
+
+	private static final String DEFAULTS_PREFIX = "spring.cloud.stream.kinesis.default";
 
 	private Map<String, KinesisBindingProperties> bindings = new HashMap<>();
 
@@ -40,10 +45,11 @@ public class KinesisExtendedBindingProperties
 	public void setBindings(Map<String, KinesisBindingProperties> bindings) {
 		this.bindings = bindings;
 	}
-	
+
 	@Override
 	public KinesisConsumerProperties getExtendedConsumerProperties(String channelName) {
-		if (this.bindings.containsKey(channelName) && this.bindings.get(channelName).getConsumer() != null) {
+		if (this.bindings.containsKey(channelName)
+				&& this.bindings.get(channelName).getConsumer() != null) {
 			return this.bindings.get(channelName).getConsumer();
 		}
 		else {
@@ -53,12 +59,23 @@ public class KinesisExtendedBindingProperties
 
 	@Override
 	public KinesisProducerProperties getExtendedProducerProperties(String channelName) {
-		if (this.bindings.containsKey(channelName) && this.bindings.get(channelName).getProducer() != null) {
+		if (this.bindings.containsKey(channelName)
+				&& this.bindings.get(channelName).getProducer() != null) {
 			return this.bindings.get(channelName).getProducer();
 		}
 		else {
 			return new KinesisProducerProperties();
 		}
+	}
+
+	@Override
+	public String getDefaultsPrefix() {
+		return DEFAULTS_PREFIX;
+	}
+
+	@Override
+	public Class<? extends BinderSpecificPropertiesProvider> getExtendedPropertiesEntryClass() {
+		return KinesisBindingProperties.class;
 	}
 
 }
