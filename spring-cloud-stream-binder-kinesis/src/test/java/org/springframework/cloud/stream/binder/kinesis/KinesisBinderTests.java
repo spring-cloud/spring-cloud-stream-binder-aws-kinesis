@@ -240,8 +240,7 @@ public class KinesisBinderTests extends
 			receiveLatch.countDown();
 		};
 
-		DirectChannel input0 = createBindableChannel("test.input0J",
-				new BindingProperties());
+		DirectChannel input0 = createBindableChannelInternal("test.input0J", new BindingProperties(), true);
 		input0.subscribe(receivingHandler);
 
 		Binding<MessageChannel> input0Binding = binder.bindConsumer("partJ.0",
@@ -249,8 +248,7 @@ public class KinesisBinderTests extends
 
 		consumerProperties.setInstanceIndex(1);
 
-		DirectChannel input1 = createBindableChannel("test.input1J",
-				new BindingProperties());
+		DirectChannel input1 = createBindableChannelInternal("test.input1J", new BindingProperties(), true);
 		input1.subscribe(receivingHandler);
 
 		Binding<MessageChannel> input1Binding = binder.bindConsumer("partJ.0",
@@ -258,8 +256,7 @@ public class KinesisBinderTests extends
 
 		consumerProperties.setInstanceIndex(2);
 
-		DirectChannel input2 = createBindableChannel("test.input2J",
-				new BindingProperties());
+		DirectChannel input2 = createBindableChannelInternal("test.input2J", new BindingProperties(), true);
 		input2.subscribe(receivingHandler);
 
 		Binding<MessageChannel> input2Binding = binder.bindConsumer("partJ.0",
@@ -271,8 +268,8 @@ public class KinesisBinderTests extends
 		producerProperties.setPartitionSelectorName("partitionSupport");
 		producerProperties.setPartitionCount(3);
 
-		DirectChannel output = createBindableChannel("test.output",
-				createProducerBindingProperties(producerProperties));
+		DirectChannel output = createBindableChannelInternal("test.output",
+				createProducerBindingProperties(producerProperties), false);
 
 		Binding<MessageChannel> outputBinding = binder.bindProducer("partJ.0", output,
 				producerProperties);
@@ -610,7 +607,7 @@ public class KinesisBinderTests extends
 		return producerProperties;
 	}
 
-	protected DirectChannel createBindableChannel(String channelName,
+	private DirectChannel createBindableChannelInternal(String channelName,
 			BindingProperties bindingProperties, boolean inputChannel) {
 
 		MessageConverterConfigurer messageConverterConfigurer = getBinder()

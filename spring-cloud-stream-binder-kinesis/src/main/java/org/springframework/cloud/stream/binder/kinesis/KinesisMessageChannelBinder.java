@@ -39,19 +39,20 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtende
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsumerDestination;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
-import org.springframework.cloud.stream.binding.MessageConverterConfigurer;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
-import org.springframework.expression.Expression;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageHeaderErrorMessageStrategy;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.channel.ChannelInterceptorAware;
 import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.expression.ExpressionUtils;
 import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.ErrorMessageStrategy;
+import org.springframework.integration.support.MessageBuilder;
 import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -71,7 +72,8 @@ import org.springframework.util.StringUtils;
  *
  */
 public class KinesisMessageChannelBinder extends
-		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
+		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>,
+				ExtendedProducerProperties<KinesisProducerProperties>, KinesisStreamProvisioner>
 		implements
 		ExtendedPropertiesBinder<MessageChannel, KinesisConsumerProperties, KinesisProducerProperties> {
 
@@ -86,6 +88,9 @@ public class KinesisMessageChannelBinder extends
 	private ConcurrentMetadataStore checkpointStore;
 
 	private LockRegistry lockRegistry;
+
+	private EvaluationContext evaluationContext;
+
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			KinesisBinderConfigurationProperties configurationProperties,
@@ -131,6 +136,12 @@ public class KinesisMessageChannelBinder extends
 	}
 
 	@Override
+	protected void onInit() throws Exception {
+		super.onInit();
+		this.evaluationContext = ExpressionUtils.createStandardEvaluationContext(getBeanFactory());
+	}
+
+	@Override
 	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties,
 			MessageChannel errorChannel) {
@@ -141,15 +152,11 @@ public class KinesisMessageChannelBinder extends
 		kinesisMessageHandler
 				.setSendTimeout(producerProperties.getExtension().getSendTimeout());
 		kinesisMessageHandler.setStream(destination.getName());
-		Expression partitionKeyExpression = producerProperties
-				.getPartitionKeyExpression();
-		if (partitionKeyExpression != null) {
-			kinesisMessageHandler.setPartitionKeyExpression(partitionKeyExpression);
-		}
-		else {
-			kinesisMessageHandler.setPartitionKeyExpression(
-					new FunctionExpression<Message<?>>((m) -> m.getPayload().hashCode()));
-		}
+		kinesisMessageHandler.setPartitionKeyExpression(
+				new FunctionExpression<Message<?>>((m) ->
+						m.getHeaders().containsKey(BinderHeaders.PARTITION_HEADER)
+								? m.getHeaders().get(BinderHeaders.PARTITION_HEADER)
+								: m.getPayload().hashCode()));
 		kinesisMessageHandler.setFailureChannel(errorChannel);
 		kinesisMessageHandler.setBeanFactory(getBeanFactory());
 
@@ -160,16 +167,21 @@ public class KinesisMessageChannelBinder extends
 	protected void postProcessOutputChannel(MessageChannel outputChannel,
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties) {
 
-		if (outputChannel instanceof ChannelInterceptorAware) {
-			ChannelInterceptorAware channelInterceptorAware = (ChannelInterceptorAware) outputChannel;
-			List<ChannelInterceptor> channelInterceptors = channelInterceptorAware
-					.getChannelInterceptors();
-			for (ChannelInterceptor channelInterceptor : channelInterceptors) {
-				if (channelInterceptor instanceof MessageConverterConfigurer.PartitioningInterceptor) {
-					channelInterceptorAware.removeInterceptor(channelInterceptor);
-					break;
-				}
-			}
+		if (outputChannel instanceof ChannelInterceptorAware && producerProperties.isPartitioned()) {
+			((ChannelInterceptorAware) outputChannel).addInterceptor(0,
+					new ChannelInterceptor() {
+
+						@Override
+						public Message<?> preSend(Message<?> message, MessageChannel channel) {
+							Object partitionKey =
+									producerProperties.getPartitionKeyExpression()
+									.getValue(KinesisMessageChannelBinder.this.evaluationContext, message);
+							return MessageBuilder.fromMessage(message)
+									.setHeader(BinderHeaders.PARTITION_OVERRIDE, partitionKey)
+									.build();
+						}
+
+					});
 		}
 	}
 
