@@ -25,6 +25,8 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.aws.autoconfigure.context.ContextCredentialsAutoConfiguration;
+import org.springframework.cloud.aws.autoconfigure.context.ContextRegionProviderAutoConfiguration;
 import org.springframework.cloud.aws.core.region.RegionProvider;
 import org.springframework.cloud.stream.binder.Binder;
 import org.springframework.cloud.stream.binder.kinesis.KinesisMessageChannelBinder;
@@ -33,6 +35,7 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtende
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
@@ -49,6 +52,7 @@ import org.springframework.integration.support.locks.LockRegistry;
 @ConditionalOnMissingBean(Binder.class)
 @EnableConfigurationProperties({ KinesisBinderConfigurationProperties.class,
 		KinesisExtendedBindingProperties.class })
+@Import({ ContextCredentialsAutoConfiguration.class, ContextRegionProviderAutoConfiguration.class })
 public class KinesisBinderConfiguration {
 
 	@Autowired
