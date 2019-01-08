@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,13 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsume
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
+import org.springframework.cloud.stream.provisioning.ProvisioningException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +55,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Jacob Severson
  * @author Artem Bilan
+ * @author Sergiu Pantiru
  */
 public class KinesisStreamProvisionerTests {
 
@@ -255,6 +259,41 @@ public class KinesisStreamProvisionerTests {
 		return new DescribeStreamResult().withStreamDescription(new StreamDescription()
 				.withShards(shards).withStreamStatus(StreamStatus.ACTIVE)
 				.withHasMoreShards(Boolean.FALSE));
+	}
+
+	@Test
+	public void testProvisionConsumerResourceNotFoundException() {
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
+		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
+		binderProperties.setAutoCreateStream(false);
+		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
+				amazonKinesisMock, binderProperties);
+		int instanceCount = 1;
+		int concurrency = 1;
+
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+				new KinesisConsumerProperties());
+		extendedConsumerProperties.setInstanceCount(instanceCount);
+		extendedConsumerProperties.setConcurrency(concurrency);
+
+		String name = "test-stream";
+		String group = "test-group";
+
+		when(amazonKinesisMock.describeStream(any(DescribeStreamRequest.class)))
+				.thenThrow(new ResourceNotFoundException("Stream not found"));
+
+		assertThatThrownBy(() -> provisioner.provisionConsumerDestination(name, group,
+				extendedConsumerProperties))
+						.isInstanceOf(ProvisioningException.class)
+						.hasMessageContaining(
+								"The stream [test-stream] was not found and auto creation is disabled.")
+						.hasCauseInstanceOf(ResourceNotFoundException.class);
+
+		verify(amazonKinesisMock, times(1))
+				.describeStream(any(DescribeStreamRequest.class));
+
+		verify(amazonKinesisMock, never()).createStream(name,
+				instanceCount * concurrency);
 	}
 
 }

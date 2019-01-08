@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.springframework.util.Assert;
  * @author Peter Oates
  * @author Artem Bilan
  * @author Jacob Severson
+ * @author Sergiu Pantiru
  *
  */
 public class KinesisStreamProvisioner implements
@@ -139,6 +140,12 @@ public class KinesisStreamProvisioner implements
 				}
 			}
 			catch (ResourceNotFoundException ex) {
+				if (!this.configurationProperties.isAutoCreateStream()) {
+					throw new ProvisioningException(
+							"The stream [" + stream
+									+ "] was not found and auto creation is disabled.",
+							ex);
+				}
 				if (logger.isInfoEnabled()) {
 					logger.info("Stream '" + stream + "' not found. Create one...");
 				}

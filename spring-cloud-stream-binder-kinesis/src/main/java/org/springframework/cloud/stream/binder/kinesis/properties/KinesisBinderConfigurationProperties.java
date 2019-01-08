@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
  * @author Peter Oates
  * @author Artem Bilan
  * @author Jacob Severson
+ * @author Sergiu Pantiru
  *
  */
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
@@ -36,6 +37,8 @@ public class KinesisBinderConfigurationProperties {
 	private int describeStreamBackoff = 1000;
 
 	private int describeStreamRetries = 50;
+
+	private boolean autoCreateStream = true;
 
 	private boolean autoAddShards = false;
 
@@ -91,6 +94,14 @@ public class KinesisBinderConfigurationProperties {
 
 	public Locks getLocks() {
 		return this.locks;
+	}
+
+	public boolean isAutoCreateStream() {
+		return this.autoCreateStream;
+	}
+
+	public void setAutoCreateStream(boolean autoCreateStream) {
+		this.autoCreateStream = autoCreateStream;
 	}
 
 	/**
