@@ -95,9 +95,9 @@ public class KinesisBinderConfigurationProperties {
 		return this.locks;
 	}
 
-    public boolean isAutoCreateStream() {
-        return autoCreateStream;
-    }
+	public boolean isAutoCreateStream() {
+		return this.autoCreateStream;
+	}
 
 	public void setAutoCreateStream(boolean autoCreateStream) {
 		this.autoCreateStream = autoCreateStream;
