@@ -141,8 +141,10 @@ public class KinesisStreamProvisioner implements
 			}
 			catch (ResourceNotFoundException ex) {
 				if (!this.configurationProperties.isAutoCreateStream()) {
-					throw new ProvisioningException("The stream [" + stream
-							+ "] was not found. Auto creation is disabled (autoCreateStream=false)", ex);
+					throw new ProvisioningException(
+							"The stream [" + stream
+									+ "] was not found and auto creation is disabled.",
+							ex);
 				}
 				if (logger.isInfoEnabled()) {
 					logger.info("Stream '" + stream + "' not found. Create one...");

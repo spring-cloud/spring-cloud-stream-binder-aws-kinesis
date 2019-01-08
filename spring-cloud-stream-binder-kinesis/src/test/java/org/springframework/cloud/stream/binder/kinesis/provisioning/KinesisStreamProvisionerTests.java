@@ -286,7 +286,7 @@ public class KinesisStreamProvisionerTests {
 				extendedConsumerProperties))
 						.isInstanceOf(ProvisioningException.class)
 						.hasMessageContaining(
-								"The stream [test-stream] was not found. Auto creation is disabled (autoCreateStream=false)")
+								"The stream [test-stream] was not found and auto creation is disabled.")
 						.hasCauseInstanceOf(ResourceNotFoundException.class);
 
 		verify(amazonKinesisMock, times(1))
