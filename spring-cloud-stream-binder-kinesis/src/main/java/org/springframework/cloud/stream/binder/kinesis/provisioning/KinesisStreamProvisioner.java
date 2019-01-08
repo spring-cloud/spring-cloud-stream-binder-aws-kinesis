@@ -139,6 +139,9 @@ public class KinesisStreamProvisioner implements
 				}
 			}
 			catch (ResourceNotFoundException ex) {
+				if (!this.configurationProperties.isAutoCreateStream()) {
+					throw ex;
+				}
 				if (logger.isInfoEnabled()) {
 					logger.info("Stream '" + stream + "' not found. Create one...");
 				}

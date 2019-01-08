@@ -94,6 +94,11 @@ describeStreamRetries::
   The amount of times the consumer will retry a `DescribeStream` operation waiting for the stream to be in `ACTIVE` state
 +
 Default: `50`.
+autoCreateStream::
+    If set to `true`, the binder will create the stream automatically.
+If set to `false`, the binder will rely on the stream being already created.
++
+Default: `true`
 autoAddShards::
     If set to `true`, the binder will create new shards automatically.
 If set to `false`, the binder will rely on the shard size of the stream being already configured.

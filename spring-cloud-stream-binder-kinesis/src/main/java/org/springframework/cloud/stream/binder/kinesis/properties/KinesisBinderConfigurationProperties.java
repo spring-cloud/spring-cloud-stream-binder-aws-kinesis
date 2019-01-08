@@ -37,6 +37,8 @@ public class KinesisBinderConfigurationProperties {
 
 	private int describeStreamRetries = 50;
 
+	private boolean autoCreateStream = true;
+
 	private boolean autoAddShards = false;
 
 	private int minShardCount = 1;
@@ -91,6 +93,14 @@ public class KinesisBinderConfigurationProperties {
 
 	public Locks getLocks() {
 		return this.locks;
+	}
+
+    public boolean isAutoCreateStream() {
+        return autoCreateStream;
+    }
+
+	public void setAutoCreateStream(boolean autoCreateStream) {
+		this.autoCreateStream = autoCreateStream;
 	}
 
 	/**

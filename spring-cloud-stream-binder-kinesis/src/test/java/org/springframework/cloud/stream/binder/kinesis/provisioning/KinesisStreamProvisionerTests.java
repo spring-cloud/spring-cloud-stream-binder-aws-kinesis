@@ -44,6 +44,7 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -255,6 +256,42 @@ public class KinesisStreamProvisionerTests {
 		return new DescribeStreamResult().withStreamDescription(new StreamDescription()
 				.withShards(shards).withStreamStatus(StreamStatus.ACTIVE)
 				.withHasMoreShards(Boolean.FALSE));
+	}
+
+	@Test(expected = ResourceNotFoundException.class)
+	public void testProvisionConsumerResourceNotFoundException() {
+		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
+		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
+		binderProperties.setAutoCreateStream(false);
+		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
+				amazonKinesisMock, binderProperties);
+		int instanceCount = 1;
+		int concurrency = 1;
+
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+				new KinesisConsumerProperties());
+		extendedConsumerProperties.setInstanceCount(instanceCount);
+		extendedConsumerProperties.setConcurrency(concurrency);
+
+		String name = "test-stream";
+		String group = "test-group";
+
+		when(amazonKinesisMock.describeStream(any(DescribeStreamRequest.class)))
+				.thenThrow(new ResourceNotFoundException("Stream not found"));
+
+		try {
+			provisioner.provisionConsumerDestination(name, group,
+					extendedConsumerProperties);
+		}
+		catch (ResourceNotFoundException ex) {
+			verify(amazonKinesisMock, times(1))
+					.describeStream(any(DescribeStreamRequest.class));
+
+			verify(amazonKinesisMock, never()).createStream(name,
+					instanceCount * concurrency);
+			throw ex;
+		}
+
 	}
 
 }
