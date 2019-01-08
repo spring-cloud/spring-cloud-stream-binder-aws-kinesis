@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,10 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsume
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisProducerProperties;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
+import org.springframework.cloud.stream.provisioning.ProvisioningException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -53,6 +55,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Jacob Severson
  * @author Artem Bilan
+ * @author Sergiu Pantiru
  */
 public class KinesisStreamProvisionerTests {
 
@@ -258,7 +261,7 @@ public class KinesisStreamProvisionerTests {
 				.withHasMoreShards(Boolean.FALSE));
 	}
 
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void testProvisionConsumerResourceNotFoundException() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
@@ -279,19 +282,18 @@ public class KinesisStreamProvisionerTests {
 		when(amazonKinesisMock.describeStream(any(DescribeStreamRequest.class)))
 				.thenThrow(new ResourceNotFoundException("Stream not found"));
 
-		try {
-			provisioner.provisionConsumerDestination(name, group,
-					extendedConsumerProperties);
-		}
-		catch (ResourceNotFoundException ex) {
-			verify(amazonKinesisMock, times(1))
-					.describeStream(any(DescribeStreamRequest.class));
+		assertThatThrownBy(() -> provisioner.provisionConsumerDestination(name, group,
+				extendedConsumerProperties))
+						.isInstanceOf(ProvisioningException.class)
+						.hasMessageContaining(
+								"The stream [test-stream] was not found. Auto creation is disabled (autoCreateStream=false)")
+						.hasCauseInstanceOf(ResourceNotFoundException.class);
 
-			verify(amazonKinesisMock, never()).createStream(name,
-					instanceCount * concurrency);
-			throw ex;
-		}
+		verify(amazonKinesisMock, times(1))
+				.describeStream(any(DescribeStreamRequest.class));
 
+		verify(amazonKinesisMock, never()).createStream(name,
+				instanceCount * concurrency);
 	}
 
 }
