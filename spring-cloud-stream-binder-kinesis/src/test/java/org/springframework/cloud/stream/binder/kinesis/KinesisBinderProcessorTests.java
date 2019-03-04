@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.aws.autoconfigure.context.ContextResourceLoaderAutoConfiguration;
+import org.springframework.cloud.aws.autoconfigure.context.ContextStackAutoConfiguration;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.cloud.stream.binder.EmbeddedHeaderUtils;
@@ -144,7 +145,7 @@ public class KinesisBinderProcessorTests {
 	 * Test configuration.
 	 */
 	@EnableBinding({ Processor.class, TestSource.class })
-	@EnableAutoConfiguration(exclude = ContextResourceLoaderAutoConfiguration.class)
+	@EnableAutoConfiguration(exclude = { ContextResourceLoaderAutoConfiguration.class, ContextStackAutoConfiguration.class })
 	static class ProcessorConfiguration {
 
 		@Bean(destroyMethod = "")
