@@ -54,7 +54,8 @@ import org.springframework.util.Assert;
  *
  */
 public class KinesisStreamProvisioner implements
-		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
+		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
+				ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private static final Log logger = LogFactory.getLog(KinesisStreamProvisioner.class);
 
