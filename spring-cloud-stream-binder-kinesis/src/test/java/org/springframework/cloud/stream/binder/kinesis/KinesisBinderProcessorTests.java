@@ -162,8 +162,8 @@ public class KinesisBinderProcessorTests {
 		}
 
 		@Transformer(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)
-		public String transform(Message<?> message) {
-			String payload = new String((byte[]) message.getPayload());
+		public String transform(Message<String> message) {
+			String payload = message.getPayload();
 			if (!"junk".equals(payload)) {
 				return payload.toUpperCase();
 			}

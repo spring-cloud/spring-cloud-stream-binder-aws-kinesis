@@ -27,12 +27,12 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
  * @author Artem Bilan
  * @author Jacob Severson
  * @author Sergiu Pantiru
- *
+ * @author Arnaud Lecollaire
  */
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
 
-	private String[] headers = new String[] {};
+	private String[] headers = new String[] { };
 
 	private int describeStreamBackoff = 1000;
 
@@ -43,6 +43,11 @@ public class KinesisBinderConfigurationProperties {
 	private boolean autoAddShards = false;
 
 	private int minShardCount = 1;
+
+	/**
+	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and production.
+	 */
+	private boolean kplKclEnabled;
 
 	private final Checkpoint checkpoint = new Checkpoint();
 
@@ -104,6 +109,14 @@ public class KinesisBinderConfigurationProperties {
 		this.autoCreateStream = autoCreateStream;
 	}
 
+	public boolean isKplKclEnabled() {
+		return this.kplKclEnabled;
+	}
+
+	public void setKplKclEnabled(boolean kplKclEnabled) {
+		this.kplKclEnabled = kplKclEnabled;
+	}
+
 	/**
 	 * The checkpoint DynamoDB table configuration properties.
 	 */
@@ -120,6 +133,11 @@ public class KinesisBinderConfigurationProperties {
 		private int createRetries = 25;
 
 		private Integer timeToLive;
+
+		/**
+		 * Interval between two checkpoints when checkpoint mode is periodic.
+		 */
+		private Long interval;
 
 		public String getTable() {
 			return this.table;
@@ -167,6 +185,14 @@ public class KinesisBinderConfigurationProperties {
 
 		public void setTimeToLive(Integer timeToLive) {
 			this.timeToLive = timeToLive;
+		}
+
+		public Long getInterval() {
+			return this.interval;
+		}
+
+		public void setInterval(Long interval) {
+			this.interval = interval;
 		}
 
 	}

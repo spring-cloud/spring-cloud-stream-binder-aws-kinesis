@@ -18,6 +18,9 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.List;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.ListStreamsRequest;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
@@ -43,7 +46,7 @@ import org.springframework.integration.core.MessageProducer;
  * An {@link AbstractTestBinder} implementation for the {@link KinesisMessageChannelBinder}.
  *
  * @author Artem Bilan
- *
+ * @author Arnaud Lecollaire
  */
 public class KinesisTestBinder extends
 		AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -53,7 +56,7 @@ public class KinesisTestBinder extends
 
 	private final GenericApplicationContext applicationContext;
 
-	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis,
+	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis, AmazonDynamoDBAsync dynamoDbClient,
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 
 		this.applicationContext = new AnnotationConfigApplicationContext(Config.class);
@@ -64,7 +67,7 @@ public class KinesisTestBinder extends
 				amazonKinesis, kinesisBinderConfigurationProperties);
 
 		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(
-				amazonKinesis, kinesisBinderConfigurationProperties,
+				amazonKinesis, dynamoDbClient, kinesisBinderConfigurationProperties,
 				provisioningProvider);
 
 		binder.setApplicationContext(this.applicationContext);
@@ -130,11 +133,12 @@ public class KinesisTestBinder extends
 			extends KinesisMessageChannelBinder {
 
 		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
+				AmazonDynamoDBAsync dynamoDbClient,
 				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
 				KinesisStreamProvisioner provisioningProvider) {
 
-			super(amazonKinesis, kinesisBinderConfigurationProperties,
-					provisioningProvider);
+			super(amazonKinesis, null, dynamoDbClient, kinesisBinderConfigurationProperties,
+					provisioningProvider, new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")));
 		}
 
 		/*

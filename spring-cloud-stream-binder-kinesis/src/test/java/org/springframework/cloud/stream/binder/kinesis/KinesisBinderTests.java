@@ -84,7 +84,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author Artem Bilan
  * @author Jacob Severson
- *
+ * @author Arnaud Lecollaire
  */
 public class KinesisBinderTests extends
 		PartitionCapableBinderTests<KinesisTestBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -98,6 +98,12 @@ public class KinesisBinderTests extends
 	 */
 	@ClassRule
 	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
+
+	/**
+	 * Class rule for the {@link LocalDynamoDbResource}.
+	 */
+	@ClassRule
+	public static LocalDynamoDbResource localDynamoDbResource = new LocalDynamoDbResource();
 
 	public KinesisBinderTests() {
 		this.timeoutMultiplier = 10D;
@@ -581,6 +587,7 @@ public class KinesisBinderTests extends
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 		if (this.testBinder == null) {
 			this.testBinder = new KinesisTestBinder(localKinesisResource.getResource(),
+					localDynamoDbResource.getResource(),
 					kinesisBinderConfigurationProperties);
 			this.timeoutMultiplier = 20;
 		}

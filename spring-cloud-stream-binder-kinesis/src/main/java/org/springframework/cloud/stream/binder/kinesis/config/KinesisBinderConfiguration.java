@@ -17,13 +17,19 @@
 package org.springframework.cloud.stream.binder.kinesis.config;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.aws.autoconfigure.context.ContextCredentialsAutoConfiguration;
 import org.springframework.cloud.aws.autoconfigure.context.ContextRegionProviderAutoConfiguration;
@@ -46,7 +52,7 @@ import org.springframework.integration.support.locks.LockRegistry;
  *
  * @author Peter Oates
  * @author Artem Bilan
- *
+ * @author Arnaud Lecollaire
  */
 @Configuration
 @ConditionalOnMissingBean(Binder.class)
@@ -77,18 +83,34 @@ public class KinesisBinderConfiguration {
 	@Bean
 	public KinesisMessageChannelBinder kinesisMessageChannelBinder(
 			AmazonKinesisAsync amazonKinesis,
+			AmazonDynamoDB dynamoDBClient,
 			KinesisStreamProvisioner provisioningProvider,
 			ConcurrentMetadataStore kinesisCheckpointStore, LockRegistry lockRegistry,
-			KinesisExtendedBindingProperties kinesisExtendedBindingProperties) {
+			KinesisExtendedBindingProperties kinesisExtendedBindingProperties,
+			AWSCredentialsProvider awsCredentialsProvider,
+			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
+			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration) {
 
-		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(
-				amazonKinesis, this.configurationProperties, provisioningProvider);
+		KinesisMessageChannelBinder kinesisMessageChannelBinder =
+				new KinesisMessageChannelBinder(amazonKinesis, cloudWatchClient, dynamoDBClient,
+				this.configurationProperties, provisioningProvider, awsCredentialsProvider);
 		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
 		kinesisMessageChannelBinder.setLockRegistry(lockRegistry);
-		kinesisMessageChannelBinder
-				.setExtendedBindingProperties(kinesisExtendedBindingProperties);
+		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
+		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
 
 		return kinesisMessageChannelBinder;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
+	public AmazonCloudWatchAsync cloudWatch(AWSCredentialsProvider awsCredentialsProvider,
+			RegionProvider regionProvider) {
+
+		return AmazonCloudWatchAsyncClientBuilder.standard()
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(regionProvider.getRegion().getName()).build();
 	}
 
 	@Bean
@@ -140,4 +162,12 @@ public class KinesisBinderConfiguration {
 		return kinesisCheckpointStore;
 	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
+	public KinesisProducerConfiguration kinesisProducerConfiguration(RegionProvider regionProvider) {
+		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
+		kinesisProducerConfiguration.setRegion(regionProvider.getRegion().getName());
+		return kinesisProducerConfiguration;
+	}
 }

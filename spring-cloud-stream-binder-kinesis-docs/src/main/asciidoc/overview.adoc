@@ -111,6 +111,10 @@ The minimum number of shards that the binder will configure on the stream from w
 It can be superseded by the `partitionCount` setting of the producer or by the value of `instanceCount * concurrency` settings of the producer (if either is larger)
 +
 Default: `1`
+kplKclEnabled::
+    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl-v2.html[KCL] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[KPL] for all message consumption and production
++
+Default: `false`
 
 === MetadataStore
 Support for consumer groups is implemented using https://github.com/spring-projects/spring-integration-aws#metadata-store-for-amazon-dynamodb[DynamoDbMetadataStore].
