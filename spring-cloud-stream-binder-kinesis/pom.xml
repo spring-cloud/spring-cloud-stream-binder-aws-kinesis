@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.cloud</groupId>
 		<artifactId>spring-cloud-stream-binder-kinesis-parent</artifactId>
-		<version>1.1.1.BUILD-SNAPSHOT</version>
+		<version>1.2.0.BUILD-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>spring-cloud-stream-binder-kinesis</artifactId>
@@ -14,8 +14,23 @@
 	<name>spring-cloud-stream-binder-kinesis</name>
 	<description>AWS Kinesis Binder Implementation</description>
 
-
+	<properties>
+		<amazon-kinesis-client.version>1.9.3</amazon-kinesis-client.version>
+		<amazon-kinesis-producer.version>0.12.11</amazon-kinesis-producer.version>
+	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>amazon-kinesis-client</artifactId>
+			<scope>compile</scope>
+			<version>${amazon-kinesis-client.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>amazon-kinesis-producer</artifactId>
+			<scope>compile</scope>
+			<version>${amazon-kinesis-producer.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.integration</groupId>
 			<artifactId>spring-integration-aws</artifactId>

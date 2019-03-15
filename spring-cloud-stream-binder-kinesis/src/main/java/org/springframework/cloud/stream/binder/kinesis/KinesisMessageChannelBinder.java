@@ -23,9 +23,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
@@ -41,11 +47,15 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsu
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.expression.EvaluationContext;
+import org.springframework.integration.aws.inbound.kinesis.KclMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageHeaderErrorMessageStrategy;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
+import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
+import org.springframework.integration.aws.outbound.KplMessageHandler;
 import org.springframework.integration.channel.ChannelInterceptorAware;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.expression.ExpressionUtils;
@@ -69,7 +79,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Peter Oates
  * @author Artem Bilan
- *
+ * @author Arnaud Lecollaire
  */
 public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -85,21 +95,38 @@ public class KinesisMessageChannelBinder extends
 
 	private final AmazonKinesisAsync amazonKinesis;
 
+	private final AmazonCloudWatch cloudWatchClient;
+
+	private final AmazonDynamoDB dynamoDBClient;
+
 	private ConcurrentMetadataStore checkpointStore;
 
 	private LockRegistry lockRegistry;
 
 	private EvaluationContext evaluationContext;
 
+	private KinesisProducerConfiguration kinesisProducerConfiguration;
+
+	private final AWSCredentialsProvider awsCredentialsProvider;
+
+	private TaskExecutor kclTaskExecutor;
 
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
+			AmazonCloudWatch cloudWatchClient,
+			AmazonDynamoDB dynamoDBClient,
 			KinesisBinderConfigurationProperties configurationProperties,
-			KinesisStreamProvisioner provisioningProvider) {
+			KinesisStreamProvisioner provisioningProvider,
+			AWSCredentialsProvider awsCredentialsProvider) {
 
 		super(headersToMap(configurationProperties), provisioningProvider);
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
+		Assert.notNull(dynamoDBClient, "'dynamoDBClient' must not be null");
+		Assert.notNull(awsCredentialsProvider, "'awsCredentialsProvider' must not be null");
 		this.configurationProperties = configurationProperties;
 		this.amazonKinesis = amazonKinesis;
+		this.cloudWatchClient = cloudWatchClient;
+		this.dynamoDBClient = dynamoDBClient;
+		this.awsCredentialsProvider = awsCredentialsProvider;
 	}
 
 	public void setExtendedBindingProperties(
@@ -113,6 +140,14 @@ public class KinesisMessageChannelBinder extends
 
 	public void setLockRegistry(LockRegistry lockRegistry) {
 		this.lockRegistry = lockRegistry;
+	}
+
+	public void setKinesisProducerConfiguration(KinesisProducerConfiguration kinesisProducerConfiguration) {
+		this.kinesisProducerConfiguration = kinesisProducerConfiguration;
+	}
+
+	public void setKclTaskExecutor(TaskExecutor kclTaskExecutor) {
+		this.kclTaskExecutor = kclTaskExecutor;
 	}
 
 	@Override
@@ -146,21 +181,40 @@ public class KinesisMessageChannelBinder extends
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties,
 			MessageChannel errorChannel) {
 
-		KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(
-				this.amazonKinesis);
-		kinesisMessageHandler.setSync(producerProperties.getExtension().isSync());
-		kinesisMessageHandler
-				.setSendTimeout(producerProperties.getExtension().getSendTimeout());
-		kinesisMessageHandler.setStream(destination.getName());
-		kinesisMessageHandler.setPartitionKeyExpression(
-				new FunctionExpression<Message<?>>((m) ->
-						m.getHeaders().containsKey(BinderHeaders.PARTITION_HEADER)
-								? m.getHeaders().get(BinderHeaders.PARTITION_HEADER)
-								: m.getPayload().hashCode()));
-		kinesisMessageHandler.setFailureChannel(errorChannel);
-		kinesisMessageHandler.setBeanFactory(getBeanFactory());
+		FunctionExpression<Message<?>> partitionKeyExpression = new FunctionExpression<Message<?>>((m) ->
+			m.getHeaders().containsKey(BinderHeaders.PARTITION_HEADER)
+				? m.getHeaders().get(BinderHeaders.PARTITION_HEADER)
+				: m.getPayload().hashCode());
+		final AbstractAwsMessageHandler<?> messageHandler;
+		if (this.configurationProperties.isKplKclEnabled()) {
+			messageHandler = createKplMessageHandler(destination, partitionKeyExpression);
+		}
+		else {
+			messageHandler = createKinesisMessageHandler(destination, partitionKeyExpression);
+		}
+		messageHandler.setSync(producerProperties.getExtension().isSync());
+		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
+		messageHandler.setFailureChannel(errorChannel);
+		messageHandler.setBeanFactory(getBeanFactory());
+		return messageHandler;
+	}
 
-		return kinesisMessageHandler;
+	private AbstractAwsMessageHandler<?> createKinesisMessageHandler(ProducerDestination destination,
+			FunctionExpression<Message<?>> partitionKeyExpression) {
+		final KinesisMessageHandler messageHandler;
+		messageHandler = new KinesisMessageHandler(this.amazonKinesis);
+		messageHandler.setStream(destination.getName());
+		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
+		return messageHandler;
+	}
+
+	private AbstractAwsMessageHandler<?> createKplMessageHandler(ProducerDestination destination,
+			FunctionExpression<Message<?>> partitionKeyExpression) {
+		final KplMessageHandler messageHandler;
+		messageHandler = new KplMessageHandler(new KinesisProducer(this.kinesisProducerConfiguration));
+		messageHandler.setStream(destination.getName());
+		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
+		return messageHandler;
 	}
 
 	@Override
@@ -190,6 +244,18 @@ public class KinesisMessageChannelBinder extends
 			String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
+		MessageProducer adapter;
+		if (this.configurationProperties.isKplKclEnabled()) {
+			adapter = createKclConsumerEndpoint(destination, group, properties);
+		}
+		else {
+			adapter = createKinesisConsumerEndpoint(destination, group, properties);
+		}
+		return adapter;
+	}
+
+	private MessageProducer createKinesisConsumerEndpoint(ConsumerDestination destination, String group,
+			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
 		Set<KinesisShardOffset> shardOffsets = null;
@@ -280,6 +346,37 @@ public class KinesisMessageChannelBinder extends
 
 		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination,
 				consumerGroup, properties);
+		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
+		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
+
+		return adapter;
+	}
+
+	private MessageProducer createKclConsumerEndpoint(ConsumerDestination destination, String group,
+			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
+		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
+
+		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
+
+		KclMessageDrivenChannelAdapter adapter = new KclMessageDrivenChannelAdapter(
+			destination.getName(), this.amazonKinesis, this.cloudWatchClient, this.dynamoDBClient, awsCredentialsProvider);
+		adapter.setExecutor(kclTaskExecutor);
+
+		boolean anonymous = !StringUtils.hasText(group);
+		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID().toString() : group;
+		adapter.setConsumerGroup(consumerGroup);
+
+		if (StringUtils.hasText(shardIteratorType)) {
+			adapter.setStreamInitialSequence(InitialPositionInStream.valueOf(shardIteratorType));
+		}
+
+		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
+		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
+		if (this.configurationProperties.getCheckpoint().getInterval() != null) {
+			adapter.setCheckpointsInterval(this.configurationProperties.getCheckpoint().getInterval());
+		}
+
+		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
 

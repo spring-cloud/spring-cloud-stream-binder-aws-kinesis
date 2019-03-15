@@ -27,7 +27,7 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
  * @author Artem Bilan
  * @author Jacob Severson
  * @author Sergiu Pantiru
- *
+ * @author Arnaud Lecollaire
  */
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
@@ -43,6 +43,8 @@ public class KinesisBinderConfigurationProperties {
 	private boolean autoAddShards = false;
 
 	private int minShardCount = 1;
+
+	private boolean kplKclEnabled;
 
 	private final Checkpoint checkpoint = new Checkpoint();
 
@@ -104,6 +106,14 @@ public class KinesisBinderConfigurationProperties {
 		this.autoCreateStream = autoCreateStream;
 	}
 
+	public boolean isKplKclEnabled() {
+		return this.kplKclEnabled;
+	}
+
+	public void setKplKclEnabled(boolean kplKclEnabled) {
+		this.kplKclEnabled = kplKclEnabled;
+	}
+
 	/**
 	 * The checkpoint DynamoDB table configuration properties.
 	 */
@@ -120,6 +130,8 @@ public class KinesisBinderConfigurationProperties {
 		private int createRetries = 25;
 
 		private Integer timeToLive;
+
+		private Long interval = null;
 
 		public String getTable() {
 			return this.table;
@@ -167,6 +179,14 @@ public class KinesisBinderConfigurationProperties {
 
 		public void setTimeToLive(Integer timeToLive) {
 			this.timeToLive = timeToLive;
+		}
+
+		public Long getInterval() {
+			return this.interval;
+		}
+
+		public void setInterval(Long interval) {
+			this.interval = interval;
 		}
 
 	}
