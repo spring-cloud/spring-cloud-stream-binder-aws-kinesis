@@ -330,6 +330,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setRecordsLimit(kinesisConsumerProperties.getRecordsLimit());
 		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
+		adapter.setCheckpointsInterval(this.configurationProperties.getCheckpoint().getInterval());
 
 		if (this.checkpointStore != null) {
 			adapter.setCheckpointStore(this.checkpointStore);

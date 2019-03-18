@@ -43,7 +43,6 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
@@ -93,7 +92,7 @@ public class KinesisBinderConfiguration {
 			KinesisExtendedBindingProperties kinesisExtendedBindingProperties,
 			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
 			AWSCredentialsProvider awsCredentialsProvider,
-			@Autowired(required = false) @Qualifier("kclTaskExecutor") TaskExecutor kclTaskExecutor) {
+			@Autowired(required = false) @Qualifier("taskScheduler") TaskExecutor kclTaskExecutor) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(
 				amazonKinesis, cloudWatchClient, dynamoDBClient,
@@ -177,11 +176,11 @@ public class KinesisBinderConfiguration {
 		return kinesisProducerConfiguration;
 	}
 
-	@Bean(name = "kclTaskExecutor")
-	@ConditionalOnMissingBean(name = "kclTaskExecutor")
-	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "true")
-	public TaskExecutor kclTaskExecutor() {
-		return new SimpleAsyncTaskExecutor();
-	}
+//	@Bean(name = "kclTaskExecutor")
+//	@ConditionalOnMissingBean(name = "kclTaskExecutor")
+//	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "true")
+//	public TaskExecutor kclTaskExecutor() {
+//		return new SimpleAsyncTaskExecutor();
+//	}
 
 }
