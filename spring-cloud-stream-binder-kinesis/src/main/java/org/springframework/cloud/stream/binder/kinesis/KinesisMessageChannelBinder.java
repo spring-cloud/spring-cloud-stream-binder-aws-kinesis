@@ -47,7 +47,6 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsu
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.integration.aws.inbound.kinesis.KclMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
@@ -109,8 +108,6 @@ public class KinesisMessageChannelBinder extends
 
 	private final AWSCredentialsProvider awsCredentialsProvider;
 
-	private TaskExecutor kclTaskExecutor;
-
 	public KinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 			AmazonCloudWatch cloudWatchClient,
 			AmazonDynamoDB dynamoDBClient,
@@ -144,10 +141,6 @@ public class KinesisMessageChannelBinder extends
 
 	public void setKinesisProducerConfiguration(KinesisProducerConfiguration kinesisProducerConfiguration) {
 		this.kinesisProducerConfiguration = kinesisProducerConfiguration;
-	}
-
-	public void setKclTaskExecutor(TaskExecutor kclTaskExecutor) {
-		this.kclTaskExecutor = kclTaskExecutor;
 	}
 
 	@Override
@@ -361,7 +354,6 @@ public class KinesisMessageChannelBinder extends
 
 		KclMessageDrivenChannelAdapter adapter = new KclMessageDrivenChannelAdapter(
 			destination.getName(), this.amazonKinesis, this.cloudWatchClient, this.dynamoDBClient, awsCredentialsProvider);
-		adapter.setExecutor(kclTaskExecutor);
 
 		boolean anonymous = !StringUtils.hasText(group);
 		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID().toString() : group;

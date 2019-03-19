@@ -44,7 +44,9 @@ public class KinesisBinderConfigurationProperties {
 
 	private int minShardCount = 1;
 
-	/** Enables the usage of Amazon KCL/KPL libraries for all message consumption and production. */
+	/**
+	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and production.
+	 */
 	private boolean kplKclEnabled;
 
 	private final Checkpoint checkpoint = new Checkpoint();
@@ -132,7 +134,9 @@ public class KinesisBinderConfigurationProperties {
 
 		private Integer timeToLive;
 
-		/** Interval between two checkpoints when checkpoint mode is periodic. */
+		/**
+		 * Interval between two checkpoints when checkpoint mode is periodic.
+		 */
 		private Long interval;
 
 		public String getTable() {

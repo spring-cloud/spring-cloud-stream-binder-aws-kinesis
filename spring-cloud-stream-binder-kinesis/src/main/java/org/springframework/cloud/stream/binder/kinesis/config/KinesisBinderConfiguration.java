@@ -28,7 +28,6 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -43,7 +42,6 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
@@ -91,8 +89,7 @@ public class KinesisBinderConfiguration {
 			ConcurrentMetadataStore kinesisCheckpointStore, LockRegistry lockRegistry,
 			KinesisExtendedBindingProperties kinesisExtendedBindingProperties,
 			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
-			AWSCredentialsProvider awsCredentialsProvider,
-			@Autowired(required = false) @Qualifier("taskScheduler") TaskExecutor kclTaskExecutor) {
+			AWSCredentialsProvider awsCredentialsProvider) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder = new KinesisMessageChannelBinder(
 				amazonKinesis, cloudWatchClient, dynamoDBClient,
@@ -102,7 +99,6 @@ public class KinesisBinderConfiguration {
 		kinesisMessageChannelBinder
 				.setExtendedBindingProperties(kinesisExtendedBindingProperties);
 		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
-		kinesisMessageChannelBinder.setKclTaskExecutor(kclTaskExecutor);
 
 		return kinesisMessageChannelBinder;
 	}
@@ -175,12 +171,4 @@ public class KinesisBinderConfiguration {
 		kinesisProducerConfiguration.setRegion(regionProvider.getRegion().getName());
 		return kinesisProducerConfiguration;
 	}
-
-//	@Bean(name = "kclTaskExecutor")
-//	@ConditionalOnMissingBean(name = "kclTaskExecutor")
-//	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "true")
-//	public TaskExecutor kclTaskExecutor() {
-//		return new SimpleAsyncTaskExecutor();
-//	}
-
 }
