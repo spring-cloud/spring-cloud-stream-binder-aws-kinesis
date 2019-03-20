@@ -137,12 +137,12 @@ createRetries::
 Default: `25`
 readCapacity::
 	The Read capacity of the DynamoDb table.
-See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 +
 Default: `1`
 writeCapacity::
 	The write capacity of the DynamoDb table.
-See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 +
 Default: `1`
 timeToLive::
@@ -163,12 +163,12 @@ table::
 Default: `SpringIntegrationLockRegistry`
 readCapacity::
 	The Read capacity of the DynamoDb table.
-See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 +
 Default: `1`
 writeCapacity::
 	The write capacity of the DynamoDb table.
-See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
 Default: `1`
 leaseDuration::
 	The length of time that the lease for the lock will be granted for.
