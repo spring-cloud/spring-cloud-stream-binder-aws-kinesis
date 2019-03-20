@@ -25,7 +25,7 @@ NOTE: Be aware that you might need to increase the amount of memory available to
 We try to cover this in the `.mvn` configuration, so if you find you have to do it to make a build succeed, please raise a ticket to get the settings added to source control.
 
 
-The projects that require middleware generally include a `docker-compose.yml`, so consider using https://compose.docker.io/[Docker Compose] to run the middleware servers in Docker containers.
+The projects that require middleware generally include a `docker-compose.yml`, so consider using https://docs.docker.com/compose[Docker Compose] to run the middleware servers in Docker containers.
 
 === Documentation
 
