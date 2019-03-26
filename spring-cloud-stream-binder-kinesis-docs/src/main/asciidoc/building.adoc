@@ -25,19 +25,19 @@ NOTE: Be aware that you might need to increase the amount of memory available to
 We try to cover this in the `.mvn` configuration, so if you find you have to do it to make a build succeed, please raise a ticket to get the settings added to source control.
 
 
-The projects that require middleware generally include a `docker-compose.yml`, so consider using http://compose.docker.io/[Docker Compose] to run the middleware servers in Docker containers.
+The projects that require middleware generally include a `docker-compose.yml`, so consider using https://compose.docker.io/[Docker Compose] to run the middleware servers in Docker containers.
 
 === Documentation
 
 There is a "full" profile that will generate documentation.
 
 === Working with the code
-If you don't have an IDE preference we would recommend that you use http://www.springsource.com/developer/sts[Spring Tools Suite] or http://eclipse.org[Eclipse] when working with the code.
-We use the http://eclipse.org/m2e/[m2eclipe] eclipse plugin for maven support.
+If you don't have an IDE preference we would recommend that you use https://www.springsource.com/developer/sts[Spring Tools Suite] or https://eclipse.org[Eclipse] when working with the code.
+We use the https://eclipse.org/m2e/[m2eclipe] eclipse plugin for maven support.
 Other IDEs and tools should also work without issue.
 
 ==== Importing into eclipse with m2eclipse
-We recommend the http://eclipse.org/m2e/[m2eclipe] eclipse plugin when working with eclipse.
+We recommend the https://eclipse.org/m2e/[m2eclipe] eclipse plugin when working with eclipse.
 If you don't already have m2eclipse installed it is available from the "eclipse marketplace".
 
 Unfortunately m2e does not yet support Maven 3.3, so once the projects are imported into Eclipse you will also need to tell m2eclipse to use the `.settings.xml` file for the projects.
