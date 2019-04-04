@@ -377,6 +377,9 @@ public class KinesisMessageChannelBinder extends
 		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
+		if (kinesisConsumerProperties.getWorkerId() != null) {
+			adapter.setWorkerId(kinesisConsumerProperties.getWorkerId());
+		}
 
 		return adapter;
 	}

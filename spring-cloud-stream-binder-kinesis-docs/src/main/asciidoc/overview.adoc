@@ -218,6 +218,10 @@ checkpointMode::
   If `manual`, checkpoints occur on demand via the `Checkpointer` callback.
 +
 Default: `batch`
+workerId::
+  The worker identifier used to distinguish different workers/processes (only used when KCL is enabled).
++
+No default - if not set, default value inside spring-integration-aws will be used (random UUID).
 recordsLimit::
   The maximum number of records to poll per `GetRecords` request.
   Must not be greater than `10000`.

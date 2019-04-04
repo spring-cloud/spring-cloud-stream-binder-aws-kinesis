@@ -43,6 +43,12 @@ public class KinesisConsumerProperties {
 
 	private String shardIteratorType;
 
+	/**
+	 * Worker identifier used to distinguish different workers/processes
+	 * (only used when KCL is enabled).
+	 */
+	private String workerId;
+
 	public int getStartTimeout() {
 		return this.startTimeout;
 	}
@@ -97,6 +103,14 @@ public class KinesisConsumerProperties {
 
 	public void setShardIteratorType(String shardIteratorType) {
 		this.shardIteratorType = shardIteratorType;
+	}
+
+	public String getWorkerId() {
+		return workerId;
+	}
+
+	public void setWorkerId(String workerId) {
+		this.workerId = workerId;
 	}
 
 }
