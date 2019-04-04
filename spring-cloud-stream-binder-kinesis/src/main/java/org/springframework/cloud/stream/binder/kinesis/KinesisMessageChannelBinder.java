@@ -368,6 +368,7 @@ public class KinesisMessageChannelBinder extends
 			adapter.setStreamInitialSequence(InitialPositionInStream.valueOf(shardIteratorType));
 		}
 
+		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
 		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		if (this.configurationProperties.getCheckpoint().getInterval() != null) {
