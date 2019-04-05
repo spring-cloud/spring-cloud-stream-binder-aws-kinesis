@@ -134,11 +134,6 @@ public class KinesisBinderConfigurationProperties {
 
 		private Integer timeToLive;
 
-		/**
-		 * Interval between two checkpoints when checkpoint mode is periodic.
-		 */
-		private Long interval;
-
 		public String getTable() {
 			return this.table;
 		}
@@ -185,14 +180,6 @@ public class KinesisBinderConfigurationProperties {
 
 		public void setTimeToLive(Integer timeToLive) {
 			this.timeToLive = timeToLive;
-		}
-
-		public Long getInterval() {
-			return this.interval;
-		}
-
-		public void setInterval(Long interval) {
-			this.interval = interval;
 		}
 
 	}

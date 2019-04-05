@@ -150,10 +150,6 @@ timeToLive::
 See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html[DynamoDB TTL]
 +
 No default - means no records expiration.
-interval::
-  The interval, in milliseconds, between two checkpoints when checkpoint mode is `periodic`.
-+
-No default - if not set, default value inside spring-integration-aws will be used (5000).
 
 === LockRegistry
 LockRegistry is used to ensure exclusive access to each shard so that, only one channel adapter in the same consumer group will consumer messages from a single shard in the stream.
@@ -219,9 +215,14 @@ Default: `record`
 checkpointMode::
   The mode in which checkpoints are updated.
   If `record`, checkpoints occur after each record is processed (but this option is only effective if `listenerMode` is set to `record`). If `batch`, checkpoints occur after each batch of records is processed.
-  If `manual`, checkpoints occur on demand via the `Checkpointer` callback. If `periodic`, checkpoints occurs at specified time interval (from `interval` property in checkpoint configuration)
+  If `manual`, checkpoints occur on demand via the `Checkpointer` callback.
+  If `periodic`, checkpoints occurs at specified time interval (from `interval` property in checkpoint configuration)
 +
 Default: `batch`
+checkpointInterval::
+  The interval, in milliseconds, between two checkpoints when checkpoint mode is `periodic`.
++
+Default - `5000`
 workerId::
   The worker identifier used to distinguish different workers/processes (only used when KCL is enabled).
 +
