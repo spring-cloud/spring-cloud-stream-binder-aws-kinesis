@@ -325,9 +325,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setRecordsLimit(kinesisConsumerProperties.getRecordsLimit());
 		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
-		if (this.configurationProperties.getCheckpoint().getInterval() != null) {
-			adapter.setCheckpointsInterval(this.configurationProperties.getCheckpoint().getInterval());
-		}
+		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
 
 		if (this.checkpointStore != null) {
 			adapter.setCheckpointStore(this.checkpointStore);
@@ -368,11 +366,10 @@ public class KinesisMessageChannelBinder extends
 			adapter.setStreamInitialSequence(InitialPositionInStream.valueOf(shardIteratorType));
 		}
 
+		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
 		adapter.setIdleBetweenPolls(kinesisConsumerProperties.getIdleBetweenPolls());
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
-		if (this.configurationProperties.getCheckpoint().getInterval() != null) {
-			adapter.setCheckpointsInterval(this.configurationProperties.getCheckpoint().getInterval());
-		}
+		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
 
 		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
