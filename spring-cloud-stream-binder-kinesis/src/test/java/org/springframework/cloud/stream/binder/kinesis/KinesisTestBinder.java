@@ -137,8 +137,8 @@ public class KinesisTestBinder extends
 				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
 				KinesisStreamProvisioner provisioningProvider) {
 
-			super(amazonKinesis, null, dynamoDbClient, kinesisBinderConfigurationProperties,
-					provisioningProvider, new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")));
+			super(kinesisBinderConfigurationProperties, provisioningProvider, amazonKinesis,
+					new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")), dynamoDbClient, null, null);
 		}
 
 		/*

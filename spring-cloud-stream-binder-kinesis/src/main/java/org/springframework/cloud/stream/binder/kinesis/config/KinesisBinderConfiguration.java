@@ -23,6 +23,8 @@ import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
@@ -61,8 +63,11 @@ import org.springframework.integration.support.locks.LockRegistry;
 @Import({ ContextCredentialsAutoConfiguration.class, ContextRegionProviderAutoConfiguration.class })
 public class KinesisBinderConfiguration {
 
-	@Autowired
-	private KinesisBinderConfigurationProperties configurationProperties;
+	private final KinesisBinderConfigurationProperties configurationProperties;
+
+	public KinesisBinderConfiguration(KinesisBinderConfigurationProperties configurationProperties) {
+		this.configurationProperties = configurationProperties;
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -75,42 +80,8 @@ public class KinesisBinderConfiguration {
 	}
 
 	@Bean
-	public KinesisStreamProvisioner provisioningProvider(
-			AmazonKinesisAsync amazonKinesis) {
+	public KinesisStreamProvisioner provisioningProvider(AmazonKinesisAsync amazonKinesis) {
 		return new KinesisStreamProvisioner(amazonKinesis, this.configurationProperties);
-	}
-
-	@Bean
-	public KinesisMessageChannelBinder kinesisMessageChannelBinder(
-			AmazonKinesisAsync amazonKinesis,
-			AmazonDynamoDB dynamoDBClient,
-			KinesisStreamProvisioner provisioningProvider,
-			ConcurrentMetadataStore kinesisCheckpointStore, LockRegistry lockRegistry,
-			KinesisExtendedBindingProperties kinesisExtendedBindingProperties,
-			AWSCredentialsProvider awsCredentialsProvider,
-			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
-			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration) {
-
-		KinesisMessageChannelBinder kinesisMessageChannelBinder =
-				new KinesisMessageChannelBinder(amazonKinesis, cloudWatchClient, dynamoDBClient,
-				this.configurationProperties, provisioningProvider, awsCredentialsProvider);
-		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
-		kinesisMessageChannelBinder.setLockRegistry(lockRegistry);
-		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
-		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
-
-		return kinesisMessageChannelBinder;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
-	public AmazonCloudWatchAsync cloudWatch(AWSCredentialsProvider awsCredentialsProvider,
-			RegionProvider regionProvider) {
-
-		return AmazonCloudWatchAsyncClientBuilder.standard()
-				.withCredentials(awsCredentialsProvider)
-				.withRegion(regionProvider.getRegion().getName()).build();
 	}
 
 	@Bean
@@ -125,9 +96,9 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	// Use Bindable.getInputs() to check if we need to register this
 	public LockRegistry dynamoDBLockRegistry(AmazonDynamoDBAsync dynamoDB) {
-		KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties
-				.getLocks();
+		KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
 
 		DynamoDbLockRegistry dynamoDbLockRegistry = new DynamoDbLockRegistry(dynamoDB,
 				locks.getTable());
@@ -164,10 +135,59 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	public AmazonDynamoDBStreams dynamoDBStreams(AWSCredentialsProvider awsCredentialsProvider,
+			RegionProvider regionProvider) {
+
+		return AmazonDynamoDBStreamsClientBuilder.standard()
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(regionProvider.getRegion().getName())
+				.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
-	public KinesisProducerConfiguration kinesisProducerConfiguration(RegionProvider regionProvider) {
+	public AmazonCloudWatchAsync cloudWatch(AWSCredentialsProvider awsCredentialsProvider,
+			RegionProvider regionProvider) {
+
+		return AmazonCloudWatchAsyncClientBuilder.standard()
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(regionProvider.getRegion().getName()).build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
+	public KinesisProducerConfiguration kinesisProducerConfiguration(AWSCredentialsProvider awsCredentialsProvider,
+			RegionProvider regionProvider) {
+
 		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
+		kinesisProducerConfiguration.setCredentialsProvider(awsCredentialsProvider);
 		kinesisProducerConfiguration.setRegion(regionProvider.getRegion().getName());
 		return kinesisProducerConfiguration;
 	}
+
+	@Bean
+	public KinesisMessageChannelBinder kinesisMessageChannelBinder(
+			KinesisStreamProvisioner provisioningProvider,
+			AmazonKinesisAsync amazonKinesis,
+			AWSCredentialsProvider awsCredentialsProvider,
+			KinesisExtendedBindingProperties kinesisExtendedBindingProperties,
+			@Autowired(required = false) ConcurrentMetadataStore kinesisCheckpointStore,
+			@Autowired(required = false) LockRegistry lockRegistry,
+			@Autowired(required = false) AmazonDynamoDB dynamoDBClient,
+			@Autowired(required = false) AmazonDynamoDBStreams dynamoDBStreams,
+			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
+			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration) {
+
+		KinesisMessageChannelBinder kinesisMessageChannelBinder =
+				new KinesisMessageChannelBinder(this.configurationProperties, provisioningProvider, amazonKinesis,
+						awsCredentialsProvider, dynamoDBClient, dynamoDBStreams, cloudWatchClient);
+		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
+		kinesisMessageChannelBinder.setLockRegistry(lockRegistry);
+		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
+		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
+		return kinesisMessageChannelBinder;
+	}
+
 }

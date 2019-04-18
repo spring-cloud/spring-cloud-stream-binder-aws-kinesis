@@ -198,7 +198,7 @@ Default: `SpringIntegrationLocks`
 
 === Kinesis Consumer Properties
 
-The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.`
+The following properties are available for Kinesis consumers only and must be prefixed with ``
 
 startTimeout::
   The amount of time to wait for the consumer to start, in milliseconds.
@@ -251,6 +251,9 @@ So the `getRecords()` will move from that point to the last point, which takes t
 It is by default 1 day and it can be extended to 7 days.
 This happens only for new consumer groups.
 Any subsequent starts of the consumer in the same group are adjusted according the stored checkpoint via `AFTER_SEQUENCE_NUMBER` iterator type.
+dynamoDbStreams::
+  The `boolean` flag indicating that Kinesis consumer channel adapter should adapt DynamoDB Streams functionality instead of regular Kinesis streams.
+Default: false.
 
 === Kinesis Producer Properties
 
@@ -280,3 +283,9 @@ The payload of the `ErrorMessage` for a send failure is an `AwsRequestFailureExc
 
 There is no automatic handling of these exceptions (such as sending to a dead letter queue), but you can consume these exceptions with your own Spring Integration flow.
 
+[[dynamodb-streams]]
+== DynamoDB Streams
+
+Starting with version 1.2, the `KinesisMessageChannelBinder` supports DynamoDB Streams for Kinesis consumer channel adapter.
+The functionality is based on the https://github.com/awslabs/dynamodb-streams-kinesis-adapter[DynamoDB Streams Kinesis Adapter] and every Kinesis consumer endpoint selects an appropriate Kinesis Client according the `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.dynamoDbStreams` boolean flag.
+In case of DynamoDB Streams the `KinesisStreamProvisioner` throws a `ProvisioningException` if there is no requested stream in the DynamoDB: the DynamoDB Streams Kinesis Adapter doesn't support stream entity manipulation operations.

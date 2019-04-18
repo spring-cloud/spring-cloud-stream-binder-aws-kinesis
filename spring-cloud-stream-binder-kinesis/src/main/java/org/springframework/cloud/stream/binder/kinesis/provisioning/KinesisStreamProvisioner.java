@@ -87,7 +87,7 @@ public class KinesisStreamProvisioner implements
 		}
 
 		return new KinesisProducerDestination(name,
-				createOrUpdate(name, properties.getPartitionCount()));
+				createOrUpdate(name, properties.getPartitionCount(), null));
 	}
 
 	@Override
@@ -105,10 +105,10 @@ public class KinesisStreamProvisioner implements
 
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
 
-		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
+		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount, properties.getExtension()));
 	}
 
-	private List<Shard> createOrUpdate(String stream, int shards) {
+	private List<Shard> createOrUpdate(String stream, int shards, KinesisConsumerProperties extension) {
 		List<Shard> shardList = new ArrayList<>();
 
 		int describeStreamRetries = 0;
@@ -145,6 +145,12 @@ public class KinesisStreamProvisioner implements
 					throw new ProvisioningException(
 							"The stream [" + stream
 									+ "] was not found and auto creation is disabled.",
+							ex);
+				}
+				if (extension != null && extension.isDynamoDbStreams()) {
+					throw new ProvisioningException(
+							"The stream [" + stream
+									+ "] was not found and DynamoDB Streams doesn't support stream creation.",
 							ex);
 				}
 				if (logger.isInfoEnabled()) {
