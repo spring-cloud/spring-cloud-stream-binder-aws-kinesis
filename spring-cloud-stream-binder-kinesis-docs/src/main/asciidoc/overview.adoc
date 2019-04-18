@@ -251,9 +251,10 @@ So the `getRecords()` will move from that point to the last point, which takes t
 It is by default 1 day and it can be extended to 7 days.
 This happens only for new consumer groups.
 Any subsequent starts of the consumer in the same group are adjusted according the stored checkpoint via `AFTER_SEQUENCE_NUMBER` iterator type.
+
 dynamoDbStreams::
   The `boolean` flag indicating that Kinesis consumer channel adapter should adapt DynamoDB Streams functionality instead of regular Kinesis streams.
-Default: false.
+Default: `false`.
 
 === Kinesis Producer Properties
 
