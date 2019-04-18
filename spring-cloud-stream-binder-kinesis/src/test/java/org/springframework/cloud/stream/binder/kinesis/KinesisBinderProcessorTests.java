@@ -64,16 +64,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Artem Bilan
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
-		"spring.cloud.stream.bindings.input.group = "
-				+ KinesisBinderProcessorTests.CONSUMER_GROUP,
-		"spring.cloud.stream.bindings."
-				+ KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT
-				+ ".destination = " + Processor.INPUT,
-		"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
-		"spring.cloud.stream.kinesis.binder.headers = foo",
-		"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
-		"spring.cloud.stream.kinesis.binder.locks.table = lockTable" })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
+		properties = {
+				"spring.cloud.stream.bindings.input.group = "
+						+ KinesisBinderProcessorTests.CONSUMER_GROUP,
+				"spring.cloud.stream.bindings."
+						+ KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT
+						+ ".destination = " + Processor.INPUT,
+				"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
+				"spring.cloud.stream.kinesis.binder.headers = foo",
+				"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
+				"spring.cloud.stream.kinesis.binder.locks.table = lockTable",
+				"cloud.aws.region.static=eu-west-2" })
 @DirtiesContext
 public class KinesisBinderProcessorTests {
 
@@ -180,13 +182,11 @@ public class KinesisBinderProcessorTests {
 		@Bean
 		public MessageProducer kinesisMessageDriverChannelAdapter() {
 			KinesisMessageDrivenChannelAdapter kinesisMessageDrivenChannelAdapter =
-					new KinesisMessageDrivenChannelAdapter(
-					amazonKinesis(), Processor.OUTPUT);
+					new KinesisMessageDrivenChannelAdapter(amazonKinesis(), Processor.OUTPUT);
 			kinesisMessageDrivenChannelAdapter.setOutputChannel(fromProcessorChannel());
 			kinesisMessageDrivenChannelAdapter.setConverter(null);
 
-			DirectFieldAccessor dfa = new DirectFieldAccessor(
-					kinesisMessageDrivenChannelAdapter);
+			DirectFieldAccessor dfa = new DirectFieldAccessor(kinesisMessageDrivenChannelAdapter);
 			dfa.setPropertyValue("describeStreamBackoff", 10);
 			dfa.setPropertyValue("consumerBackoff", 10);
 			dfa.setPropertyValue("idleBetweenPolls", 1);

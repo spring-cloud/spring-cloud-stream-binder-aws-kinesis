@@ -290,3 +290,9 @@ There is no automatic handling of these exceptions (such as sending to a dead le
 Starting with version 1.2, the `KinesisMessageChannelBinder` supports DynamoDB Streams for Kinesis consumer channel adapter.
 The functionality is based on the https://github.com/awslabs/dynamodb-streams-kinesis-adapter[DynamoDB Streams Kinesis Adapter] and every Kinesis consumer endpoint selects an appropriate Kinesis Client according the `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.dynamoDbStreams` boolean flag.
 In case of DynamoDB Streams the `KinesisStreamProvisioner` throws a `ProvisioningException` if there is no requested stream in the DynamoDB: the DynamoDB Streams Kinesis Adapter doesn't support stream entity manipulation operations.
+
+[[optional-resources]]
+== Optional Resources
+
+Starting with version 1.2, if your Spring Cloud Stream application delivered only in the `source` role, the extra beans, required for `sink` (or Kinesis consumers), are not going to be registered in the application context and, therefore, no need to worry about their resources on AWS.
+The story is about DynamoDB and Cloud Watch.
