@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.cloud</groupId>
 		<artifactId>spring-cloud-build</artifactId>
-		<version>2.1.5.BUILD-SNAPSHOT</version>
+		<version>2.1.4.RELEASE</version>
 		<relativePath/>
 	</parent>
 
@@ -15,12 +15,12 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<spring-cloud-stream.version>2.2.0.BUILD-SNAPSHOT</spring-cloud-stream.version>
+		<java.version>1.8</java.version>
+		<spring-cloud-stream.version>2.2.0.RELEASE</spring-cloud-stream.version>
 		<spring-cloud-aws.version>2.1.1.RELEASE</spring-cloud-aws.version>
 		<dynamodb-lock-client.version>1.1.0</dynamodb-lock-client.version>
-		<spring-integration-aws.version>2.2.0.BUILD-SNAPSHOT</spring-integration-aws.version>
-		<java.version>1.8</java.version>
-		<amazon-kinesis-client.version>1.9.3</amazon-kinesis-client.version>
+		<spring-integration-aws.version>2.2.0.RELEASE</spring-integration-aws.version>
+		<amazon-kinesis-client.version>1.10.0</amazon-kinesis-client.version>
 		<amazon-kinesis-producer.version>0.12.11</amazon-kinesis-producer.version>
 		<dynamodb-stream.version>1.4.0</dynamodb-stream.version>
 	</properties>
