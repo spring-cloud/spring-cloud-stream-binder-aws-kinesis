@@ -122,34 +122,44 @@ public class KinesisBinderConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(AmazonDynamoDBAsync.class)
-	public LockRegistry dynamoDBLockRegistry(AmazonDynamoDBAsync dynamoDB) {
-		KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
-		DynamoDbLockRegistry dynamoDbLockRegistry = new DynamoDbLockRegistry(dynamoDB, locks.getTable());
-		dynamoDbLockRegistry.setRefreshPeriod(locks.getRefreshPeriod());
-		dynamoDbLockRegistry.setHeartbeatPeriod(locks.getHeartbeatPeriod());
-		dynamoDbLockRegistry.setLeaseDuration(locks.getLeaseDuration());
-		dynamoDbLockRegistry.setPartitionKey(locks.getPartitionKey());
-		dynamoDbLockRegistry.setSortKeyName(locks.getSortKeyName());
-		dynamoDbLockRegistry.setSortKey(locks.getSortKey());
-		dynamoDbLockRegistry.setReadCapacity(locks.getReadCapacity());
-		dynamoDbLockRegistry.setWriteCapacity(locks.getWriteCapacity());
-		return dynamoDbLockRegistry;
+	public LockRegistry dynamoDBLockRegistry(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
+		if (dynamoDB != null) {
+			KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
+			DynamoDbLockRegistry dynamoDbLockRegistry = new DynamoDbLockRegistry(dynamoDB, locks.getTable());
+			dynamoDbLockRegistry.setRefreshPeriod(locks.getRefreshPeriod());
+			dynamoDbLockRegistry.setHeartbeatPeriod(locks.getHeartbeatPeriod());
+			dynamoDbLockRegistry.setLeaseDuration(locks.getLeaseDuration());
+			dynamoDbLockRegistry.setPartitionKey(locks.getPartitionKey());
+			dynamoDbLockRegistry.setSortKeyName(locks.getSortKeyName());
+			dynamoDbLockRegistry.setSortKey(locks.getSortKey());
+			dynamoDbLockRegistry.setReadCapacity(locks.getReadCapacity());
+			dynamoDbLockRegistry.setWriteCapacity(locks.getWriteCapacity());
+			return dynamoDbLockRegistry;
+		}
+		else {
+			return null;
+		}
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(AmazonDynamoDBAsync.class)
-	public ConcurrentMetadataStore kinesisCheckpointStore(AmazonDynamoDBAsync dynamoDB) {
-		KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
-		DynamoDbMetadataStore kinesisCheckpointStore = new DynamoDbMetadataStore(dynamoDB, checkpoint.getTable());
-		kinesisCheckpointStore.setReadCapacity(checkpoint.getReadCapacity());
-		kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
-		kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());
-		kinesisCheckpointStore.setCreateTableRetries(checkpoint.getCreateRetries());
-		if (checkpoint.getTimeToLive() != null) {
-			kinesisCheckpointStore.setTimeToLive(checkpoint.getTimeToLive());
+	public ConcurrentMetadataStore kinesisCheckpointStore(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
+		if (dynamoDB != null) {
+			KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
+			DynamoDbMetadataStore kinesisCheckpointStore = new DynamoDbMetadataStore(dynamoDB, checkpoint.getTable());
+			kinesisCheckpointStore.setReadCapacity(checkpoint.getReadCapacity());
+			kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
+			kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());
+			kinesisCheckpointStore.setCreateTableRetries(checkpoint.getCreateRetries());
+			if (checkpoint.getTimeToLive() != null) {
+				kinesisCheckpointStore.setTimeToLive(checkpoint.getTimeToLive());
+			}
+			return kinesisCheckpointStore;
 		}
-		return kinesisCheckpointStore;
+		else {
+			return null;
+		}
 	}
 
 	@Bean
