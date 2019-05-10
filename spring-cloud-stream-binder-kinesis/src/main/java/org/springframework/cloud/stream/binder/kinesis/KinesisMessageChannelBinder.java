@@ -126,7 +126,6 @@ public class KinesisMessageChannelBinder extends
 
 		super(headersToMap(configurationProperties), provisioningProvider);
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
-		Assert.notNull(dynamoDBClient, "'dynamoDBClient' must not be null");
 		Assert.notNull(awsCredentialsProvider, "'awsCredentialsProvider' must not be null");
 		this.configurationProperties = configurationProperties;
 		this.amazonKinesis = amazonKinesis;

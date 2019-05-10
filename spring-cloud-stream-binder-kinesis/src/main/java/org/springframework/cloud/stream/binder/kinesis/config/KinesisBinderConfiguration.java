@@ -195,15 +195,10 @@ public class KinesisBinderConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
 	public KinesisProducerConfiguration kinesisProducerConfiguration() {
-		if (this.hasInputs) {
-			KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
-			kinesisProducerConfiguration.setCredentialsProvider(this.awsCredentialsProvider);
-			kinesisProducerConfiguration.setRegion(this.region);
-			return kinesisProducerConfiguration;
-		}
-		else {
-			return null;
-		}
+		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
+		kinesisProducerConfiguration.setCredentialsProvider(this.awsCredentialsProvider);
+		kinesisProducerConfiguration.setRegion(this.region);
+		return kinesisProducerConfiguration;
 	}
 
 	@Bean
