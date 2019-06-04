@@ -75,7 +75,7 @@ The only way to achieve HA in this case is that, when an instance processing a p
 
 This section contains settings specific to the Kinesis Binder and bound channels.
 
-For general binding configuration options and properties, please refer to the https://github.com/spring-cloud/spring-cloud-stream/blob/master/spring-cloud-stream-core-docs/src/main/asciidoc/spring-cloud-stream-overview.adoc#configuration-options[Spring Cloud Stream core documentation].
+For general binding configuration options and properties, please refer to the https://docs.spring.io/spring-cloud-stream/docs/current/reference/htmlsingle/#_configuration_options[Spring Cloud Stream core documentation].
 
 [[kinesis-binder-properties]]
 === Kinesis Binder Properties
