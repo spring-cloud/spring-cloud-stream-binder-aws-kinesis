@@ -300,7 +300,7 @@ public class KinesisMessageChannelBinder extends
 		if (kinesisConsumerProperties.getWorkerId() != null) {
 			adapter.setWorkerId(kinesisConsumerProperties.getWorkerId());
 		}
-
+		adapter.setBindSourceRecord(true);
 		return adapter;
 	}
 
@@ -403,7 +403,7 @@ public class KinesisMessageChannelBinder extends
 				consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
-
+		adapter.setBindSourceRecord(true);
 		return adapter;
 	}
 

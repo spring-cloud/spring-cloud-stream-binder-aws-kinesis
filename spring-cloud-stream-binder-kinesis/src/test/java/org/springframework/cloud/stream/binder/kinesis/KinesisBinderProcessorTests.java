@@ -40,6 +40,7 @@ import org.springframework.cloud.stream.binder.MessageValues;
 import org.springframework.cloud.stream.messaging.Processor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.support.AwsHeaders;
@@ -127,6 +128,7 @@ public class KinesisBinderProcessorTests {
 		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM))
 				.isEqualTo(Processor.OUTPUT);
 		assertThat(messageValues.getHeaders().get("foo")).isEqualTo("BAR");
+		assertThat(messageValues.getHeaders()).containsKey(IntegrationMessageHeaderAccessor.SOURCE_DATA);
 
 		BlockingQueue<Message<?>> errorMessages = new LinkedBlockingQueue<>();
 
@@ -185,6 +187,7 @@ public class KinesisBinderProcessorTests {
 					new KinesisMessageDrivenChannelAdapter(amazonKinesis(), Processor.OUTPUT);
 			kinesisMessageDrivenChannelAdapter.setOutputChannel(fromProcessorChannel());
 			kinesisMessageDrivenChannelAdapter.setConverter(null);
+			kinesisMessageDrivenChannelAdapter.setBindSourceRecord(true);
 
 			DirectFieldAccessor dfa = new DirectFieldAccessor(kinesisMessageDrivenChannelAdapter);
 			dfa.setPropertyValue("describeStreamBackoff", 10);
