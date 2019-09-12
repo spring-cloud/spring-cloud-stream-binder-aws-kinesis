@@ -112,7 +112,7 @@ It can be superseded by the `partitionCount` setting of the producer or by the v
 +
 Default: `1`
 kplKclEnabled::
-    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl-v2.html[KCL] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[KPL] for all message consumption and production
+    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[KCL] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[KPL] for all message consumption and production
 +
 Default: `false`
 
