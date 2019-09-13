@@ -38,6 +38,7 @@ import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
+import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.ExtendedPropertiesBinder;
@@ -57,7 +58,6 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.outbound.KplMessageHandler;
-import org.springframework.integration.channel.ChannelInterceptorAware;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.expression.ExpressionUtils;
 import org.springframework.integration.expression.FunctionExpression;
@@ -70,6 +70,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.InterceptableChannel;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -167,6 +168,16 @@ public class KinesisMessageChannelBinder extends
 	}
 
 	@Override
+	public String getDefaultsPrefix() {
+		return this.extendedBindingProperties.getDefaultsPrefix();
+	}
+
+	@Override
+	public Class<? extends BinderSpecificPropertiesProvider> getExtendedPropertiesEntryClass() {
+		return this.extendedBindingProperties.getExtendedPropertiesEntryClass();
+	}
+
+	@Override
 	protected void onInit() throws Exception {
 		super.onInit();
 		this.evaluationContext = ExpressionUtils.createStandardEvaluationContext(getBeanFactory());
@@ -220,8 +231,8 @@ public class KinesisMessageChannelBinder extends
 	protected void postProcessOutputChannel(MessageChannel outputChannel,
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties) {
 
-		if (outputChannel instanceof ChannelInterceptorAware && producerProperties.isPartitioned()) {
-			((ChannelInterceptorAware) outputChannel)
+		if (outputChannel instanceof InterceptableChannel && producerProperties.isPartitioned()) {
+			((InterceptableChannel) outputChannel)
 					.addInterceptor(0,
 							new ChannelInterceptor() {
 

@@ -16,13 +16,15 @@
 
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
+import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
+
 /**
  * The Kinesis-specific binding configuration properties.
  *
  * @author Peter Oates
  * @author Artem Bilan
  */
-public class KinesisBindingProperties {
+public class KinesisBindingProperties implements BinderSpecificPropertiesProvider {
 
 	private KinesisConsumerProperties consumer = new KinesisConsumerProperties();
 

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
 import org.springframework.cloud.stream.binder.ExtendedBindingProperties;
 
 /**
@@ -65,6 +66,16 @@ public class KinesisExtendedBindingProperties implements
 		else {
 			return new KinesisProducerProperties();
 		}
+	}
+
+	@Override
+	public String getDefaultsPrefix() {
+		return DEFAULTS_PREFIX;
+	}
+
+	@Override
+	public Class<? extends BinderSpecificPropertiesProvider> getExtendedPropertiesEntryClass() {
+		return KinesisBindingProperties.class;
 	}
 
 }
