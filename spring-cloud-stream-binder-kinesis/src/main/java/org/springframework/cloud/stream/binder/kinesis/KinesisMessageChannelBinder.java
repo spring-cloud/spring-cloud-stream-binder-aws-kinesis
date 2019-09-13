@@ -38,7 +38,6 @@ import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
-import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.ExtendedPropertiesBinder;
@@ -165,16 +164,6 @@ public class KinesisMessageChannelBinder extends
 	@Override
 	public KinesisProducerProperties getExtendedProducerProperties(String channelName) {
 		return this.extendedBindingProperties.getExtendedProducerProperties(channelName);
-	}
-
-	@Override
-	public String getDefaultsPrefix() {
-		return this.extendedBindingProperties.getDefaultsPrefix();
-	}
-
-	@Override
-	public Class<? extends BinderSpecificPropertiesProvider> getExtendedPropertiesEntryClass() {
-		return this.extendedBindingProperties.getExtendedPropertiesEntryClass();
 	}
 
 	@Override
