@@ -57,16 +57,16 @@ import static org.mockito.Mockito.when;
  * @author Artem Bilan
  * @author Sergiu Pantiru
  */
-public class KinesisStreamProvisionerTests {
+class KinesisStreamProvisionerTests {
 
 	@Test
-	public void testProvisionProducerSuccessfulWithExistingStream() {
+	void testProvisionProducerSuccessfulWithExistingStream() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
 				amazonKinesisMock, binderProperties);
-		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties = new ExtendedProducerProperties<>(
-				new KinesisProducerProperties());
+		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties =
+				new ExtendedProducerProperties<>(new KinesisProducerProperties());
 		String name = "test-stream";
 
 		DescribeStreamResult describeStreamResult = describeStreamResultWithShards(
@@ -84,13 +84,14 @@ public class KinesisStreamProvisionerTests {
 	}
 
 	@Test
-	public void testProvisionConsumerSuccessfulWithExistingStream() {
+	void testProvisionConsumerSuccessfulWithExistingStream() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
 				amazonKinesisMock, binderProperties);
 
-		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties =
+				new ExtendedConsumerProperties<>(
 				new KinesisConsumerProperties());
 
 		String name = "test-stream";
@@ -111,7 +112,7 @@ public class KinesisStreamProvisionerTests {
 	}
 
 	@Test
-	public void testProvisionConsumerExistingStreamUpdateShards() {
+	void testProvisionConsumerExistingStreamUpdateShards() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		ArgumentCaptor<UpdateShardCountRequest> updateShardCaptor = ArgumentCaptor
 				.forClass(UpdateShardCountRequest.class);
@@ -124,7 +125,8 @@ public class KinesisStreamProvisionerTests {
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
 				amazonKinesisMock, binderProperties);
 
-		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties =
+				new ExtendedConsumerProperties<>(
 				new KinesisConsumerProperties());
 
 		DescribeStreamResult describeOriginalStream = describeStreamResultWithShards(
@@ -148,12 +150,13 @@ public class KinesisStreamProvisionerTests {
 	}
 
 	@Test
-	public void testProvisionProducerSuccessfulWithNewStream() {
+	void testProvisionProducerSuccessfulWithNewStream() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
 				amazonKinesisMock, binderProperties);
-		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties = new ExtendedProducerProperties<>(
+		ExtendedProducerProperties<KinesisProducerProperties> extendedProducerProperties =
+				new ExtendedProducerProperties<>(
 				new KinesisProducerProperties());
 
 		String name = "test-stream";
@@ -181,7 +184,7 @@ public class KinesisStreamProvisionerTests {
 	}
 
 	@Test
-	public void testProvisionProducerUpdateShards() {
+	void testProvisionProducerUpdateShards() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		ArgumentCaptor<UpdateShardCountRequest> updateShardCaptor = ArgumentCaptor
 				.forClass(UpdateShardCountRequest.class);
@@ -194,7 +197,8 @@ public class KinesisStreamProvisionerTests {
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
 				amazonKinesisMock, binderProperties);
 
-		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties =
+				new ExtendedConsumerProperties<>(
 				new KinesisConsumerProperties());
 
 		DescribeStreamResult describeOriginalStream = describeStreamResultWithShards(
@@ -217,7 +221,7 @@ public class KinesisStreamProvisionerTests {
 	}
 
 	@Test
-	public void testProvisionConsumerSuccessfulWithNewStream() {
+	void testProvisionConsumerSuccessfulWithNewStream() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		KinesisStreamProvisioner provisioner = new KinesisStreamProvisioner(
@@ -225,7 +229,8 @@ public class KinesisStreamProvisionerTests {
 		int instanceCount = 1;
 		int concurrency = 1;
 
-		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties =
+				new ExtendedConsumerProperties<>(
 				new KinesisConsumerProperties());
 		extendedConsumerProperties.setInstanceCount(instanceCount);
 		extendedConsumerProperties.setConcurrency(concurrency);
@@ -262,7 +267,7 @@ public class KinesisStreamProvisionerTests {
 	}
 
 	@Test
-	public void testProvisionConsumerResourceNotFoundException() {
+	void testProvisionConsumerResourceNotFoundException() {
 		AmazonKinesis amazonKinesisMock = mock(AmazonKinesis.class);
 		KinesisBinderConfigurationProperties binderProperties = new KinesisBinderConfigurationProperties();
 		binderProperties.setAutoCreateStream(false);
@@ -271,7 +276,8 @@ public class KinesisStreamProvisionerTests {
 		int instanceCount = 1;
 		int concurrency = 1;
 
-		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties = new ExtendedConsumerProperties<>(
+		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties =
+				new ExtendedConsumerProperties<>(
 				new KinesisConsumerProperties());
 		extendedConsumerProperties.setInstanceCount(instanceCount);
 		extendedConsumerProperties.setConcurrency(concurrency);
@@ -284,10 +290,10 @@ public class KinesisStreamProvisionerTests {
 
 		assertThatThrownBy(() -> provisioner.provisionConsumerDestination(name, group,
 				extendedConsumerProperties))
-						.isInstanceOf(ProvisioningException.class)
-						.hasMessageContaining(
-								"The stream [test-stream] was not found and auto creation is disabled.")
-						.hasCauseInstanceOf(ResourceNotFoundException.class);
+				.isInstanceOf(ProvisioningException.class)
+				.hasMessageContaining(
+						"The stream [test-stream] was not found and auto creation is disabled.")
+				.hasCauseInstanceOf(ResourceNotFoundException.class);
 
 		verify(amazonKinesisMock, times(1))
 				.describeStream(any(DescribeStreamRequest.class));

@@ -25,7 +25,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import cloud.localstack.docker.LocalstackDockerTestRunner;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazonaws.handlers.AsyncHandler;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
@@ -37,9 +40,10 @@ import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.StreamStatus;
 import org.assertj.core.api.Condition;
-import org.junit.ClassRule;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.BDDMockito;
 import org.mockito.stubbing.Answer;
 
@@ -76,6 +80,7 @@ import org.springframework.messaging.support.GenericMessage;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
@@ -86,6 +91,10 @@ import static org.mockito.Mockito.mock;
  * @author Jacob Severson
  * @author Arnaud Lecollaire
  */
+@RunWith(LocalstackDockerTestRunner.class)
+@LocalstackDockerProperties(randomizePorts = true,
+		hostNameResolver = EnvironmentHostNameResolver.class,
+		services = { "kinesis", "dynamodb"})
 public class KinesisBinderTests extends
 		PartitionCapableBinderTests<KinesisTestBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
 				ExtendedProducerProperties<KinesisProducerProperties>> {
@@ -93,20 +102,20 @@ public class KinesisBinderTests extends
 	private static final String CLASS_UNDER_TEST_NAME = KinesisBinderTests.class
 			.getSimpleName();
 
-	/**
-	 * Class rule for the {@link LocalKinesisResource}.
-	 */
-	@ClassRule
-	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
+	private static AmazonKinesisAsync AMAZON_KINESIS;
 
-	/**
-	 * Class rule for the {@link LocalDynamoDbResource}.
-	 */
-	@ClassRule
-	public static LocalDynamoDbResource localDynamoDbResource = new LocalDynamoDbResource();
+	private static AmazonDynamoDBAsync DYNAMO_DB;
+
 
 	public KinesisBinderTests() {
 		this.timeoutMultiplier = 10D;
+	}
+
+	@BeforeClass
+	public static void setup() {
+		assumeThat(System.getProperty(EnvironmentHostNameResolver.DOCKER_HOST_NAME)).isNotEmpty();
+		AMAZON_KINESIS = ExtendedDockerTestUtils.getClientKinesisAsync();
+		DYNAMO_DB = ExtendedDockerTestUtils.getClientDynamoDbAsync();
 	}
 
 	@Test
@@ -127,8 +136,7 @@ public class KinesisBinderTests extends
 				consumerProperties);
 		binding.unbind();
 
-		DescribeStreamResult streamResult = localKinesisResource.getResource()
-				.describeStream(testStreamName);
+		DescribeStreamResult streamResult = AMAZON_KINESIS.describeStream(testStreamName);
 		String createdStreamName = streamResult.getStreamDescription().getStreamName();
 		int createdShards = streamResult.getStreamDescription().getShards().size();
 		String createdStreamStatus = streamResult.getStreamDescription()
@@ -507,8 +515,7 @@ public class KinesisBinderTests extends
 
 		String stream = "existing" + System.currentTimeMillis();
 
-		AmazonKinesisAsync amazonKinesis = localKinesisResource.getResource();
-		amazonKinesis.createStream(stream, 1);
+		AMAZON_KINESIS.createStream(stream, 1);
 
 		List<Shard> shards = describeStream(stream);
 
@@ -529,8 +536,6 @@ public class KinesisBinderTests extends
 	}
 
 	private List<Shard> describeStream(String stream) {
-		AmazonKinesisAsync amazonKinesis = localKinesisResource.getResource();
-
 		String exclusiveStartShardId = null;
 
 		DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest()
@@ -542,7 +547,7 @@ public class KinesisBinderTests extends
 			DescribeStreamResult describeStreamResult;
 
 			describeStreamRequest.withExclusiveStartShardId(exclusiveStartShardId);
-			describeStreamResult = amazonKinesis.describeStream(describeStreamRequest);
+			describeStreamResult = AMAZON_KINESIS.describeStream(describeStreamRequest);
 			StreamDescription streamDescription = describeStreamResult
 					.getStreamDescription();
 			if (StreamStatus.ACTIVE.toString()
@@ -586,9 +591,7 @@ public class KinesisBinderTests extends
 	private KinesisTestBinder getBinder(
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 		if (this.testBinder == null) {
-			this.testBinder = new KinesisTestBinder(localKinesisResource.getResource(),
-					localDynamoDbResource.getResource(),
-					kinesisBinderConfigurationProperties);
+			this.testBinder = new KinesisTestBinder(AMAZON_KINESIS, DYNAMO_DB, kinesisBinderConfigurationProperties);
 			this.timeoutMultiplier = 20;
 		}
 		return this.testBinder;

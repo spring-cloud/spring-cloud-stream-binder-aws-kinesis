@@ -23,6 +23,7 @@
 		<amazon-kinesis-client.version>1.11.2</amazon-kinesis-client.version>
 		<amazon-kinesis-producer.version>0.13.1</amazon-kinesis-producer.version>
 		<dynamodb-stream.version>1.5.0</dynamodb-stream.version>
+		<localstack.version>0.1.22</localstack.version>
 	</properties>
 
 	<modules>
@@ -59,6 +60,16 @@
 				<version>${dynamodb-stream.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>com.amazonaws</groupId>
+				<artifactId>amazon-kinesis-client</artifactId>
+				<version>${amazon-kinesis-client.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.amazonaws</groupId>
+				<artifactId>amazon-kinesis-producer</artifactId>
+				<version>${amazon-kinesis-producer.version}</version>
+			</dependency>
+			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-stream-binder-test</artifactId>
 				<version>${spring-cloud-stream.version}</version>
@@ -70,6 +81,12 @@
 				<version>${spring-cloud-stream.version}</version>
 				<scope>test</scope>
 			</dependency>
+			<dependency>
+				<groupId>cloud.localstack</groupId>
+				<artifactId>localstack-utils</artifactId>
+				<version>${localstack.version}</version>
+				<scope>test</scope>
+			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
@@ -79,16 +96,6 @@
 				<scope>import</scope>
 			</dependency>
 
-			<dependency>
-				<groupId>com.amazonaws</groupId>
-				<artifactId>amazon-kinesis-client</artifactId>
-				<version>${amazon-kinesis-client.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.amazonaws</groupId>
-				<artifactId>amazon-kinesis-producer</artifactId>
-				<version>${amazon-kinesis-producer.version}</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

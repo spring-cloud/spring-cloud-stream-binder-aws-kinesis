@@ -71,6 +71,11 @@
 			<artifactId>spring-cloud-stream-test-support-internal</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>cloud.localstack</groupId>
+			<artifactId>localstack-utils</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 	</dependencies>
 

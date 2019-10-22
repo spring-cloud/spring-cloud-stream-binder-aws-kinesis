@@ -20,11 +20,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import cloud.localstack.docker.LocalstackDockerExtension;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +58,6 @@ import org.springframework.messaging.SubscribableChannel;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,7 +66,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Artem Bilan
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
 		properties = {
 				"spring.cloud.stream.bindings.input.group = "
@@ -77,22 +78,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 				"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
 				"spring.cloud.stream.kinesis.binder.locks.table = lockTable",
 				"cloud.aws.region.static=eu-west-2" })
+@EnabledIfEnvironmentVariable(named = EnvironmentHostNameResolver.DOCKER_HOST_NAME, matches = ".+")
+@ExtendWith(LocalstackDockerExtension.class)
+@LocalstackDockerProperties(randomizePorts = true,
+		hostNameResolver = EnvironmentHostNameResolver.class,
+		services = { "kinesis", "dynamodb"})
 @DirtiesContext
-public class KinesisBinderProcessorTests {
+class KinesisBinderProcessorTests {
 
 	static final String CONSUMER_GROUP = "testGroup";
 
-	/**
-	 * Class rule for the {@link LocalKinesisResource}.
-	 */
-	@ClassRule
-	public static LocalKinesisResource localKinesisResource = new LocalKinesisResource();
+	private static AmazonKinesisAsync AMAZON_KINESIS;
 
-	/**
-	 * Class rule for the {@link LocalDynamoDbResource}.
-	 */
-	@ClassRule
-	public static LocalDynamoDbResource localDynamoDbResource = new LocalDynamoDbResource();
+	private static AmazonDynamoDBAsync DYNAMO_DB;
 
 	@Autowired
 	private TestSource testSource;
@@ -107,9 +105,15 @@ public class KinesisBinderProcessorTests {
 	@Qualifier(Processor.INPUT + "." + CONSUMER_GROUP + ".errors")
 	private SubscribableChannel consumerErrorChannel;
 
+	@BeforeAll
+	static void setup() {
+		AMAZON_KINESIS = ExtendedDockerTestUtils.getClientKinesisAsync();
+		DYNAMO_DB = ExtendedDockerTestUtils.getClientDynamoDbAsync();
+	}
+
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testProcessorWithKinesisBinder() throws Exception {
+	void testProcessorWithKinesisBinder() throws Exception {
 		Message<String> testMessage = MessageBuilder.withPayload("foo")
 				.setHeader("foo", "BAR").build();
 		this.testSource.toProcessorOutput().send(testMessage);
@@ -157,12 +161,12 @@ public class KinesisBinderProcessorTests {
 
 		@Bean(destroyMethod = "")
 		public AmazonDynamoDBAsync dynamoDB() {
-			return localDynamoDbResource.getResource();
+			return DYNAMO_DB;
 		}
 
 		@Bean(destroyMethod = "")
 		public AmazonKinesisAsync amazonKinesis() {
-			return localKinesisResource.getResource();
+			return AMAZON_KINESIS;
 		}
 
 		@Transformer(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)
