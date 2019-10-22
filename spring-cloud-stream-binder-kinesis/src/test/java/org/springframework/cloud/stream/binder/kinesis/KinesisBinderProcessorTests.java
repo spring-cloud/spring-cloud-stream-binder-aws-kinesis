@@ -16,6 +16,9 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -40,12 +43,14 @@ import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.cloud.stream.binder.EmbeddedHeaderUtils;
 import org.springframework.cloud.stream.binder.MessageValues;
+import org.springframework.cloud.stream.config.ProducerMessageHandlerCustomizer;
 import org.springframework.cloud.stream.messaging.Processor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
+import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.support.AwsHeaders;
 import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.channel.QueueChannel;
@@ -59,7 +64,12 @@ import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.amazonaws.handlers.AsyncHandler;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.model.PutRecordRequest;
+import com.amazonaws.services.kinesis.model.PutRecordResult;
+import reactor.core.publisher.MonoProcessor;
 
 /**
  * The tests for the processor SCSt application against local Kinesis and DynamoDB.
@@ -104,6 +114,9 @@ class KinesisBinderProcessorTests {
 	@Autowired
 	@Qualifier(Processor.INPUT + "." + CONSUMER_GROUP + ".errors")
 	private SubscribableChannel consumerErrorChannel;
+	
+	@Autowired
+	private ProcessorConfiguration config;
 
 	@BeforeAll
 	static void setup() {
@@ -148,6 +161,11 @@ class KinesisBinderProcessorTests {
 		assertThat(errorMessage1).isSameAs(errorMessage2);
 		assertThat(errorMessages).isEmpty();
 
+		PutRecordResult putRecordResult = this.config.resultMonoProcessor.block(Duration.ofSeconds(10));
+		assertThat(putRecordResult)
+				.isNotNull()
+				.extracting(PutRecordResult::getSequenceNumber)
+				.isNotNull();
 	}
 
 	/**
@@ -158,6 +176,8 @@ class KinesisBinderProcessorTests {
 			ContextResourceLoaderAutoConfiguration.class,
 			ContextStackAutoConfiguration.class })
 	static class ProcessorConfiguration {
+
+		private MonoProcessor<PutRecordResult> resultMonoProcessor = MonoProcessor.create();
 
 		@Bean(destroyMethod = "")
 		public AmazonDynamoDBAsync dynamoDB() {
@@ -204,6 +224,29 @@ class KinesisBinderProcessorTests {
 		@Bean
 		public PollableChannel fromProcessorChannel() {
 			return new QueueChannel();
+		}
+
+		@Bean
+		public ProducerMessageHandlerCustomizer<KinesisMessageHandler> kinesisMessageHandlerCustomizer() {
+			return (handler, destinationName) -> handler.setAsyncHandler(asyncHandler());
+		}
+
+		@Bean
+		public AsyncHandler<PutRecordRequest, PutRecordResult> asyncHandler() {
+			return new AsyncHandler<PutRecordRequest, PutRecordResult>() {
+
+				@Override
+				public void onError(Exception exception) {
+
+				}
+
+				@Override
+				public void onSuccess(PutRecordRequest request, PutRecordResult putRecordsResult) {
+					ProcessorConfiguration.this.resultMonoProcessor.onNext(putRecordsResult);
+					ProcessorConfiguration.this.resultMonoProcessor.onComplete();
+				}
+
+			};
 		}
 
 	}

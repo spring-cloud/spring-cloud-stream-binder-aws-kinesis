@@ -46,13 +46,16 @@ import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderC
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.binding.Bindable;
+import org.springframework.cloud.stream.config.ProducerMessageHandlerCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
+import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.locks.LockRegistry;
+import org.springframework.messaging.MessageHandler;
 
 /**
  * The auto-configuration for AWS components and Spring Cloud Stream Kinesis Binder.
@@ -211,7 +214,8 @@ public class KinesisBinderConfiguration {
 			@Autowired(required = false) AmazonDynamoDB dynamoDBClient,
 			@Autowired(required = false) AmazonDynamoDBStreams dynamoDBStreams,
 			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
-			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration) {
+			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
+			@Autowired(required = false) ProducerMessageHandlerCustomizer<? extends AbstractAwsMessageHandler<Void>> producerMessageHandlerCustomizer) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder =
 				new KinesisMessageChannelBinder(this.configurationProperties, provisioningProvider, amazonKinesis,
@@ -220,6 +224,7 @@ public class KinesisBinderConfiguration {
 		kinesisMessageChannelBinder.setLockRegistry(lockRegistry);
 		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
 		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
+		kinesisMessageChannelBinder.setProducerMessageHandlerCustomizer(producerMessageHandlerCustomizer);
 		return kinesisMessageChannelBinder;
 	}
 
