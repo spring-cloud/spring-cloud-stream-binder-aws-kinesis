@@ -16,8 +16,6 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -25,12 +23,16 @@ import java.util.concurrent.TimeUnit;
 
 import cloud.localstack.docker.LocalstackDockerExtension;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
+import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.model.PutRecordRequest;
+import com.amazonaws.services.kinesis.model.PutRecordResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
+import reactor.core.publisher.MonoProcessor;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,12 +66,7 @@ import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 
-import com.amazonaws.handlers.AsyncHandler;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.model.PutRecordRequest;
-import com.amazonaws.services.kinesis.model.PutRecordResult;
-import reactor.core.publisher.MonoProcessor;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The tests for the processor SCSt application against local Kinesis and DynamoDB.
@@ -114,7 +111,7 @@ class KinesisBinderProcessorTests {
 	@Autowired
 	@Qualifier(Processor.INPUT + "." + CONSUMER_GROUP + ".errors")
 	private SubscribableChannel consumerErrorChannel;
-	
+
 	@Autowired
 	private ProcessorConfiguration config;
 
