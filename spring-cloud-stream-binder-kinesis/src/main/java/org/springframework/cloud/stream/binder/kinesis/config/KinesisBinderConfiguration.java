@@ -55,7 +55,6 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.locks.LockRegistry;
-import org.springframework.messaging.MessageHandler;
 
 /**
  * The auto-configuration for AWS components and Spring Cloud Stream Kinesis Binder.
