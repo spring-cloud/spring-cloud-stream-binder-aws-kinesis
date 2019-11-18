@@ -294,6 +294,14 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
 
+		if (properties.isUseNativeDecoding()) {
+			adapter.setConverter(null);
+		}
+		else {
+			// Defer byte[] conversion to the InboundContentTypeConvertingInterceptor
+			adapter.setConverter((bytes) -> bytes);
+		}
+
 		ErrorInfrastructure errorInfrastructure = registerErrorInfrastructure(destination, consumerGroup, properties);
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
