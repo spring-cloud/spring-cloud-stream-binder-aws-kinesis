@@ -296,3 +296,13 @@ In case of DynamoDB Streams the `KinesisStreamProvisioner` throws a `Provisionin
 
 Starting with version 1.2, if your Spring Cloud Stream application delivered only in the `source` role, the extra beans, required for `sink` (or Kinesis consumers), are not going to be registered in the application context and, therefore, no need to worry about their resources on AWS.
 The story is about DynamoDB and Cloud Watch.
+
+[[health-indicator]]
+== Kinesis Binder Health Indicator
+
+Version 2.0 has introduced a `KinesisBinderHealthIndicator` implementation which is a part of `BindersHealthContributor` composition under the `binders` path.
+An out-of-the-box implementation iterates over Kinesis streams involved in the binder configuration calling a `describeStream` command against them.
+If any of streams doesn't exist the health is treated as `DOWN`.
+If `LimitExceededException` is thrown according `describeStream` limitations, the `KinesisBinderHealthIndicator` tries over again after one second interval.
+Ony when all the configured stream are described properly the `UP` health is returned.
+You can override out-of-the-box implementation provided your own bean with the `kinesisBinderHealthIndicator` name.

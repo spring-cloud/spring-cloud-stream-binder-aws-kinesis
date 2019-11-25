@@ -37,6 +37,8 @@ import reactor.core.publisher.MonoProcessor;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.boot.actuate.health.Status;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.aws.autoconfigure.context.ContextResourceLoaderAutoConfiguration;
@@ -115,6 +117,9 @@ class KinesisBinderProcessorTests {
 	@Autowired
 	private ProcessorConfiguration config;
 
+	@Autowired
+	private HealthEndpoint healthEndpoint;
+
 	@BeforeAll
 	static void setup() {
 		AMAZON_KINESIS = ExtendedDockerTestUtils.getClientKinesisAsync();
@@ -124,6 +129,9 @@ class KinesisBinderProcessorTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void testProcessorWithKinesisBinder() throws Exception {
+		assertThat(this.healthEndpoint.health().getStatus()).isEqualTo(Status.UP);
+		assertThat(this.healthEndpoint.healthForPath("binders").getStatus()).isEqualTo(Status.UP);
+
 		Message<String> testMessage = MessageBuilder.withPayload("foo")
 				.setHeader("foo", "BAR").build();
 		this.testSource.toProcessorOutput().send(testMessage);

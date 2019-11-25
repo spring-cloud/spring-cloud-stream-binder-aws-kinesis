@@ -19,6 +19,36 @@ package org.springframework.cloud.stream.binder.kinesis.config;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.aws.autoconfigure.context.ContextCredentialsAutoConfiguration;
+import org.springframework.cloud.aws.autoconfigure.context.ContextRegionProviderAutoConfiguration;
+import org.springframework.cloud.aws.core.region.RegionProvider;
+import org.springframework.cloud.stream.binder.Binder;
+import org.springframework.cloud.stream.binder.kinesis.KinesisBinderHealthIndicator;
+import org.springframework.cloud.stream.binder.kinesis.KinesisMessageChannelBinder;
+import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
+import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
+import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
+import org.springframework.cloud.stream.binding.Bindable;
+import org.springframework.cloud.stream.config.ConsumerEndpointCustomizer;
+import org.springframework.cloud.stream.config.ProducerMessageHandlerCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
+import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
+import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
+import org.springframework.integration.endpoint.MessageProducerSupport;
+import org.springframework.integration.metadata.ConcurrentMetadataStore;
+import org.springframework.integration.support.locks.LockRegistry;
+
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
@@ -31,30 +61,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.aws.autoconfigure.context.ContextCredentialsAutoConfiguration;
-import org.springframework.cloud.aws.autoconfigure.context.ContextRegionProviderAutoConfiguration;
-import org.springframework.cloud.aws.core.region.RegionProvider;
-import org.springframework.cloud.stream.binder.Binder;
-import org.springframework.cloud.stream.binder.kinesis.KinesisMessageChannelBinder;
-import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
-import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
-import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
-import org.springframework.cloud.stream.binding.Bindable;
-import org.springframework.cloud.stream.config.ProducerMessageHandlerCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
-import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
-import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
-import org.springframework.integration.metadata.ConcurrentMetadataStore;
-import org.springframework.integration.support.locks.LockRegistry;
 
 /**
  * The auto-configuration for AWS components and Spring Cloud Stream Kinesis Binder.
@@ -214,7 +220,8 @@ public class KinesisBinderConfiguration {
 			@Autowired(required = false) AmazonDynamoDBStreams dynamoDBStreams,
 			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
 			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
-			@Autowired(required = false) ProducerMessageHandlerCustomizer<? extends AbstractAwsMessageHandler<Void>> producerMessageHandlerCustomizer) {
+			@Autowired(required = false) ProducerMessageHandlerCustomizer<? extends AbstractAwsMessageHandler<Void>> producerMessageHandlerCustomizer,
+			@Autowired(required = false) ConsumerEndpointCustomizer<? extends MessageProducerSupport> consumerEndpointCustomizer) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder =
 				new KinesisMessageChannelBinder(this.configurationProperties, provisioningProvider, amazonKinesis,
@@ -224,7 +231,23 @@ public class KinesisBinderConfiguration {
 		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
 		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
 		kinesisMessageChannelBinder.setProducerMessageHandlerCustomizer(producerMessageHandlerCustomizer);
+		kinesisMessageChannelBinder.setConsumerEndpointCustomizer(consumerEndpointCustomizer);
 		return kinesisMessageChannelBinder;
+	}
+
+	@Configuration
+	@ConditionalOnClass(HealthIndicator.class)
+	@ConditionalOnEnabledHealthIndicator("binders")
+	protected static class KinesisBinderHealthIndicatorConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean(name = "kinesisBinderHealthIndicator")
+		public KinesisBinderHealthIndicator kinesisBinderHealthIndicator(
+				KinesisMessageChannelBinder kinesisMessageChannelBinder) {
+
+			return new KinesisBinderHealthIndicator(kinesisMessageChannelBinder);
+		}
+
 	}
 
 }

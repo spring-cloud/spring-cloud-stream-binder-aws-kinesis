@@ -16,25 +16,13 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
-import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
-import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import com.amazonaws.services.kinesis.model.Shard;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
-import com.amazonaws.services.kinesis.producer.KinesisProducer;
-import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
@@ -77,6 +65,19 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
+import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.model.Shard;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+
 /**
  *
  * The Spring Cloud Stream Binder implementation for AWS Kinesis.
@@ -92,6 +93,8 @@ public class KinesisMessageChannelBinder extends
 		ExtendedPropertiesBinder<MessageChannel, KinesisConsumerProperties, KinesisProducerProperties> {
 
 	private static final ErrorMessageStrategy ERROR_MESSAGE_STRATEGY = new KinesisMessageHeaderErrorMessageStrategy();
+
+	private final List<String> streamsInUse = new ArrayList<>();
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
@@ -178,6 +181,14 @@ public class KinesisMessageChannelBinder extends
 		return this.extendedBindingProperties.getExtendedPropertiesEntryClass();
 	}
 
+	public AmazonKinesisAsync getAmazonKinesis() {
+		return this.amazonKinesis;
+	}
+
+	public List<String> getStreamsInUse() {
+		return this.streamsInUse;
+	}
+
 	@Override
 	protected void onInit() throws Exception {
 		super.onInit();
@@ -205,6 +216,9 @@ public class KinesisMessageChannelBinder extends
 		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
 		messageHandler.setFailureChannel(errorChannel);
 		messageHandler.setBeanFactory(getBeanFactory());
+
+		this.streamsInUse.add(destination.getName());
+
 		return messageHandler;
 	}
 
@@ -279,6 +293,9 @@ public class KinesisMessageChannelBinder extends
 		else {
 			adapter = createKinesisConsumerEndpoint(destination, group, properties);
 		}
+
+		this.streamsInUse.add(destination.getName());
+
 		return adapter;
 	}
 

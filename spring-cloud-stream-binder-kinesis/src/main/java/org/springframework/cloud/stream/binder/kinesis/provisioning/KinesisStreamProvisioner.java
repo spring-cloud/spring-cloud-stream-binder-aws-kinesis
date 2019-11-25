@@ -157,8 +157,8 @@ public class KinesisStreamProvisioner implements
 					logger.info("Stream '" + stream + "' not found. Create one...");
 				}
 
-				this.amazonKinesis.createStream(stream, Math
-						.max(this.configurationProperties.getMinShardCount(), shards));
+				this.amazonKinesis.createStream(stream,
+						Math.max(this.configurationProperties.getMinShardCount(), shards));
 				continue;
 			}
 			catch (LimitExceededException ex) {
@@ -192,8 +192,7 @@ public class KinesisStreamProvisioner implements
 			}
 		}
 
-		int effectiveShardCount = Math
-				.max(this.configurationProperties.getMinShardCount(), shards);
+		int effectiveShardCount = Math.max(this.configurationProperties.getMinShardCount(), shards);
 
 		if ((shardList.size() < effectiveShardCount)
 				&& this.configurationProperties.isAutoAddShards()) {
@@ -203,8 +202,7 @@ public class KinesisStreamProvisioner implements
 		return shardList;
 	}
 
-	private List<Shard> updateShardCount(String streamName, int shardCount,
-			int targetCount) {
+	private List<Shard> updateShardCount(String streamName, int shardCount, int targetCount) {
 		if (logger.isInfoEnabled()) {
 			logger.info("Stream [" + streamName + "] has [" + shardCount
 					+ "] shards compared to a target configuration of [" + targetCount
