@@ -19,6 +19,19 @@ package org.springframework.cloud.stream.binder.kinesis.config;
 import java.util.List;
 import java.util.Set;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -48,19 +61,6 @@ import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.endpoint.MessageProducerSupport;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.locks.LockRegistry;
-
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
-import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 /**
  * The auto-configuration for AWS components and Spring Cloud Stream Kinesis Binder.

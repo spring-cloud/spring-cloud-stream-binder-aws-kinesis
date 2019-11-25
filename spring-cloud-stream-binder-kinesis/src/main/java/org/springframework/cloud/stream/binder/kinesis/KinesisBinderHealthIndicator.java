@@ -19,12 +19,12 @@ package org.springframework.cloud.stream.binder.kinesis;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
-
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.LimitExceededException;
+
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
 
 /**
  * @author Artem Bilan
