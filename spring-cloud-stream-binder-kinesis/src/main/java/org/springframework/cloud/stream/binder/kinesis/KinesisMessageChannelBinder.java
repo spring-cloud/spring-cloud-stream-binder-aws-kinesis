@@ -42,6 +42,7 @@ import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.ExtendedPropertiesBinder;
+import org.springframework.cloud.stream.binder.PartitionKeyExtractorStrategy;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
@@ -236,12 +237,27 @@ public class KinesisMessageChannelBinder extends
 					.addInterceptor(0,
 							new ChannelInterceptor() {
 
+								private final PartitionKeyExtractorStrategy partitionKeyExtractorStrategy;
+
+								{
+									if (StringUtils.hasText(producerProperties.getPartitionKeyExtractorName())) {
+										this.partitionKeyExtractorStrategy =
+												getBeanFactory()
+														.getBean(producerProperties.getPartitionKeyExtractorName(),
+																PartitionKeyExtractorStrategy.class);
+									}
+									else {
+										this.partitionKeyExtractorStrategy =
+												(message) ->
+														producerProperties.getPartitionKeyExpression()
+																.getValue(KinesisMessageChannelBinder.this.evaluationContext,
+																		message);
+									}
+								}
+
 								@Override
 								public Message<?> preSend(Message<?> message, MessageChannel channel) {
-									Object partitionKey =
-											producerProperties.getPartitionKeyExpression()
-													.getValue(KinesisMessageChannelBinder.this.evaluationContext,
-															message);
+									Object partitionKey = this.partitionKeyExtractorStrategy.extractKey(message);
 									return MessageBuilder.fromMessage(message)
 											.setHeader(BinderHeaders.PARTITION_OVERRIDE, partitionKey)
 											.build();
