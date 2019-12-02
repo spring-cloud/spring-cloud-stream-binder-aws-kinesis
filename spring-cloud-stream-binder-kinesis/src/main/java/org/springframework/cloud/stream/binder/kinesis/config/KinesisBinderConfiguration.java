@@ -69,7 +69,7 @@ import org.springframework.integration.support.locks.LockRegistry;
  * @author Artem Bilan
  * @author Arnaud Lecollaire
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnMissingBean(Binder.class)
 @EnableConfigurationProperties({ KinesisBinderConfigurationProperties.class, KinesisExtendedBindingProperties.class })
 @Import({ ContextCredentialsAutoConfiguration.class, ContextRegionProviderAutoConfiguration.class })
@@ -130,6 +130,8 @@ public class KinesisBinderConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(AmazonDynamoDBAsync.class)
+	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
+			matchIfMissing = true)
 	public LockRegistry dynamoDBLockRegistry(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
 		if (dynamoDB != null) {
 			KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
@@ -152,6 +154,8 @@ public class KinesisBinderConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(AmazonDynamoDBAsync.class)
+	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
+			matchIfMissing = true)
 	public ConcurrentMetadataStore kinesisCheckpointStore(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
 		if (dynamoDB != null) {
 			KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
@@ -235,7 +239,7 @@ public class KinesisBinderConfiguration {
 		return kinesisMessageChannelBinder;
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(HealthIndicator.class)
 	@ConditionalOnEnabledHealthIndicator("binders")
 	protected static class KinesisBinderHealthIndicatorConfiguration {
