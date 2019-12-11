@@ -18,6 +18,7 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
+import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
 import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
@@ -52,6 +54,7 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsu
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
+import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.integration.aws.inbound.kinesis.KclMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
@@ -286,15 +289,31 @@ public class KinesisMessageChannelBinder extends
 			String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
-		MessageProducer adapter;
-		if (this.configurationProperties.isKplKclEnabled()) {
-			adapter = createKclConsumerEndpoint(destination, group, properties);
+		ConsumerDestination destinationToUse = destination;
+
+		if (properties.getExtension().isDynamoDbStreams()) {
+			DescribeTableResult describeTableResult = this.dynamoDBClient.describeTable(destinationToUse.getName());
+			String latestStreamArn = describeTableResult.getTable().getLatestStreamArn();
+			if (StringUtils.hasText(latestStreamArn)) {
+				destinationToUse = new KinesisConsumerDestination(latestStreamArn, Collections.emptyList());
+			}
+			else {
+				throw new ProvisioningException("The DynamoDB table ["
+						+ destinationToUse.getName()
+						+ "] doesn't have Streams enabled.");
+			}
 		}
 		else {
-			adapter = createKinesisConsumerEndpoint(destination, group, properties);
+			this.streamsInUse.add(destinationToUse.getName());
 		}
 
-		this.streamsInUse.add(destination.getName());
+		MessageProducer adapter;
+		if (this.configurationProperties.isKplKclEnabled()) {
+			adapter = createKclConsumerEndpoint(destinationToUse, group, properties);
+		}
+		else {
+			adapter = createKinesisConsumerEndpoint(destinationToUse, group, properties);
+		}
 
 		return adapter;
 	}

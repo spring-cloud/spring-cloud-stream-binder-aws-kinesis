@@ -36,11 +36,11 @@ public final class KinesisConsumerDestination implements ConsumerDestination {
 
 	private final String dlqName;
 
-	KinesisConsumerDestination(String streamName, List<Shard> shards) {
+	public KinesisConsumerDestination(String streamName, List<Shard> shards) {
 		this(streamName, shards, null);
 	}
 
-	KinesisConsumerDestination(String streamName, List<Shard> shards, String dlqName) {
+	public KinesisConsumerDestination(String streamName, List<Shard> shards, String dlqName) {
 		this.streamName = streamName;
 		this.shards = shards;
 		this.dlqName = dlqName;

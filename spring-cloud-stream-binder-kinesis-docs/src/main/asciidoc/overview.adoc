@@ -52,7 +52,7 @@ A `single consumer` for the message is ensured by https://docs.spring.io/spring-
 To have a highly available consumer group for your kinesis stream:
 
  - Ensure all instances of your consumer applications use a shared `DynamoDbMetadataStore` and `DynamoDbLockRegistry` (See below for configuration options).
- - Use same group name for the channel in all application instances by using property `spring.cloud.stream.bindings.<channelName>.group`.
+ - Use same group name for the channel in all application instances by using property `spring.cloud.stream.bindings.<bindingTarget>.group`.
 
 These configurations alone guarantee HA, message ordering and guaranteed message delivery.
 However, even distribution across instances is not guaranteed as of now.
@@ -60,7 +60,7 @@ There is a very high chance that a single instance in a consumer group will pick
 But, when that instance goes down (couldn't send heartbeat for any reason), other instance in the consumer group will start processing from the last checkpoint of the previous consumer (for shardIterator type TRIM_HORIZON).
 
 So, configuring consumer concurrency is important to achieve throughput.
-It can be configured using `spring.cloud.stream.bindings.<channelName>.consumer.concurrency`.
+It can be configured using `spring.cloud.stream.bindings.<bindingTarget>.consumer.concurrency`.
 
 === Static shard distribution within a single consumer group
 It is possible to evenly distribute shard across all instances within a single consumer group.
@@ -254,15 +254,16 @@ Any subsequent starts of the consumer in the same group are adjusted according t
 
 dynamoDbStreams::
   The `boolean` flag indicating that Kinesis consumer channel adapter should adapt DynamoDB Streams functionality instead of regular Kinesis streams.
+The `spring.cloud.stream.bindings.<bindingTarget>.destination` value must be a DynamoDB table name.
 Default: `false`.
 
 === Kinesis Producer Properties
 
-The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channelName>.producer.`
+The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<bindingTarget>.producer.`.
 
 sync::
-  Whether the producer should act in a synchronous manner with respect to writing records into a stream. If true, the producer will
-  wait for a response from Kinesis after a `PutRecord` operation.
+  Whether the producer should act in a synchronous manner with respect to writing records into a stream.
+If true, the producer will wait for a response from Kinesis after a `PutRecord` operation.
 +
 Default: `false`
 sendTimeout::
@@ -288,8 +289,8 @@ There is no automatic handling of these exceptions (such as sending to a dead le
 == DynamoDB Streams
 
 Starting with version 1.2, the `KinesisMessageChannelBinder` supports DynamoDB Streams for Kinesis consumer channel adapter.
-The functionality is based on the https://github.com/awslabs/dynamodb-streams-kinesis-adapter[DynamoDB Streams Kinesis Adapter] and every Kinesis consumer endpoint selects an appropriate Kinesis Client according the `spring.cloud.stream.kinesis.bindings.<channelName>.consumer.dynamoDbStreams` boolean flag.
-In case of DynamoDB Streams the `KinesisStreamProvisioner` throws a `ProvisioningException` if there is no requested stream in the DynamoDB: the DynamoDB Streams Kinesis Adapter doesn't support stream entity manipulation operations.
+The functionality is based on the https://github.com/awslabs/dynamodb-streams-kinesis-adapter[DynamoDB Streams Kinesis Adapter] and every Kinesis consumer endpoint selects an appropriate Kinesis Client according the `spring.cloud.stream.kinesis.bindings.<bindingTarget>.consumer.dynamoDbStreams` boolean flag.
+In this case a value for `spring.cloud.stream.bindings.<bindingTarget>.destination` must be a DynamoDB table name.
 
 [[optional-resources]]
 == Optional Resources

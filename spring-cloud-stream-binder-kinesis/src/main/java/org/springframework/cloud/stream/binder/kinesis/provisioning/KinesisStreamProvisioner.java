@@ -17,6 +17,7 @@
 package org.springframework.cloud.stream.binder.kinesis.provisioning;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.amazonaws.services.kinesis.AmazonKinesis;
@@ -87,13 +88,20 @@ public class KinesisStreamProvisioner implements
 		}
 
 		return new KinesisProducerDestination(name,
-				createOrUpdate(name, properties.getPartitionCount(), null));
+				createOrUpdate(name, properties.getPartitionCount()));
 	}
 
 	@Override
 	public ConsumerDestination provisionConsumerDestination(String name, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties)
 			throws ProvisioningException {
+
+		if (properties.getExtension().isDynamoDbStreams()) {
+			if (logger.isInfoEnabled()) {
+				logger.info("Using DynamoDB table in DynamoDB Streams support for inbound: " + name);
+			}
+			return new KinesisConsumerDestination(name, Collections.emptyList());
+		}
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Using Kinesis stream for inbound: " + name);
@@ -105,10 +113,10 @@ public class KinesisStreamProvisioner implements
 
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
 
-		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount, properties.getExtension()));
+		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
 	}
 
-	private List<Shard> createOrUpdate(String stream, int shards, KinesisConsumerProperties extension) {
+	private List<Shard> createOrUpdate(String stream, int shards) {
 		List<Shard> shardList = new ArrayList<>();
 
 		int describeStreamRetries = 0;
@@ -145,12 +153,6 @@ public class KinesisStreamProvisioner implements
 					throw new ProvisioningException(
 							"The stream [" + stream
 									+ "] was not found and auto creation is disabled.",
-							ex);
-				}
-				if (extension != null && extension.isDynamoDbStreams()) {
-					throw new ProvisioningException(
-							"The stream [" + stream
-									+ "] was not found and DynamoDB Streams doesn't support stream creation.",
 							ex);
 				}
 				if (logger.isInfoEnabled()) {
