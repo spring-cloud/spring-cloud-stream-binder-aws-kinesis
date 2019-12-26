@@ -257,6 +257,11 @@ dynamoDbStreams::
 The `spring.cloud.stream.bindings.<bindingTarget>.destination` value must be a DynamoDB table name.
 Default: `false`.
 
+Starting with version 2.0.1, beans of `KinesisClientLibConfiguration` type can be provided in the application context to have a full control over Kinesis Client Library configuration options.
+The stream and consumer group (plus workerId) must be provided in the respective `KinesisClientLibConfiguration` bean.
+When `KclMessageDrivenChannelAdapter` endpoint is configured in the binder, it selects an appropriate `KinesisClientLibConfiguration` from the application context according a destination (stream) for binding.
+If there is no `KinesisClientLibConfiguration` bean for its stream, the `KclMessageDrivenChannelAdapter` falls back to original configuration with defaults options for its internal `KinesisClientLibConfiguration`.
+
 === Kinesis Producer Properties
 
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<bindingTarget>.producer.`.

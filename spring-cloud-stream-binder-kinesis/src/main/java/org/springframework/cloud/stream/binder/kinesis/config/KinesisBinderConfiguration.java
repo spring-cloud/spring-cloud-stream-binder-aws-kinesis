@@ -30,6 +30,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -225,7 +226,8 @@ public class KinesisBinderConfiguration {
 			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
 			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
 			@Autowired(required = false) ProducerMessageHandlerCustomizer<? extends AbstractAwsMessageHandler<Void>> producerMessageHandlerCustomizer,
-			@Autowired(required = false) ConsumerEndpointCustomizer<? extends MessageProducerSupport> consumerEndpointCustomizer) {
+			@Autowired(required = false) ConsumerEndpointCustomizer<? extends MessageProducerSupport> consumerEndpointCustomizer,
+			@Autowired List<KinesisClientLibConfiguration> kinesisClientLibConfigurations) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder =
 				new KinesisMessageChannelBinder(this.configurationProperties, provisioningProvider, amazonKinesis,
@@ -236,6 +238,7 @@ public class KinesisBinderConfiguration {
 		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
 		kinesisMessageChannelBinder.setProducerMessageHandlerCustomizer(producerMessageHandlerCustomizer);
 		kinesisMessageChannelBinder.setConsumerEndpointCustomizer(consumerEndpointCustomizer);
+		kinesisMessageChannelBinder.setKinesisClientLibConfigurations(kinesisClientLibConfigurations);
 		return kinesisMessageChannelBinder;
 	}
 
