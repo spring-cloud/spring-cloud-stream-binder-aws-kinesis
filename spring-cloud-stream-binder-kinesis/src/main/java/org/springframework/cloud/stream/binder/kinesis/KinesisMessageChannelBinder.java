@@ -89,6 +89,7 @@ import org.springframework.util.StringUtils;
  * @author Peter Oates
  * @author Artem Bilan
  * @author Arnaud Lecollaire
+ * @author Dirk Bonhomme
  */
 public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -366,6 +367,8 @@ public class KinesisMessageChannelBinder extends
 
 		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
 		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
+
+		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 
 		if (properties.isUseNativeDecoding()) {
 			adapter.setConverter(null);
