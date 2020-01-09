@@ -44,6 +44,9 @@ By default partition key is a result of the `Object.hash()` from the message `pa
 The Spring Cloud Stream partition handling logic is excluded in case of AWS Kinesis Binder since it is out of use and the provided `producer.partitionKeyExpression` is propagated to the `KinesisMessageHandler` directly.
 
 On the consumer side the `instanceCount` and `instanceIndex` are used to distribute shards between consumers in group evenly.
+This has an effect only for regular `KinesisMessageDrivenChannelAdapter` which can assign specific shards for the target Kinesis consumer.
+With Kinesis Client Library we can only subscriber to the provided stream and shards distribution is done by that client.
+See more information in the Kinesis Client Library https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[documentation].
 
 == Consumer Groups
 Consumer groups are implemented with focus on High availability, Message ordering and guaranteed Message delivery in Spring cloud stream.
