@@ -201,7 +201,7 @@ Default: `SpringIntegrationLocks`
 
 === Kinesis Consumer Properties
 
-The following properties are available for Kinesis consumers only and must be prefixed with ``
+The following properties are available for Kinesis consumers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<channel-name>.consumer`
 
 startTimeout::
   The amount of time to wait for the consumer to start, in milliseconds.
