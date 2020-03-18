@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -339,7 +340,7 @@ public class KinesisMessageChannelBinder extends
 
 		String stream = destination.getName();
 
-		KinesisClientLibConfiguration kinesisClientLibConfiguration = obtainKinesisClientLibConfiguration(stream);
+		KinesisClientLibConfiguration kinesisClientLibConfiguration = obtainKinesisClientLibConfiguration(stream, group);
 
 		KclMessageDrivenChannelAdapter adapter;
 
@@ -385,11 +386,17 @@ public class KinesisMessageChannelBinder extends
 		return adapter;
 	}
 
-	private KinesisClientLibConfiguration obtainKinesisClientLibConfiguration(String stream) {
-		return this.kinesisClientLibConfigurations.stream()
-				.filter(kinesisClientLibConfiguration -> stream.equals(kinesisClientLibConfiguration.getStreamName()))
-				.findFirst()
-				.orElse(null);
+	private KinesisClientLibConfiguration obtainKinesisClientLibConfiguration(String stream, String group) {
+		KinesisClientLibConfiguration candidate = null;
+		for (KinesisClientLibConfiguration conf : this.kinesisClientLibConfigurations) {
+			if (stream.equals(conf.getStreamName())) {
+				candidate = conf;
+				if (Objects.equals(group, conf.getApplicationName())) {
+					break;
+				}
+			}
+		}
+		return candidate;
 	}
 
 	private MessageProducer createKinesisConsumerEndpoint(ConsumerDestination destination, String group,
