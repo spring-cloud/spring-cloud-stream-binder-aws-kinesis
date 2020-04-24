@@ -32,11 +32,16 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
 
-	private String[] headers = new String[] { };
+	private String[] headers = new String[] {};
 
+	@Deprecated
 	private int describeStreamBackoff = 1000;
 
 	private int describeStreamRetries = 50;
+
+	private int listShardsStreamBackoff = 1000;
+
+	private int listShardsStreamRetries = 50;
 
 	private boolean autoCreateStream = true;
 
@@ -45,7 +50,8 @@ public class KinesisBinderConfigurationProperties {
 	private int minShardCount = 1;
 
 	/**
-	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and production.
+	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and
+	 * production.
 	 */
 	private boolean kplKclEnabled;
 
@@ -59,6 +65,22 @@ public class KinesisBinderConfigurationProperties {
 
 	public void setHeaders(String... headers) {
 		this.headers = headers;
+	}
+
+	public int getListShardsStreamBackoff() {
+		return listShardsStreamBackoff;
+	}
+
+	public void setListShardsStreamBackoff(int listShardsStreamBackoff) {
+		this.listShardsStreamBackoff = listShardsStreamBackoff;
+	}
+
+	public int getListShardsStreamRetries() {
+		return listShardsStreamRetries;
+	}
+
+	public void setListShardsStreamRetries(int listShardsStreamRetries) {
+		this.listShardsStreamRetries = listShardsStreamRetries;
 	}
 
 	public int getDescribeStreamBackoff() {
