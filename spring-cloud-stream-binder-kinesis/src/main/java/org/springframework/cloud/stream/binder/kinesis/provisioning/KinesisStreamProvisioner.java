@@ -120,7 +120,7 @@ public class KinesisStreamProvisioner implements
 	private List<Shard> getShardList(String stream, int retryCount) {
 		List<Shard> shardList = new ArrayList<>();
 
-		if (retryCount > configurationProperties.getListShardsStreamRetries()) {
+		if (retryCount > configurationProperties.getListShardsRetries()) {
 			ResourceNotFoundException resourceNotFoundException = new ResourceNotFoundException(
 					"The stream [" + stream + "] isn't ACTIVE or doesn't exist.");
 			resourceNotFoundException.setServiceName("Kinesis");

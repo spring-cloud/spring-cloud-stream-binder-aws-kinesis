@@ -39,9 +39,9 @@ public class KinesisBinderConfigurationProperties {
 
 	private int describeStreamRetries = 50;
 
-	private int listShardsStreamBackoff = 1000;
+	private int listShardsBackoff = 1000;
 
-	private int listShardsStreamRetries = 50;
+	private int listShardsRetries = 50;
 
 	private boolean autoCreateStream = true;
 
@@ -67,20 +67,20 @@ public class KinesisBinderConfigurationProperties {
 		this.headers = headers;
 	}
 
-	public int getListShardsStreamBackoff() {
-		return listShardsStreamBackoff;
+	public int getListShardsBackoff() {
+		return listShardsBackoff;
 	}
 
-	public void setListShardsStreamBackoff(int listShardsStreamBackoff) {
-		this.listShardsStreamBackoff = listShardsStreamBackoff;
+	public void setListShardsBackoff(int listShardsBackoff) {
+		this.listShardsBackoff = listShardsBackoff;
 	}
 
-	public int getListShardsStreamRetries() {
-		return listShardsStreamRetries;
+	public int getListShardsRetries() {
+		return listShardsRetries;
 	}
 
-	public void setListShardsStreamRetries(int listShardsStreamRetries) {
-		this.listShardsStreamRetries = listShardsStreamRetries;
+	public void setListShardsRetries(int listShardsRetries) {
+		this.listShardsRetries = listShardsRetries;
 	}
 
 	public int getDescribeStreamBackoff() {
