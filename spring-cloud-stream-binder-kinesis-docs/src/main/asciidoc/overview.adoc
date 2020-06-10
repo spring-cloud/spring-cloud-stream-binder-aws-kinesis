@@ -89,12 +89,12 @@ headers::
   The set of custom headers to transfer over AWS Kinesis
 +
 Default: "correlationId", "sequenceSize", "sequenceNumber", "contentType", "originalContentType".
-listShardsBackoff::
-  The amount of time in milliseconds in between retries for the `ListShards` operation
+describeStreamBackoff::
+  The amount of time in milliseconds in between retries for the `DescribeStream` operation
 +
 Default: `1000`.
-listShardsRetries::
-  The amount of times the consumer will retry a `ListShards` operation
+describeStreamRetries::
+  The amount of times the consumer will retry a `DescribeStream` operation waiting for the stream to be in `ACTIVE` state
 +
 Default: `50`.
 autoCreateStream::
