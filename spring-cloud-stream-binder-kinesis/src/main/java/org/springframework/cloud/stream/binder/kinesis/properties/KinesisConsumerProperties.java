@@ -37,8 +37,7 @@ public class KinesisConsumerProperties {
 	private CheckpointMode checkpointMode = CheckpointMode.batch;
 
 	/**
-	 * Interval, in milliseconds, between two checkpoints when checkpoint mode is
-	 * periodic.
+	 * Interval, in milliseconds, between two checkpoints when checkpoint mode is periodic.
 	 */
 	private Long checkpointInterval = 5_000L;
 
@@ -53,8 +52,8 @@ public class KinesisConsumerProperties {
 	private boolean dynamoDbStreams;
 
 	/**
-	 * Worker identifier used to distinguish different workers/processes (only used when
-	 * KCL is enabled).
+	 * Worker identifier used to distinguish different workers/processes
+	 * (only used when KCL is enabled).
 	 */
 	private String workerId;
 

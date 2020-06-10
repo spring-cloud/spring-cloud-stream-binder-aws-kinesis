@@ -55,8 +55,8 @@ public final class KinesisProducerDestination implements ProducerDestination {
 
 	@Override
 	public String toString() {
-		return "KinesisProducerDestination{" + "streamName='" + this.streamName + '\'' + ", shards=" + this.shards
-				+ '}';
+		return "KinesisProducerDestination{" + "streamName='" + this.streamName + '\''
+				+ ", shards=" + this.shards + '}';
 	}
 
 }

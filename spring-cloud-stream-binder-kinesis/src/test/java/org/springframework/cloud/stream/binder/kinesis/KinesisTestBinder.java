@@ -43,14 +43,14 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.integration.core.MessageProducer;
 
 /**
- * An {@link AbstractTestBinder} implementation for the
- * {@link KinesisMessageChannelBinder}.
+ * An {@link AbstractTestBinder} implementation for the {@link KinesisMessageChannelBinder}.
  *
  * @author Artem Bilan
  * @author Arnaud Lecollaire
  */
 public class KinesisTestBinder extends
-		AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
+		AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
+				ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private final AmazonKinesisAsync amazonKinesis;
 
@@ -63,11 +63,12 @@ public class KinesisTestBinder extends
 
 		this.amazonKinesis = amazonKinesis;
 
-		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(amazonKinesis,
-				kinesisBinderConfigurationProperties);
+		KinesisStreamProvisioner provisioningProvider = new KinesisStreamProvisioner(
+				amazonKinesis, kinesisBinderConfigurationProperties);
 
-		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(amazonKinesis, dynamoDbClient,
-				kinesisBinderConfigurationProperties, provisioningProvider);
+		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(
+				amazonKinesis, dynamoDbClient, kinesisBinderConfigurationProperties,
+				provisioningProvider);
 
 		binder.setApplicationContext(this.applicationContext);
 
@@ -81,13 +82,15 @@ public class KinesisTestBinder extends
 	@Override
 	public void cleanup() {
 		ListStreamsRequest listStreamsRequest = new ListStreamsRequest();
-		ListStreamsResult listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
+		ListStreamsResult listStreamsResult = this.amazonKinesis
+				.listStreams(listStreamsRequest);
 
 		List<String> streamNames = listStreamsResult.getStreamNames();
 
 		while (listStreamsResult.getHasMoreStreams()) {
 			if (streamNames.size() > 0) {
-				listStreamsRequest.setExclusiveStartStreamName(streamNames.get(streamNames.size() - 1));
+				listStreamsRequest.setExclusiveStartStreamName(
+						streamNames.get(streamNames.size() - 1));
 			}
 			listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
 			streamNames.addAll(listStreamsResult.getStreamNames());
@@ -126,9 +129,11 @@ public class KinesisTestBinder extends
 
 	}
 
-	private static class TestKinesisMessageChannelBinder extends KinesisMessageChannelBinder {
+	private static class TestKinesisMessageChannelBinder
+			extends KinesisMessageChannelBinder {
 
-		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis, AmazonDynamoDBAsync dynamoDbClient,
+		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
+				AmazonDynamoDBAsync dynamoDbClient,
 				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
 				KinesisStreamProvisioner provisioningProvider) {
 
@@ -148,10 +153,12 @@ public class KinesisTestBinder extends
 		}
 
 		@Override
-		protected MessageProducer createConsumerEndpoint(ConsumerDestination destination, String group,
+		protected MessageProducer createConsumerEndpoint(ConsumerDestination destination,
+				String group,
 				ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
-			MessageProducer messageProducer = super.createConsumerEndpoint(destination, group, properties);
+			MessageProducer messageProducer = super.createConsumerEndpoint(destination,
+					group, properties);
 			DirectFieldAccessor dfa = new DirectFieldAccessor(messageProducer);
 			dfa.setPropertyValue("describeStreamBackoff", 10);
 			dfa.setPropertyValue("consumerBackoff", 10);

@@ -57,7 +57,8 @@ import org.springframework.util.Assert;
  * @author Matthias Wesolowski
  */
 public class KinesisStreamProvisioner implements
-		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>, ExtendedProducerProperties<KinesisProducerProperties>> {
+		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
+				ExtendedProducerProperties<KinesisProducerProperties>> {
 
 	private static final Log logger = LogFactory.getLog(KinesisStreamProvisioner.class);
 
@@ -69,14 +70,16 @@ public class KinesisStreamProvisioner implements
 			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
-		Assert.notNull(kinesisBinderConfigurationProperties, "'kinesisBinderConfigurationProperties' must not be null");
+		Assert.notNull(kinesisBinderConfigurationProperties,
+				"'kinesisBinderConfigurationProperties' must not be null");
 		this.amazonKinesis = amazonKinesis;
 		this.configurationProperties = kinesisBinderConfigurationProperties;
 	}
 
 	@Override
 	public ProducerDestination provisionProducerDestination(String name,
-			ExtendedProducerProperties<KinesisProducerProperties> properties) throws ProvisioningException {
+			ExtendedProducerProperties<KinesisProducerProperties> properties)
+			throws ProvisioningException {
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Using Kinesis stream for outbound: " + name);
@@ -86,12 +89,14 @@ public class KinesisStreamProvisioner implements
 			properties.setHeaderMode(HeaderMode.embeddedHeaders);
 		}
 
-		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
+		return new KinesisProducerDestination(name,
+				createOrUpdate(name, properties.getPartitionCount()));
 	}
 
 	@Override
 	public ConsumerDestination provisionConsumerDestination(String name, String group,
-			ExtendedConsumerProperties<KinesisConsumerProperties> properties) throws ProvisioningException {
+			ExtendedConsumerProperties<KinesisConsumerProperties> properties)
+			throws ProvisioningException {
 
 		if (properties.getExtension().isDynamoDbStreams()) {
 			if (logger.isInfoEnabled()) {
@@ -176,7 +181,8 @@ public class KinesisStreamProvisioner implements
 
 		int effectiveShardCount = Math.max(this.configurationProperties.getMinShardCount(), shards);
 
-		if ((shardList.size() < effectiveShardCount) && this.configurationProperties.isAutoAddShards()) {
+		if ((shardList.size() < effectiveShardCount)
+				&& this.configurationProperties.isAutoAddShards()) {
 			return updateShardCount(stream, shardList.size(), effectiveShardCount);
 		}
 
@@ -186,11 +192,13 @@ public class KinesisStreamProvisioner implements
 	private List<Shard> updateShardCount(String streamName, int shardCount, int targetCount) {
 		if (logger.isInfoEnabled()) {
 			logger.info("Stream [" + streamName + "] has [" + shardCount
-					+ "] shards compared to a target configuration of [" + targetCount + "], creating shards...");
+					+ "] shards compared to a target configuration of [" + targetCount
+					+ "], creating shards...");
 		}
 
-		UpdateShardCountRequest updateShardCountRequest = new UpdateShardCountRequest().withStreamName(streamName)
-				.withTargetShardCount(targetCount).withScalingType(ScalingType.UNIFORM_SCALING);
+		UpdateShardCountRequest updateShardCountRequest = new UpdateShardCountRequest()
+				.withStreamName(streamName).withTargetShardCount(targetCount)
+				.withScalingType(ScalingType.UNIFORM_SCALING);
 
 		this.amazonKinesis.updateShardCount(updateShardCountRequest);
 
@@ -201,20 +209,25 @@ public class KinesisStreamProvisioner implements
 
 		String exclusiveStartShardId = null;
 
-		DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest().withStreamName(streamName);
+		DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest()
+				.withStreamName(streamName);
 
 		while (true) {
 			DescribeStreamResult describeStreamResult = null;
 
 			try {
 				describeStreamRequest.withExclusiveStartShardId(exclusiveStartShardId);
-				describeStreamResult = this.amazonKinesis.describeStream(describeStreamRequest);
-				StreamDescription streamDescription = describeStreamResult.getStreamDescription();
-				if (StreamStatus.ACTIVE.toString().equals(streamDescription.getStreamStatus())) {
+				describeStreamResult = this.amazonKinesis
+						.describeStream(describeStreamRequest);
+				StreamDescription streamDescription = describeStreamResult
+						.getStreamDescription();
+				if (StreamStatus.ACTIVE.toString()
+						.equals(streamDescription.getStreamStatus())) {
 					shardList.addAll(streamDescription.getShards());
 
 					if (streamDescription.getHasMoreShards()) {
-						exclusiveStartShardId = shardList.get(shardList.size() - 1).getShardId();
+						exclusiveStartShardId = shardList.get(shardList.size() - 1)
+								.getShardId();
 					}
 					else {
 						break;
@@ -222,15 +235,19 @@ public class KinesisStreamProvisioner implements
 				}
 			}
 			catch (LimitExceededException ex) {
-				logger.info("Got LimitExceededException when describing stream [" + streamName + "]. "
-						+ "Backing off for [" + this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
+				logger.info("Got LimitExceededException when describing stream ["
+						+ streamName + "]. " + "Backing off for ["
+						+ this.configurationProperties.getDescribeStreamBackoff()
+						+ "] millis.");
 			}
 
-			if (describeStreamResult == null || !StreamStatus.ACTIVE.toString()
-					.equals(describeStreamResult.getStreamDescription().getStreamStatus())) {
-				if (describeStreamRetries++ > this.configurationProperties.getDescribeStreamRetries()) {
+			if (describeStreamResult == null || !StreamStatus.ACTIVE.toString().equals(
+					describeStreamResult.getStreamDescription().getStreamStatus())) {
+				if (describeStreamRetries++ > this.configurationProperties
+						.getDescribeStreamRetries()) {
 					ResourceNotFoundException resourceNotFoundException = new ResourceNotFoundException(
-							"The stream [" + streamName + "] isn't ACTIVE or doesn't exist.");
+							"The stream [" + streamName
+									+ "] isn't ACTIVE or doesn't exist.");
 					resourceNotFoundException.setServiceName("Kinesis");
 					throw new ProvisioningException(
 							"Kinesis org.springframework.cloud.stream.binder.kinesis.provisioning error",
@@ -242,7 +259,8 @@ public class KinesisStreamProvisioner implements
 				catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 					throw new ProvisioningException(
-							"The [describeStream] thread for the stream [" + streamName + "] has been interrupted.",
+							"The [describeStream] thread for the stream [" + streamName
+									+ "] has been interrupted.",
 							ex);
 				}
 			}

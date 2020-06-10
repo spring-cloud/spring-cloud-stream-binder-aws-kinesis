@@ -32,7 +32,7 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
 
-	private String[] headers = new String[] {};
+	private String[] headers = new String[] { };
 
 	private int describeStreamBackoff = 1000;
 
@@ -45,8 +45,7 @@ public class KinesisBinderConfigurationProperties {
 	private int minShardCount = 1;
 
 	/**
-	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and
-	 * production.
+	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and production.
 	 */
 	private boolean kplKclEnabled;
 

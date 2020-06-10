@@ -21,6 +21,7 @@ import com.amazonaws.SDKGlobalConfiguration;
 
 /**
  * @author Artem Bilan
+ *
  * @since 2.3
  */
 public class EnvironmentHostNameResolver implements IHostNameResolver {
