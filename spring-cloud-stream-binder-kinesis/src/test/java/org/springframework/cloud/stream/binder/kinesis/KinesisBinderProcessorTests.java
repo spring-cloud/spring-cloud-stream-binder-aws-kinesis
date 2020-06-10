@@ -76,22 +76,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Artem Bilan
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-		properties = {
-				"spring.cloud.stream.bindings.input.group = "
-						+ KinesisBinderProcessorTests.CONSUMER_GROUP,
-				"spring.cloud.stream.bindings."
-						+ KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT
+		properties = {"spring.cloud.stream.bindings.input.group = " + KinesisBinderProcessorTests.CONSUMER_GROUP,
+				"spring.cloud.stream.bindings." + KinesisBinderProcessorTests.TestSource.TO_PROCESSOR_OUTPUT
 						+ ".destination = " + Processor.INPUT,
 				"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
 				"spring.cloud.stream.kinesis.binder.headers = foo",
 				"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
-				"spring.cloud.stream.kinesis.binder.locks.table = lockTable",
-				"cloud.aws.region.static=eu-west-2" })
+				"spring.cloud.stream.kinesis.binder.locks.table = lockTable", "cloud.aws.region.static=eu-west-2"})
 @EnabledIfEnvironmentVariable(named = EnvironmentHostNameResolver.DOCKER_HOST_NAME, matches = ".+")
 @ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(randomizePorts = true,
-		hostNameResolver = EnvironmentHostNameResolver.class,
-		services = { "kinesis", "dynamodb"})
+@LocalstackDockerProperties(randomizePorts = true, hostNameResolver = EnvironmentHostNameResolver.class,
+		services = {"kinesis", "dynamodb"})
 @DirtiesContext
 class KinesisBinderProcessorTests {
 
@@ -132,12 +127,10 @@ class KinesisBinderProcessorTests {
 		assertThat(this.healthEndpoint.health().getStatus()).isEqualTo(Status.UP);
 		assertThat(this.healthEndpoint.healthForPath("binders").getStatus()).isEqualTo(Status.UP);
 
-		Message<String> testMessage = MessageBuilder.withPayload("foo")
-				.setHeader("foo", "BAR").build();
+		Message<String> testMessage = MessageBuilder.withPayload("foo").setHeader("foo", "BAR").build();
 		this.testSource.toProcessorOutput().send(testMessage);
 
-		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel
-				.receive(10_000);
+		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel.receive(10_000);
 		assertThat(receive).isNotNull();
 
 		MessageValues messageValues = EmbeddedHeaderUtils.extractHeaders(receive, true);
@@ -147,8 +140,7 @@ class KinesisBinderProcessorTests {
 		assertThat(messageValues.getHeaders().get(MessageHeaders.CONTENT_TYPE))
 				.isEqualTo(MediaType.APPLICATION_JSON_VALUE);
 
-		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM))
-				.isEqualTo(Processor.OUTPUT);
+		assertThat(messageValues.getHeaders().get(AwsHeaders.RECEIVED_STREAM)).isEqualTo(Processor.OUTPUT);
 		assertThat(messageValues.getHeaders().get("foo")).isEqualTo("BAR");
 		assertThat(messageValues.getHeaders()).containsKey(IntegrationMessageHeaderAccessor.SOURCE_DATA);
 
@@ -167,19 +159,15 @@ class KinesisBinderProcessorTests {
 		assertThat(errorMessages).isEmpty();
 
 		PutRecordResult putRecordResult = this.config.resultMonoProcessor.block(Duration.ofSeconds(10));
-		assertThat(putRecordResult)
-				.isNotNull()
-				.extracting(PutRecordResult::getSequenceNumber)
-				.isNotNull();
+		assertThat(putRecordResult).isNotNull().extracting(PutRecordResult::getSequenceNumber).isNotNull();
 	}
 
 	/**
 	 * Test configuration.
 	 */
-	@EnableBinding({ Processor.class, TestSource.class })
-	@EnableAutoConfiguration(exclude = {
-			ContextResourceLoaderAutoConfiguration.class,
-			ContextStackAutoConfiguration.class })
+	@EnableBinding({Processor.class, TestSource.class})
+	@EnableAutoConfiguration(
+			exclude = {ContextResourceLoaderAutoConfiguration.class, ContextStackAutoConfiguration.class})
 	static class ProcessorConfiguration {
 
 		private MonoProcessor<PutRecordResult> resultMonoProcessor = MonoProcessor.create();
@@ -212,8 +200,8 @@ class KinesisBinderProcessorTests {
 
 		@Bean
 		public MessageProducer kinesisMessageDriverChannelAdapter() {
-			KinesisMessageDrivenChannelAdapter kinesisMessageDrivenChannelAdapter =
-					new KinesisMessageDrivenChannelAdapter(amazonKinesis(), Processor.OUTPUT);
+			KinesisMessageDrivenChannelAdapter kinesisMessageDrivenChannelAdapter = new KinesisMessageDrivenChannelAdapter(
+					amazonKinesis(), Processor.OUTPUT);
 			kinesisMessageDrivenChannelAdapter.setOutputChannel(fromProcessorChannel());
 			kinesisMessageDrivenChannelAdapter.setConverter(null);
 			kinesisMessageDrivenChannelAdapter.setBindSourceRecord(true);

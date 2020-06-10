@@ -57,8 +57,8 @@ public final class KinesisConsumerDestination implements ConsumerDestination {
 
 	@Override
 	public String toString() {
-		return "KinesisConsumerDestination{" + "streamName='" + this.streamName + '\''
-				+ ", shards=" + this.shards + ", dlqName='" + this.dlqName + '\'' + '}';
+		return "KinesisConsumerDestination{" + "streamName='" + this.streamName + '\'' + ", shards=" + this.shards
+				+ ", dlqName='" + this.dlqName + '\'' + '}';
 	}
 
 }
