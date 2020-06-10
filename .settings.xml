@@ -16,7 +16,9 @@
 				this settings file, or copy the profile into their ~/.m2/settings.xml.
 			-->
 			<id>spring</id>
-			<activation><activeByDefault>true</activeByDefault></activation>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
 			<repositories>
 				<repository>
 					<id>spring-snapshots</id>

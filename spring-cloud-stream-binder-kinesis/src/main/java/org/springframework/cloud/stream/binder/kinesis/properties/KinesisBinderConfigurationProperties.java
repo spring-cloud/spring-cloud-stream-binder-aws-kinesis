@@ -34,14 +34,9 @@ public class KinesisBinderConfigurationProperties {
 
 	private String[] headers = new String[] {};
 
-	@Deprecated
 	private int describeStreamBackoff = 1000;
 
 	private int describeStreamRetries = 50;
-
-	private int listShardsBackoff = 1000;
-
-	private int listShardsRetries = 50;
 
 	private boolean autoCreateStream = true;
 
@@ -65,22 +60,6 @@ public class KinesisBinderConfigurationProperties {
 
 	public void setHeaders(String... headers) {
 		this.headers = headers;
-	}
-
-	public int getListShardsBackoff() {
-		return listShardsBackoff;
-	}
-
-	public void setListShardsBackoff(int listShardsBackoff) {
-		this.listShardsBackoff = listShardsBackoff;
-	}
-
-	public int getListShardsRetries() {
-		return listShardsRetries;
-	}
-
-	public void setListShardsRetries(int listShardsRetries) {
-		this.listShardsRetries = listShardsRetries;
 	}
 
 	public int getDescribeStreamBackoff() {

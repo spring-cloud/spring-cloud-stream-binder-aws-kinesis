@@ -20,15 +20,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.LimitExceededException;
+import com.amazonaws.services.kinesis.model.ListShardsRequest;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 
 /**
  * @author Artem Bilan
- *
  * @since 2.0
  */
 public class KinesisBinderHealthIndicator implements HealthIndicator {
@@ -39,7 +38,6 @@ public class KinesisBinderHealthIndicator implements HealthIndicator {
 		this.kinesisMessageChannelBinder = kinesisMessageChannelBinder;
 	}
 
-
 	@Override
 	public Health health() {
 		AmazonKinesisAsync amazonKinesis = this.kinesisMessageChannelBinder.getAmazonKinesis();
@@ -47,7 +45,7 @@ public class KinesisBinderHealthIndicator implements HealthIndicator {
 		for (String stream : streamsInUse) {
 			while (true) {
 				try {
-					amazonKinesis.describeStream(new DescribeStreamRequest().withStreamName(stream).withLimit(1));
+					amazonKinesis.listShards(new ListShardsRequest().withStreamName(stream).withMaxResults(1));
 					break;
 				}
 				catch (LimitExceededException ex) {

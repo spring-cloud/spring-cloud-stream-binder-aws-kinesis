@@ -31,8 +31,8 @@ import org.springframework.cloud.stream.binder.ExtendedBindingProperties;
  *
  */
 @ConfigurationProperties("spring.cloud.stream.kinesis")
-public class KinesisExtendedBindingProperties implements
-		ExtendedBindingProperties<KinesisConsumerProperties, KinesisProducerProperties> {
+public class KinesisExtendedBindingProperties
+		implements ExtendedBindingProperties<KinesisConsumerProperties, KinesisProducerProperties> {
 
 	private static final String DEFAULTS_PREFIX = "spring.cloud.stream.kinesis.default";
 
@@ -48,8 +48,7 @@ public class KinesisExtendedBindingProperties implements
 
 	@Override
 	public KinesisConsumerProperties getExtendedConsumerProperties(String channelName) {
-		if (this.bindings.containsKey(channelName)
-				&& this.bindings.get(channelName).getConsumer() != null) {
+		if (this.bindings.containsKey(channelName) && this.bindings.get(channelName).getConsumer() != null) {
 			return this.bindings.get(channelName).getConsumer();
 		}
 		else {
@@ -59,8 +58,7 @@ public class KinesisExtendedBindingProperties implements
 
 	@Override
 	public KinesisProducerProperties getExtendedProducerProperties(String channelName) {
-		if (this.bindings.containsKey(channelName)
-				&& this.bindings.get(channelName).getProducer() != null) {
+		if (this.bindings.containsKey(channelName) && this.bindings.get(channelName).getProducer() != null) {
 			return this.bindings.get(channelName).getProducer();
 		}
 		else {

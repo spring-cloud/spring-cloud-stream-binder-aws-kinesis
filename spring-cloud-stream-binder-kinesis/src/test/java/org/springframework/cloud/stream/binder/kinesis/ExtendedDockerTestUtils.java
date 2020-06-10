@@ -30,24 +30,19 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 
 /**
  * @author Artem Bilan
- *
  * @since 2.3
  */
 public final class ExtendedDockerTestUtils {
 
 	public static AmazonKinesisAsync getClientKinesisAsync() {
-		AmazonKinesisAsyncClientBuilder amazonKinesisAsyncClientBuilder =
-				AmazonKinesisAsyncClientBuilder.standard()
-						.withEndpointConfiguration(
-								createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointKinesis));
+		AmazonKinesisAsyncClientBuilder amazonKinesisAsyncClientBuilder = AmazonKinesisAsyncClientBuilder.standard()
+				.withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointKinesis));
 		return applyConfigurationAndBuild(amazonKinesisAsyncClientBuilder);
 	}
 
 	public static AmazonDynamoDBAsync getClientDynamoDbAsync() {
-		AmazonDynamoDBAsyncClientBuilder dynamoDBAsyncClientBuilder =
-				AmazonDynamoDBAsyncClientBuilder.standard()
-						.withEndpointConfiguration(
-								createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB));
+		AmazonDynamoDBAsyncClientBuilder dynamoDBAsyncClientBuilder = AmazonDynamoDBAsyncClientBuilder.standard()
+				.withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB));
 		return applyConfigurationAndBuild(dynamoDBAsyncClientBuilder);
 	}
 
