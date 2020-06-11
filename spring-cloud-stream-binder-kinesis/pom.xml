@@ -10,6 +10,7 @@
 	</parent>
 
 	<artifactId>spring-cloud-stream-binder-kinesis</artifactId>
+
 	<packaging>jar</packaging>
 	<name>spring-cloud-stream-binder-kinesis</name>
 	<description>AWS Kinesis Binder Implementation</description>

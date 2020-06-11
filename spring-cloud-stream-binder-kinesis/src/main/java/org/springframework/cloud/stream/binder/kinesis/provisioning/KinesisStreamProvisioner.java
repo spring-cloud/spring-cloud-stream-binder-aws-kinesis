@@ -24,6 +24,8 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
 import com.amazonaws.services.kinesis.model.LimitExceededException;
+import com.amazonaws.services.kinesis.model.ListShardsRequest;
+import com.amazonaws.services.kinesis.model.ListShardsResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import com.amazonaws.services.kinesis.model.ScalingType;
 import com.amazonaws.services.kinesis.model.Shard;
@@ -52,7 +54,7 @@ import org.springframework.util.Assert;
  * @author Artem Bilan
  * @author Jacob Severson
  * @author Sergiu Pantiru
- *
+ * @author Matthias Wesolowski
  */
 public class KinesisStreamProvisioner implements
 		ProvisioningProvider<ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -116,82 +118,65 @@ public class KinesisStreamProvisioner implements
 		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
 	}
 
-	private List<Shard> createOrUpdate(String stream, int shards) {
+	private List<Shard> getShardList(String stream) {
+		return this.getShardList(stream, 0);
+	}
+
+	private List<Shard> getShardList(String stream, int retryCount) {
 		List<Shard> shardList = new ArrayList<>();
 
-		int describeStreamRetries = 0;
+		if (retryCount > configurationProperties.getDescribeStreamRetries()) {
+			ResourceNotFoundException resourceNotFoundException = new ResourceNotFoundException(
+					"The stream [" + stream + "] isn't ACTIVE or doesn't exist.");
+			resourceNotFoundException.setServiceName("Kinesis");
 
-		String exclusiveStartShardId = null;
+			throw new ProvisioningException(
+					"Kinesis org.springframework.cloud.stream.binder.kinesis.provisioning error",
+					resourceNotFoundException);
+		}
 
-		DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest()
-				.withStreamName(stream);
+		ListShardsRequest listShardsRequest = new ListShardsRequest().withStreamName(stream);
 
-		while (true) {
-			DescribeStreamResult describeStreamResult = null;
+		try {
+			ListShardsResult listShardsResult = amazonKinesis.listShards(listShardsRequest);
+
+			shardList.addAll(listShardsResult.getShards());
+
+		}
+		catch (LimitExceededException limitExceededException) {
+			logger.info("Got LimitExceededException when describing stream [" + stream + "]. " + "Backing off for ["
+					+ this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
 
 			try {
-				describeStreamRequest.withExclusiveStartShardId(exclusiveStartShardId);
-				describeStreamResult = this.amazonKinesis
-						.describeStream(describeStreamRequest);
-				StreamDescription streamDescription = describeStreamResult
-						.getStreamDescription();
-				if (StreamStatus.ACTIVE.toString()
-						.equals(streamDescription.getStreamStatus())) {
-					shardList.addAll(streamDescription.getShards());
-
-					if (streamDescription.getHasMoreShards()) {
-						exclusiveStartShardId = shardList.get(shardList.size() - 1)
-								.getShardId();
-					}
-					else {
-						break;
-					}
-				}
+				Thread.sleep(this.configurationProperties.getDescribeStreamBackoff());
+				getShardList(stream, retryCount++);
 			}
-			catch (ResourceNotFoundException ex) {
-				if (!this.configurationProperties.isAutoCreateStream()) {
-					throw new ProvisioningException(
-							"The stream [" + stream
-									+ "] was not found and auto creation is disabled.",
-							ex);
-				}
-				if (logger.isInfoEnabled()) {
-					logger.info("Stream '" + stream + "' not found. Create one...");
-				}
-
-				this.amazonKinesis.createStream(stream,
-						Math.max(this.configurationProperties.getMinShardCount(), shards));
-				continue;
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+				throw new ProvisioningException(
+						"The [describeStream] thread for the stream [" + stream + "] has been interrupted.", ex);
 			}
-			catch (LimitExceededException ex) {
-				logger.info("Got LimitExceededException when describing stream [" + stream
-						+ "]. " + "Backing off for ["
-						+ this.configurationProperties.getDescribeStreamBackoff()
-						+ "] millis.");
+		}
+
+		return shardList;
+	}
+
+	private List<Shard> createOrUpdate(String stream, int shards) {
+		List<Shard> shardList = new ArrayList<>();
+		try {
+			shardList = getShardList(stream);
+		}
+		catch (ResourceNotFoundException ex) {
+			if (!this.configurationProperties.isAutoCreateStream()) {
+				throw new ProvisioningException(
+						"The stream [" + stream + "] was not found and auto creation is disabled.", ex);
+			}
+			if (logger.isInfoEnabled()) {
+				logger.info("Stream '" + stream + "' not found. Create one...");
 			}
 
-			if (describeStreamResult == null || !StreamStatus.ACTIVE.toString().equals(
-					describeStreamResult.getStreamDescription().getStreamStatus())) {
-				if (describeStreamRetries++ > this.configurationProperties
-						.getDescribeStreamRetries()) {
-					ResourceNotFoundException resourceNotFoundException = new ResourceNotFoundException(
-							"The stream [" + stream + "] isn't ACTIVE or doesn't exist.");
-					resourceNotFoundException.setServiceName("Kinesis");
-					throw new ProvisioningException(
-							"Kinesis org.springframework.cloud.stream.binder.kinesis.provisioning error",
-							resourceNotFoundException);
-				}
-				try {
-					Thread.sleep(this.configurationProperties.getDescribeStreamBackoff());
-				}
-				catch (InterruptedException ex) {
-					Thread.currentThread().interrupt();
-					throw new ProvisioningException(
-							"The [describeStream] thread for the stream [" + stream
-									+ "] has been interrupted.",
-							ex);
-				}
-			}
+			this.amazonKinesis.createStream(stream, Math.max(this.configurationProperties.getMinShardCount(), shards));
+
 		}
 
 		int effectiveShardCount = Math.max(this.configurationProperties.getMinShardCount(), shards);

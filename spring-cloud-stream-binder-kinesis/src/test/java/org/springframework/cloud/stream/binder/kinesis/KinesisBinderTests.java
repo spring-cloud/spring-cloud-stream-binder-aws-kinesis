@@ -598,14 +598,13 @@ public class KinesisBinderTests extends
 
 	@Override
 	protected ExtendedConsumerProperties<KinesisConsumerProperties> createConsumerProperties() {
-		ExtendedConsumerProperties<KinesisConsumerProperties> kafkaConsumerProperties = new ExtendedConsumerProperties<>(
+		ExtendedConsumerProperties<KinesisConsumerProperties> kinesisConsumerProperties = new ExtendedConsumerProperties<>(
 				new KinesisConsumerProperties());
 		// set the default values that would normally be propagated by Spring Cloud Stream
-		kafkaConsumerProperties.setInstanceCount(1);
-		kafkaConsumerProperties.setInstanceIndex(0);
-		kafkaConsumerProperties.getExtension()
-				.setShardIteratorType(ShardIteratorType.TRIM_HORIZON.name());
-		return kafkaConsumerProperties;
+		kinesisConsumerProperties.setInstanceCount(1);
+		kinesisConsumerProperties.setInstanceIndex(0);
+		kinesisConsumerProperties.getExtension().setShardIteratorType(ShardIteratorType.TRIM_HORIZON.name());
+		return kinesisConsumerProperties;
 	}
 
 	@Override
