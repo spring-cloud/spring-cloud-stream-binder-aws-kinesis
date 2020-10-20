@@ -383,6 +383,12 @@ public class KinesisMessageChannelBinder extends
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
 		adapter.setBindSourceRecord(true);
+		if (this.getApplicationContext() != null) {
+			adapter.setApplicationContext(this.getApplicationContext());
+		}
+		if (this.getBeanFactory() != null) {
+			adapter.setBeanFactory(this.getBeanFactory());
+		}
 		return adapter;
 	}
 
@@ -499,6 +505,15 @@ public class KinesisMessageChannelBinder extends
 		adapter.setErrorMessageStrategy(ERROR_MESSAGE_STRATEGY);
 		adapter.setErrorChannel(errorInfrastructure.getErrorChannel());
 		adapter.setBindSourceRecord(true);
+		if (this.getApplicationContext() != null) {
+			adapter.setApplicationContext(this.getApplicationContext());
+		}
+		if (this.getBeanFactory() != null) {
+			adapter.setBeanFactory(this.getBeanFactory());
+		}
+		if (this.getApplicationEventPublisher() != null) {
+			adapter.setApplicationEventPublisher(this.getApplicationEventPublisher());
+		}
 		return adapter;
 	}
 
