@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import cloud.localstack.docker.LocalstackDockerTestRunner;
+import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
@@ -91,7 +91,7 @@ import static org.mockito.Mockito.mock;
  * @author Arnaud Lecollaire
  */
 @Ignore("Doesn't work on Jenkins")
-@RunWith(LocalstackDockerTestRunner.class)
+@RunWith(LocalstackTestRunner.class)
 @LocalstackDockerProperties(randomizePorts = true,
 		hostNameResolver = EnvironmentHostNameResolver.class,
 		services = { "kinesis", "dynamodb"})

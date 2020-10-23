@@ -18,8 +18,9 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.function.Supplier;
 
-import cloud.localstack.TestUtils;
-import cloud.localstack.docker.LocalstackDocker;
+import cloud.localstack.Constants;
+import cloud.localstack.Localstack;
+import cloud.localstack.awssdkv1.TestUtils;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.client.builder.AwsAsyncClientBuilder;
 import com.amazonaws.client.builder.AwsClientBuilder;
@@ -35,11 +36,13 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
  */
 public final class ExtendedDockerTestUtils {
 
+	private ExtendedDockerTestUtils() { }
+
 	public static AmazonKinesisAsync getClientKinesisAsync() {
 		AmazonKinesisAsyncClientBuilder amazonKinesisAsyncClientBuilder =
 				AmazonKinesisAsyncClientBuilder.standard()
 						.withEndpointConfiguration(
-								createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointKinesis));
+								createEndpointConfiguration(Localstack.INSTANCE::getEndpointKinesis));
 		return applyConfigurationAndBuild(amazonKinesisAsyncClientBuilder);
 	}
 
@@ -47,12 +50,12 @@ public final class ExtendedDockerTestUtils {
 		AmazonDynamoDBAsyncClientBuilder dynamoDBAsyncClientBuilder =
 				AmazonDynamoDBAsyncClientBuilder.standard()
 						.withEndpointConfiguration(
-								createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB));
+								createEndpointConfiguration(Localstack.INSTANCE::getEndpointDynamoDB));
 		return applyConfigurationAndBuild(dynamoDBAsyncClientBuilder);
 	}
 
 	private static AwsClientBuilder.EndpointConfiguration createEndpointConfiguration(Supplier<String> supplier) {
-		return new AwsClientBuilder.EndpointConfiguration(supplier.get(), TestUtils.DEFAULT_REGION);
+		return new AwsClientBuilder.EndpointConfiguration(supplier.get(), Constants.DEFAULT_REGION);
 	}
 
 	private static <T, C extends AwsAsyncClientBuilder<C, T>> T applyConfigurationAndBuild(C builder) {
@@ -60,8 +63,4 @@ public final class ExtendedDockerTestUtils {
 				.withClientConfiguration(new ClientConfiguration().withMaxErrorRetry(0).withConnectionTimeout(1000))
 				.build();
 	}
-
-	private ExtendedDockerTestUtils() {
-	}
-
 }

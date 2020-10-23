@@ -48,6 +48,7 @@ import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.ExtendedPropertiesBinder;
 import org.springframework.cloud.stream.binder.PartitionKeyExtractorStrategy;
+import org.springframework.cloud.stream.binder.kinesis.adapter.SpringDynamoDBAdapterClient;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
@@ -146,7 +147,7 @@ public class KinesisMessageChannelBinder extends
 		this.awsCredentialsProvider = awsCredentialsProvider;
 
 		if (dynamoDBStreams != null) {
-			this.dynamoDBStreamsAdapter = new AmazonDynamoDBStreamsAdapterClient(dynamoDBStreams);
+			this.dynamoDBStreamsAdapter = new SpringDynamoDBAdapterClient(dynamoDBStreams);
 		}
 		else {
 			this.dynamoDBStreamsAdapter = null;
