@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.ExtendedPropertiesBinder;
 import org.springframework.cloud.stream.binder.PartitionKeyExtractorStrategy;
+import org.springframework.cloud.stream.binder.kinesis.adapter.SpringDynamoDBAdapterClient;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
@@ -91,6 +92,7 @@ import org.springframework.util.StringUtils;
  * @author Artem Bilan
  * @author Arnaud Lecollaire
  * @author Dirk Bonhomme
+ * @author Asiel Caballero
  */
 public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -146,7 +148,7 @@ public class KinesisMessageChannelBinder extends
 		this.awsCredentialsProvider = awsCredentialsProvider;
 
 		if (dynamoDBStreams != null) {
-			this.dynamoDBStreamsAdapter = new AmazonDynamoDBStreamsAdapterClient(dynamoDBStreams);
+			this.dynamoDBStreamsAdapter = new SpringDynamoDBAdapterClient(dynamoDBStreams);
 		}
 		else {
 			this.dynamoDBStreamsAdapter = null;

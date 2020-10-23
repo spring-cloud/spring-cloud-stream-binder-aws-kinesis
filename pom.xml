@@ -23,7 +23,7 @@
 		<amazon-kinesis-client.version>1.14.0</amazon-kinesis-client.version>
 		<amazon-kinesis-producer.version>0.14.1</amazon-kinesis-producer.version>
 		<dynamodb-stream.version>1.5.2</dynamodb-stream.version>
-		<localstack.version>0.1.22</localstack.version>
+		<localstack.version>0.2.2</localstack.version>
 	</properties>
 
 	<modules>
@@ -119,6 +119,7 @@
 					<artifactId>maven-surefire-plugin</artifactId>
 					<configuration>
 						<redirectTestOutputToFile>true</redirectTestOutputToFile>
+						<trimStackTrace>false</trimStackTrace>
 					</configuration>
 				</plugin>
 			</plugins>
@@ -247,5 +248,4 @@
 			</pluginRepositories>
 		</profile>
 	</profiles>
-
 </project>
