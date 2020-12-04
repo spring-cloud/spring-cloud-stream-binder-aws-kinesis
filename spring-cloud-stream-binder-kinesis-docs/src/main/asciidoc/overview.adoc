@@ -279,7 +279,7 @@ sendTimeout::
 +
 Default: `10000`
 
-
+Also, if you'd like to produce a batch of records into Kinesis stream, the message payload must be as a `PutRecordsRequest` instance and general Spring Cloud Stream producer property `useNativeEncoding` must be set to `true`, so Spring Cloud Stream won't try to convert a `PutRecordsRequest` into a `byte[]`. The content of the `PutRecordsRequest` is now end-user responsibility.
 [[kinesis-error-channels]]
 == Error Channels
 
