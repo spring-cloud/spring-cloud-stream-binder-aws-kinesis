@@ -138,14 +138,18 @@ createRetries::
     The amount of times the consumer will poll DynamoDB while waiting for the checkpoint table to be created
 +
 Default: `25`
+billingMode::
+    The Billing Mode of the DynamoDB table. See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.OnDemand[DynamoDB On-Demand Mode]. Possible values are `provisioned` and `payPerRequest`. If left empty or set to `payPerRequest` both `readCapacity` and `writeCapacity` are ignored
++
+Default: `payPerRequest`
 readCapacity::
 	The Read capacity of the DynamoDb table.
-See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.ProvisionedThroughput.Manual[DynamoDB Provisioned Throughput]. This property is used only when `billingMode` is set to `provisioned`
 +
 Default: `1`
 writeCapacity::
 	The write capacity of the DynamoDb table.
-See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.ProvisionedThroughput.Manual[DynamoDB Provisioned Throughput]. This property is used only when `billingMode` is set to `provisioned`
 +
 Default: `1`
 timeToLive::
@@ -161,17 +165,22 @@ This is implemented using https://github.com/spring-projects/spring-integration-
 DynamoDB `LockRegistry` properties are prefixed with `spring.cloud.stream.kinesis.binder.locks.`
 
 table::
-	The name to give the DynamoDb table
+	The name to give the DynamoDB table
 +
 Default: `SpringIntegrationLockRegistry`
+billingMode::
+    The Billing Mode of the DynamoDB table. See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.OnDemand[DynamoDB On-Demand Mode]. Possible values are `provisioned` and `payPerRequest`. If left empty or set to `payPerRequest` both `readCapacity` and `writeCapacity` are ignored
++
+Default: `payPerRequest`
 readCapacity::
-	The Read capacity of the DynamoDb table.
-See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+	The Read capacity of the DynamoDB table.
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.ProvisionedThroughput.Manual[DynamoDB Provisioned Throughput]. This property is used only when `billingMode` is set to `provisioned`
 +
 Default: `1`
 writeCapacity::
 	The write capacity of the DynamoDb table.
-See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html[Kinesis Provisioned Throughput]
+See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.ProvisionedThroughput.Manual[DynamoDB Provisioned Throughput]. This property is used only when `billingMode` is set to `provisioned`
++
 Default: `1`
 leaseDuration::
 	The length of time that the lease for the lock will be granted for.

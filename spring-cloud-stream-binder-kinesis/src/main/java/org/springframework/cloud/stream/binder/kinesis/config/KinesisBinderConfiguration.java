@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import org.springframework.integration.support.locks.LockRegistry;
  * @author Peter Oates
  * @author Artem Bilan
  * @author Arnaud Lecollaire
+ * @author Asiel Caballero
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnMissingBean(Binder.class)
@@ -143,6 +144,7 @@ public class KinesisBinderConfiguration {
 			dynamoDbLockRegistry.setPartitionKey(locks.getPartitionKey());
 			dynamoDbLockRegistry.setSortKeyName(locks.getSortKeyName());
 			dynamoDbLockRegistry.setSortKey(locks.getSortKey());
+			dynamoDbLockRegistry.setBillingMode(locks.getBillingMode());
 			dynamoDbLockRegistry.setReadCapacity(locks.getReadCapacity());
 			dynamoDbLockRegistry.setWriteCapacity(locks.getWriteCapacity());
 			return dynamoDbLockRegistry;
@@ -161,6 +163,7 @@ public class KinesisBinderConfiguration {
 		if (dynamoDB != null) {
 			KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
 			DynamoDbMetadataStore kinesisCheckpointStore = new DynamoDbMetadataStore(dynamoDB, checkpoint.getTable());
+			kinesisCheckpointStore.setBillingMode(checkpoint.getBillingMode());
 			kinesisCheckpointStore.setReadCapacity(checkpoint.getReadCapacity());
 			kinesisCheckpointStore.setWriteCapacity(checkpoint.getWriteCapacity());
 			kinesisCheckpointStore.setCreateTableDelay(checkpoint.getCreateDelay());
