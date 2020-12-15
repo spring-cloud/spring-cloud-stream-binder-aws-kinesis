@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
+import com.amazonaws.services.dynamodbv2.model.BillingMode;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
@@ -28,6 +30,7 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
  * @author Jacob Severson
  * @author Sergiu Pantiru
  * @author Arnaud Lecollaire
+ * @author Asiel Caballero
  */
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
@@ -124,6 +127,8 @@ public class KinesisBinderConfigurationProperties {
 
 		private String table = DynamoDbMetadataStore.DEFAULT_TABLE_NAME;
 
+		private BillingMode billingMode = BillingMode.PAY_PER_REQUEST;
+
 		private long readCapacity = 1L;
 
 		private long writeCapacity = 1L;
@@ -140,6 +145,14 @@ public class KinesisBinderConfigurationProperties {
 
 		public void setTable(String table) {
 			this.table = table;
+		}
+
+		public BillingMode getBillingMode() {
+			return billingMode;
+		}
+
+		public void setBillingMode(BillingMode billingMode) {
+			this.billingMode = billingMode;
 		}
 
 		public long getReadCapacity() {
@@ -191,6 +204,8 @@ public class KinesisBinderConfigurationProperties {
 
 		private String table = DynamoDbLockRegistry.DEFAULT_TABLE_NAME;
 
+		private BillingMode billingMode = BillingMode.PAY_PER_REQUEST;
+
 		private long readCapacity = 1L;
 
 		private long writeCapacity = 1L;
@@ -213,6 +228,14 @@ public class KinesisBinderConfigurationProperties {
 
 		public void setTable(String table) {
 			this.table = table;
+		}
+
+		public BillingMode getBillingMode() {
+			return billingMode;
+		}
+
+		public void setBillingMode(BillingMode billingMode) {
+			this.billingMode = billingMode;
 		}
 
 		public long getReadCapacity() {
@@ -278,7 +301,5 @@ public class KinesisBinderConfigurationProperties {
 		public void setHeartbeatPeriod(long heartbeatPeriod) {
 			this.heartbeatPeriod = heartbeatPeriod;
 		}
-
 	}
-
 }
