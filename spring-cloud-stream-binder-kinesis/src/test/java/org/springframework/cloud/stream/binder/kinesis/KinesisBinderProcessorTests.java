@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
-import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.Sinks;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,8 +89,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 				"cloud.aws.region.static=eu-west-2" })
 @EnabledIfEnvironmentVariable(named = EnvironmentHostNameResolver.DOCKER_HOST_NAME, matches = ".+")
 @ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(randomizePorts = true,
-		hostNameResolver = EnvironmentHostNameResolver.class,
+@LocalstackDockerProperties(hostNameResolver = EnvironmentHostNameResolver.class,
 		services = { "kinesis", "dynamodb"})
 @DirtiesContext
 class KinesisBinderProcessorTests {
@@ -166,7 +165,7 @@ class KinesisBinderProcessorTests {
 		assertThat(errorMessage1).isSameAs(errorMessage2);
 		assertThat(errorMessages).isEmpty();
 
-		PutRecordResult putRecordResult = this.config.resultMonoProcessor.block(Duration.ofSeconds(10));
+		PutRecordResult putRecordResult = this.config.resultSink.asMono().block(Duration.ofSeconds(10));
 		assertThat(putRecordResult)
 				.isNotNull()
 				.extracting(PutRecordResult::getSequenceNumber)
@@ -182,7 +181,7 @@ class KinesisBinderProcessorTests {
 			ContextStackAutoConfiguration.class })
 	static class ProcessorConfiguration {
 
-		private MonoProcessor<PutRecordResult> resultMonoProcessor = MonoProcessor.create();
+		private Sinks.One<PutRecordResult> resultSink = Sinks.one();
 
 		@Bean(destroyMethod = "")
 		public AmazonDynamoDBAsync dynamoDB() {
@@ -247,8 +246,7 @@ class KinesisBinderProcessorTests {
 
 				@Override
 				public void onSuccess(PutRecordRequest request, PutRecordResult putRecordsResult) {
-					ProcessorConfiguration.this.resultMonoProcessor.onNext(putRecordsResult);
-					ProcessorConfiguration.this.resultMonoProcessor.onComplete();
+					ProcessorConfiguration.this.resultSink.tryEmitValue(putRecordsResult);
 				}
 
 			};

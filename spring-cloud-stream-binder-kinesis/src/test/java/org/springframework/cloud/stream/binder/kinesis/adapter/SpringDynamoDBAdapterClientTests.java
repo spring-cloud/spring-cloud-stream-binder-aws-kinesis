@@ -37,9 +37,10 @@ import com.amazonaws.services.kinesis.model.InvalidArgumentException;
 import com.amazonaws.services.kinesis.model.ListShardsRequest;
 import com.amazonaws.services.kinesis.model.ListShardsResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Asiel Caballero
@@ -53,23 +54,27 @@ public class SpringDynamoDBAdapterClientTests {
 	private final SpringDynamoDBAdapterClient springDynamoDBAdapterClient =
 			new SpringDynamoDBAdapterClient(amazonDynamoDBStreams);
 
-	@Test(expected = ResourceNotFoundException.class)
+	@Test
 	public void listShardsForNotFoundStream() {
-		springDynamoDBAdapterClient.listShards(new ListShardsRequest()
-				.withStreamName("not-found"));
+		assertThatExceptionOfType(ResourceNotFoundException.class)
+				.isThrownBy(() -> springDynamoDBAdapterClient.listShards(new ListShardsRequest()
+						.withStreamName("not-found")));
 	}
 
-	@Test(expected = InvalidArgumentException.class)
+	@Test
 	public void listShardsWithInvalidToken() {
-		springDynamoDBAdapterClient.listShards(new ListShardsRequest()
-				.withNextToken("invalid-token"));
+		assertThatExceptionOfType(InvalidArgumentException.class)
+				.isThrownBy(() -> springDynamoDBAdapterClient.listShards(new ListShardsRequest()
+						.withNextToken("invalid-token")));
 	}
 
-	@Test(expected = InvalidArgumentException.class)
+	@Test
 	public void listShardsWithTokenAndStreamName() {
-		springDynamoDBAdapterClient.listShards(new ListShardsRequest()
-				.withStreamName(InMemoryAmazonDynamoDBStreams.STREAM_ARN)
-				.withNextToken("valid!!##%%token"));
+		assertThatExceptionOfType(InvalidArgumentException.class)
+				.isThrownBy(() ->
+						springDynamoDBAdapterClient.listShards(new ListShardsRequest()
+								.withStreamName(InMemoryAmazonDynamoDBStreams.STREAM_ARN)
+								.withNextToken("valid!!##%%token")));
 	}
 
 	@Test
