@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +29,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 
 /**
  * @author Artem Bilan
+ *
  * @since 2.0
  */
 public class KinesisBinderHealthIndicator implements HealthIndicator {
@@ -41,7 +43,7 @@ public class KinesisBinderHealthIndicator implements HealthIndicator {
 	@Override
 	public Health health() {
 		AmazonKinesisAsync amazonKinesis = this.kinesisMessageChannelBinder.getAmazonKinesis();
-		List<String> streamsInUse = this.kinesisMessageChannelBinder.getStreamsInUse();
+		List<String> streamsInUse = new ArrayList<>(this.kinesisMessageChannelBinder.getStreamsInUse());
 		for (String stream : streamsInUse) {
 			while (true) {
 				try {
