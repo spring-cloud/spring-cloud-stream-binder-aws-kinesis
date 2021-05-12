@@ -395,6 +395,136 @@ If you're going to allow spring-cloud-stream-binder-kinesis to create the resour
 }
 ----
 
+[[running-locally-with-localstack]]
+== Running locally with localstack
+
+Sometimes we don't have the necessary permissions to connect to the real Kinesis and DynamoDB from our developer's machine.
+In moments like this, it's pretty useful to setup Localstack in your project, so you can run everything locally, without
+having to worry about permissions and enterprise restrictions.
+
+Create a *docker-compose.yaml* file, in the root of your project, to quickly start localstack
+
+[source, yaml]
+----
+version: '3.5'
+
+services:
+  localstack:
+    image: localstack/localstack:0.12.10
+    environment:
+      - AWS_DEFAULT_REGION=sa-east-1
+      - EDGE_PORT=4566
+      - SERVICES=kinesis, dynamodb
+    ports:
+      - '4566:4566'
+    volumes:
+      - localstack:/tmp/localstack
+      - './setup-localstack.sh:/docker-entrypoint-initaws.d/setup-localstack.sh'
+
+volumes:
+  localstack:
+----
+
+After that, create a script called *setup-localstack.sh*, in the root directory, that will contain the script to create the
+Kinesis Stream, and the 2 DynamoDB Tables
+
+[source, shell script]
+----
+awslocal kinesis create-stream --stream-name my-test-stream --shard-count 1
+
+awslocal dynamodb create-table \
+--table-name spring-stream-lock-registry \
+--attribute-definitions AttributeName=lockKey,AttributeType=S AttributeName=sortKey,AttributeType=S \
+--key-schema AttributeName=lockKey,KeyType=HASH AttributeName=sortKey,KeyType=RANGE \
+--provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+--tags Key=Owner,Value=localstack
+
+awslocal dynamodb create-table \
+--table-name spring-stream-metadata \
+--attribute-definitions AttributeName=KEY,AttributeType=S \
+--key-schema AttributeName=KEY,KeyType=HASH \
+--provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+--tags Key=Owner,Value=localstack
+
+awslocal dynamodb list-tables
+awslocal kinesis list-streams
+----
+
+Since this file is being mapped to the localstack image, the container will automatically run this script the first
+time you run the container.
+
+To run localstack, just execute
+[source, shell script]
+----
+docker-compose up -d
+----
+Your local AWS Endpoint is now available at http://localhost:4566
+
+To put records into your test stream, just run
+[source, shell script]
+----
+aws --endpoint-url=http://localhost:4566 kinesis put-record --stream-name my-test-stream --partition-key 1 --data <base64-encoded-data>
+----
+
+[[telling-the-binder-to-use-your-local-endpoint]]
+=== Telling the binder to use your local endpoint
+
+By default, the Kinesis and DynamoDB Client will try to hit the real AWS Endpoint. To change this behavior,
+you have to declare a new @Bean, and override the endpoint.
+
+For example:
+
+[source, kotlin]
+----
+@Configuration
+@Profile("local")
+class DynamoDBConfigLocal {
+    @Value("\${cloud.aws.region.static}")
+    val region: String = ""
+
+    private val endpointUrl: String = "http://localhost:4566"
+
+    @Bean
+    @Primary
+    fun amazonDynamoDBAsync(): AmazonDynamoDBAsync {
+        return AmazonDynamoDBAsyncClientBuilder.standard()
+            .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(this.endpointUrl, region))
+            .build()
+    }
+
+}
+----
+
+[source, kotlin]
+----
+@Configuration
+@Profile("local")
+class KinesisConfigLocal {
+    @Value("\${cloud.aws.region.static}")
+    val region: String = ""
+
+    private val endpointUrl: String = "http://localhost:4566"
+
+    @Bean
+    fun amazonKinesis(awsCredentialsProvider: AWSCredentialsProvider): AmazonKinesisAsync {
+        return AmazonKinesisAsyncClientBuilder
+            .standard()
+            .withCredentials(awsCredentialsProvider)
+            .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(endpointUrl, region))
+            .build()
+    }
+
+}
+----
+
+Now, remember to pass the following environment variables when running locally:
+[source, shell script]
+----
+SPRING_PROFILES_ACTIVE=local AWS_CBOR_DISABLE=true gradle bootRun
+----
+This will make sure that these beans are only instantiated when running locally, and will also disable CBOR, which is not
+supported for the localstack's kinesis stream.
+
 [[health-indicator]]
 == Kinesis Binder Health Indicator
 
