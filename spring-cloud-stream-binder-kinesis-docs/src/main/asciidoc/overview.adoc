@@ -315,6 +315,86 @@ In this case a value for `spring.cloud.stream.bindings.<bindingTarget>.destinati
 Starting with version 1.2, if your Spring Cloud Stream application delivered only in the `source` role, the extra beans, required for `sink` (or Kinesis consumers), are not going to be registered in the application context and, therefore, no need to worry about their resources on AWS.
 The story is about DynamoDB and Cloud Watch.
 
+[[aws-roles-and-policies]]
+== AWS Roles and Policies
+
+In order to be able to run properly on AWS, the role that will be used by the application needs to have a set of policies configured.
+Here are the policies statements that your application role need:
+
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kinesis:SubscribeToShard",
+                "kinesis:DescribeStreamSummary",
+                "kinesis:DescribeStreamConsumer",
+                "kinesis:GetShardIterator",
+                "kinesis:GetRecords",
+                "kinesis:PutRecords",
+                "kinesis:DescribeStream"
+            ],
+            "Resource": [
+                "arn:aws:kinesis:<region>:<account_number>:*/*/consumer/*:*",
+                "arn:aws:kinesis:<region>:<account_number>:stream/<stream_name>"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": "kinesis:DescribeLimits",
+            "Resource": "*"
+        },
+        {
+          "Sid": "DynamoDB",
+          "Effect": "Allow",
+          "Action": [
+            "dynamodb:BatchGetItem",
+            "dynamodb:BatchWriteItem",
+            "dynamodb:PutItem",
+            "dynamodb:GetItem",
+            "dynamodb:Scan",
+            "dynamodb:Query",
+            "dynamodb:UpdateItem"
+          ],
+          "Resource": [
+            "arn:aws:dynamodb:<region>:<account>:table/<name-of-metadata-table>",
+            "arn:aws:dynamodb:<region>:<account>:table/<name-of-lock-table>"
+          ]
+        }
+    ]
+}
+----
+
+Keep in mind that these are only the policies to allow the application to consume/produce records from/to Kinesis.
+If you're going to allow spring-cloud-stream-binder-kinesis to create the resources for you, you'll need an extra set of policies.
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:CreateTable",
+                "kinesis:CreateStream",
+                "kinesis:UpdateShardCount",
+                "kinesis:EnableEnhancedMonitoring",
+                "kinesis:DisableEnhancedMonitoring",
+                "dynamodb:DeleteTable",
+                "dynamodb:UpdateTable"
+            ],
+            "Resource": [
+                "arn:aws:dynamodb:<region>:<account>:table/<table_name>",
+                "arn:aws:kinesis:<region>:<account>:stream/<stream_name>"
+            ]
+        }
+    ]
+}
+----
+
 [[health-indicator]]
 == Kinesis Binder Health Indicator
 
