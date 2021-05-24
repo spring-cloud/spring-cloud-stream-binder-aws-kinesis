@@ -12,6 +12,7 @@
 	</appender>
 
 	<logger name="org.springframework.cloud.stream.binder.kinesis" level="debug"/>
+	<logger name="org.springframework.integration" level="debug"/>
 
 	<root level="warn">
 		<appender-ref ref="STDOUT" />
