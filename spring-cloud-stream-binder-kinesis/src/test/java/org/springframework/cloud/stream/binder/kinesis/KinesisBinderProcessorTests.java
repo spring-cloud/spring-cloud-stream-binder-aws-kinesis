@@ -54,6 +54,7 @@ import org.springframework.http.MediaType;
 import org.springframework.integration.IntegrationMessageHeaderAccessor;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
+import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.support.AwsHeaders;
 import org.springframework.integration.channel.PublishSubscribeChannel;
@@ -84,6 +85,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 						+ ".destination = " + Processor.INPUT,
 				"spring.cloud.stream.kinesis.bindings.input.consumer.idleBetweenPolls = 1",
 				"spring.cloud.stream.kinesis.binder.headers = foo",
+				"spring.cloud.stream.kinesis.binder.autoAddShards = true",
 				"spring.cloud.stream.kinesis.binder.checkpoint.table = checkpointTable",
 				"spring.cloud.stream.kinesis.binder.locks.table = lockTable",
 				"cloud.aws.region.static=eu-west-2" })
@@ -119,6 +121,9 @@ class KinesisBinderProcessorTests {
 	@Autowired
 	private HealthEndpoint healthEndpoint;
 
+	@Autowired
+	private KinesisMessageDrivenChannelAdapter kinesisMessageDrivenChannelAdapter;
+
 	@BeforeAll
 	static void setup() {
 		AMAZON_KINESIS = ExtendedDockerTestUtils.getClientKinesisAsync();
@@ -134,6 +139,8 @@ class KinesisBinderProcessorTests {
 		Message<String> testMessage = MessageBuilder.withPayload("foo")
 				.setHeader("foo", "BAR").build();
 		this.testSource.toProcessorOutput().send(testMessage);
+
+		this.kinesisMessageDrivenChannelAdapter.start();
 
 		Message<byte[]> receive = (Message<byte[]>) this.fromProcessorChannel
 				.receive(10_000);
@@ -216,6 +223,8 @@ class KinesisBinderProcessorTests {
 			kinesisMessageDrivenChannelAdapter.setOutputChannel(fromProcessorChannel());
 			kinesisMessageDrivenChannelAdapter.setConverter(null);
 			kinesisMessageDrivenChannelAdapter.setBindSourceRecord(true);
+			kinesisMessageDrivenChannelAdapter.setAutoStartup(false);
+			kinesisMessageDrivenChannelAdapter.setStreamInitialSequence(KinesisShardOffset.trimHorizon());
 
 			DirectFieldAccessor dfa = new DirectFieldAccessor(kinesisMessageDrivenChannelAdapter);
 			dfa.setPropertyValue("describeStreamBackoff", 10);
