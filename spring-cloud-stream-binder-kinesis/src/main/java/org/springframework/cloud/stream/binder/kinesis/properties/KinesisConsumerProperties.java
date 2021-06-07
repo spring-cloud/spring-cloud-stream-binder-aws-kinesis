@@ -26,6 +26,7 @@ import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
  * @author Jacob Severson
  * @author Artem Bilan
  * @author Arnaud Lecollaire
+ * @author Dmytro Danilenkov
  *
  */
 public class KinesisConsumerProperties {
