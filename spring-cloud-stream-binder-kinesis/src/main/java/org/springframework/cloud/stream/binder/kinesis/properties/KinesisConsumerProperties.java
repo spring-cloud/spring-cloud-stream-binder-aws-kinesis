@@ -51,6 +51,8 @@ public class KinesisConsumerProperties {
 
 	private boolean dynamoDbStreams;
 
+	private String shardId;
+
 	/**
 	 * Worker identifier used to distinguish different workers/processes
 	 * (only used when KCL is enabled).
@@ -137,4 +139,11 @@ public class KinesisConsumerProperties {
 		this.dynamoDbStreams = dynamoDbStreams;
 	}
 
+	public String getShardId() {
+		return shardId;
+	}
+
+	public void setShardId(String shardId) {
+		this.shardId = shardId;
+	}
 }

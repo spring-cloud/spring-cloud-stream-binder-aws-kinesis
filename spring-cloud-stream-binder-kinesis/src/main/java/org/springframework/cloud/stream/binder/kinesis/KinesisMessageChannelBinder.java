@@ -36,6 +36,7 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+import com.amazonaws.services.kinesis.model.InvalidArgumentException;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
@@ -333,6 +334,10 @@ public class KinesisMessageChannelBinder extends
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
+		if (kinesisConsumerProperties.getShardId() != null) {
+			logger.warn("KCL doesn't expose any option to deal with a specific shard. Ignoring shardId property");
+		}
+
 		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
 
 		AmazonKinesis amazonKinesisClient =
@@ -406,6 +411,10 @@ public class KinesisMessageChannelBinder extends
 
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
+		if (properties.getInstanceCount() > 1 && properties.getExtension().getShardId() != null) {
+			throw new InvalidArgumentException("instanceCount more than 1 and shardId cannot be provided together.");
+		}
+
 		Set<KinesisShardOffset> shardOffsets = null;
 
 		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
@@ -450,8 +459,17 @@ public class KinesisMessageChannelBinder extends
 						? this.dynamoDBStreamsAdapter
 						: this.amazonKinesis;
 
-		if (CollectionUtils.isEmpty(shardOffsets)) {
+		String shardId = kinesisConsumerProperties.getShardId();
+
+		if (CollectionUtils.isEmpty(shardOffsets) && shardId == null) {
 			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient, destination.getName());
+		}
+		else if (shardId != null) {
+			KinesisShardOffset shardOffset = new KinesisShardOffset(
+					kinesisShardOffset);
+			shardOffset.setStream(destination.getName());
+			shardOffset.setShard(shardId);
+			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient, shardOffset);
 		}
 		else {
 			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient,
