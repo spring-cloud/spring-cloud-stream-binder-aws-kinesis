@@ -36,6 +36,7 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+import com.amazonaws.services.kinesis.model.InvalidArgumentException;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
@@ -93,6 +94,8 @@ import org.springframework.util.StringUtils;
  * @author Arnaud Lecollaire
  * @author Dirk Bonhomme
  * @author Asiel Caballero
+ * @author Dmytro Danilenkov
+ *
  */
 public class KinesisMessageChannelBinder extends
 		AbstractMessageChannelBinder<ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -333,6 +336,11 @@ public class KinesisMessageChannelBinder extends
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
+		if (kinesisConsumerProperties.getShardId() != null) {
+			logger.warn("Kinesis Client Library doesn't does not support explicit shard configuration. " +
+					"Ignoring 'shardId' property");
+		}
+
 		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
 
 		AmazonKinesis amazonKinesisClient =
@@ -351,7 +359,7 @@ public class KinesisMessageChannelBinder extends
 			adapter = new KclMessageDrivenChannelAdapter(stream, amazonKinesisClient, this.cloudWatchClient,
 							this.dynamoDBClient, this.awsCredentialsProvider);
 			boolean anonymous = !StringUtils.hasText(group);
-			consumerGroup = anonymous ? "anonymous." + UUID.randomUUID().toString() : group;
+			consumerGroup = anonymous ? "anonymous." + UUID.randomUUID() : group;
 			adapter.setConsumerGroup(consumerGroup);
 			if (StringUtils.hasText(shardIteratorType)) {
 				adapter.setStreamInitialSequence(InitialPositionInStream.valueOf(shardIteratorType));
@@ -406,6 +414,10 @@ public class KinesisMessageChannelBinder extends
 
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
+		if (properties.getInstanceCount() > 1 && properties.getExtension().getShardId() != null) {
+			throw new InvalidArgumentException("'instanceCount' more than 1 and 'shardId' cannot be provided together.");
+		}
+
 		Set<KinesisShardOffset> shardOffsets = null;
 
 		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
@@ -434,8 +446,7 @@ public class KinesisMessageChannelBinder extends
 			for (int i = 0; i < shards.size(); i++) {
 				// divide shards across instances
 				if ((i % properties.getInstanceCount()) == properties.getInstanceIndex()) {
-					KinesisShardOffset shardOffset = new KinesisShardOffset(
-							kinesisShardOffset);
+					KinesisShardOffset shardOffset = new KinesisShardOffset(kinesisShardOffset);
 					shardOffset.setStream(destination.getName());
 					shardOffset.setShard(shards.get(i).getShardId());
 					shardOffsets.add(shardOffset);
@@ -450,8 +461,16 @@ public class KinesisMessageChannelBinder extends
 						? this.dynamoDBStreamsAdapter
 						: this.amazonKinesis;
 
-		if (CollectionUtils.isEmpty(shardOffsets)) {
+		String shardId = kinesisConsumerProperties.getShardId();
+
+		if (CollectionUtils.isEmpty(shardOffsets) && shardId == null) {
 			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient, destination.getName());
+		}
+		else if (shardId != null) {
+			KinesisShardOffset shardOffset = new KinesisShardOffset(kinesisShardOffset);
+			shardOffset.setStream(destination.getName());
+			shardOffset.setShard(shardId);
+			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient, shardOffset);
 		}
 		else {
 			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient,
@@ -459,8 +478,7 @@ public class KinesisMessageChannelBinder extends
 		}
 
 		boolean anonymous = !StringUtils.hasText(group);
-		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID().toString()
-				: group;
+		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID() : group;
 		adapter.setConsumerGroup(consumerGroup);
 
 		adapter.setStreamInitialSequence(

@@ -26,6 +26,7 @@ import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
  * @author Jacob Severson
  * @author Artem Bilan
  * @author Arnaud Lecollaire
+ * @author Dmytro Danilenkov
  *
  */
 public class KinesisConsumerProperties {
@@ -50,6 +51,8 @@ public class KinesisConsumerProperties {
 	private String shardIteratorType;
 
 	private boolean dynamoDbStreams;
+
+	private String shardId;
 
 	/**
 	 * Worker identifier used to distinguish different workers/processes
@@ -137,4 +140,11 @@ public class KinesisConsumerProperties {
 		this.dynamoDbStreams = dynamoDbStreams;
 	}
 
+	public String getShardId() {
+		return shardId;
+	}
+
+	public void setShardId(String shardId) {
+		this.shardId = shardId;
+	}
 }

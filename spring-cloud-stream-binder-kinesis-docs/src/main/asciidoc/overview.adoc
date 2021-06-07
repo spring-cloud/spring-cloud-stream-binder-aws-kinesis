@@ -115,7 +115,7 @@ It can be superseded by the `partitionCount` setting of the producer or by the v
 +
 Default: `1`
 kplKclEnabled::
-    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[KCL] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[KPL] for all message consumption and production
+    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[Kinesis Client Library] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[Kinesis Producer Library] for all message consumption and production
 +
 Default: `false`
 
@@ -236,7 +236,7 @@ checkpointInterval::
 +
 Default - `5000`
 workerId::
-  The worker identifier used to distinguish different workers/processes (only used when KCL is enabled).
+  The worker identifier used to distinguish different workers/processes (only used when Kinesis Client Library is enabled).
 +
 No default - if not set, default value inside spring-integration-aws will be used (random UUID).
 recordsLimit::
@@ -273,6 +273,14 @@ Starting with version 2.0.1, beans of `KinesisClientLibConfiguration` type can b
 The stream and consumer group (plus workerId) must be provided in the respective `KinesisClientLibConfiguration` bean.
 When `KclMessageDrivenChannelAdapter` endpoint is configured in the binder, it selects an appropriate `KinesisClientLibConfiguration` from the application context according a destination (stream) for binding.
 If there is no `KinesisClientLibConfiguration` bean for its stream, the `KclMessageDrivenChannelAdapter` falls back to original configuration with defaults options for its internal `KinesisClientLibConfiguration`.
+
+shardId::
+An explicit shard id to consume from.
+
+NOTE: Kinesis Client Library does not support a configuration for a specific shard.
+When `shardId` property is used, it is ignored for Kinesis Client Library and standard stream consumer distribution is applied.
+Also, in case of an `instanceCount > 1`, application will throw validation exception.
+The `instanceCount` and `shardId` are considered as mutually exclusive.
 
 === Kinesis Producer Properties
 
