@@ -26,6 +26,9 @@ import com.amazonaws.SDKGlobalConfiguration;
  */
 public class EnvironmentHostNameResolver implements IHostNameResolver {
 
+	/**
+	 * DOCKER_HOST_NAME
+	 */
 	public static final String DOCKER_HOST_NAME = "DOCKER_HOST_NAME";
 
 	static {
