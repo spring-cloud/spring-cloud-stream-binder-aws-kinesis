@@ -274,6 +274,15 @@ The stream and consumer group (plus workerId) must be provided in the respective
 When `KclMessageDrivenChannelAdapter` endpoint is configured in the binder, it selects an appropriate `KinesisClientLibConfiguration` from the application context according a destination (stream) for binding.
 If there is no `KinesisClientLibConfiguration` bean for its stream, the `KclMessageDrivenChannelAdapter` falls back to original configuration with defaults options for its internal `KinesisClientLibConfiguration`.
 
+shardId::
+The `String` value indicating Kinesis consumer channel adapter should use specific shardId for consuming messages.
+For example: `shardId:shardId-000000000001`.
++
+No default - means no specific shardId selected.
+
+NOTE: KCL doesn't expose any option to deal with a specific shard. When `shardId` property is used, it won't work with KCL. Also, in case
+`instanceCount`>1, application will throw validation exception. So, `instanceCount` and `shardId` are considered as mutually exclusive.
+
 === Kinesis Producer Properties
 
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<bindingTarget>.producer.`.
