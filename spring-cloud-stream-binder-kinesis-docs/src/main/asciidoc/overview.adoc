@@ -301,7 +301,7 @@ Also, if you'd like to produce a batch of records into Kinesis stream, the messa
 == Error Channels
 
 The binder can be configured to send producer exceptions to an error channel.
-See https://docs.spring.io/spring-cloud-stream/docs/current/reference/htmlsingle/#_spring_integration_error_channel_support[the section on Spring Cloud error channel support] for more information.
+See https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/spring-cloud-stream.html#spring-cloud-stream-overview-error-handling[the section on Spring Cloud Stream error handling] for more information.
 
 The payload of the `ErrorMessage` for a send failure is an `AwsRequestFailureException` with properties:
 
