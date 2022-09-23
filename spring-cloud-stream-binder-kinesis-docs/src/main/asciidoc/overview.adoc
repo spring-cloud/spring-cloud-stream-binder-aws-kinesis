@@ -365,7 +365,8 @@ Here are the policies statements that your application role need:
             "dynamodb:GetItem",
             "dynamodb:Scan",
             "dynamodb:Query",
-            "dynamodb:UpdateItem"
+            "dynamodb:UpdateItem",
+	    "dynamodb:DescribeTable"
           ],
           "Resource": [
             "arn:aws:dynamodb:<region>:<account>:table/<name-of-metadata-table>",
