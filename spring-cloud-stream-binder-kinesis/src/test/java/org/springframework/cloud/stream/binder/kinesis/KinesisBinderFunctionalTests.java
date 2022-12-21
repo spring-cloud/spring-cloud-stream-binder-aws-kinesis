@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2021 the original author or authors.
+ * Copyright 2021-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import cloud.localstack.docker.LocalstackDockerExtension;
-import cloud.localstack.docker.annotation.LocalstackDockerProperties;
+import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.PutRecordsRequest;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
@@ -34,9 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.autoconfigure.context.ContextResourceLoaderAutoConfiguration;
 import io.awspring.cloud.autoconfigure.context.ContextStackAutoConfiguration;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -60,19 +58,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Artem Bilan
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-		properties = {
-				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.destination=" + KinesisBinderFunctionalTests.KINESIS_STREAM,
-				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.idleBetweenPolls = 1",
-				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.listenerMode = batch",
-				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.checkpointMode = manual",
-				"spring.cloud.stream.kinesis.binder.headers = event.eventType",
-				"spring.cloud.stream.kinesis.binder.autoAddShards = true",
-				"cloud.aws.region.static=eu-west-2" })
-@EnabledIfEnvironmentVariable(named = EnvironmentHostNameResolver.DOCKER_HOST_NAME, matches = ".+")
-@ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(hostNameResolver = EnvironmentHostNameResolver.class, services = "kinesis")
+	properties = {
+		"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.destination=" + KinesisBinderFunctionalTests.KINESIS_STREAM,
+		"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.idleBetweenPolls = 1",
+		"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.listenerMode = batch",
+		"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.checkpointMode = manual",
+		"spring.cloud.stream.kinesis.binder.headers = event.eventType",
+		"spring.cloud.stream.kinesis.binder.autoAddShards = true",
+		"cloud.aws.region.static=eu-west-2" })
 @DirtiesContext
-public class KinesisBinderFunctionalTests {
+@Disabled
+public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 
 	static final String KINESIS_STREAM = "test_stream";
 
@@ -89,7 +85,8 @@ public class KinesisBinderFunctionalTests {
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_KINESIS = ExtendedDockerTestUtils.getClientKinesisAsync();
+		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
+		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY, "true");
 	}
 
 	@Test
@@ -99,9 +96,9 @@ public class KinesisBinderFunctionalTests {
 		List<PutRecordsRequestEntry> putRecordsRequestEntryList = new ArrayList<>();
 		for (int i = 0; i < 10; i++) {
 			Message<String> eventMessages =
-					MessageBuilder.withPayload("Message" + i)
-							.setHeader("event.eventType", "createEvent")
-							.build();
+				MessageBuilder.withPayload("Message" + i)
+					.setHeader("event.eventType", "createEvent")
+					.build();
 			PutRecordsRequestEntry putRecordsRequestEntry = new PutRecordsRequestEntry();
 			byte[] jsonInput = objectMapper.writeValueAsBytes(eventMessages);
 			putRecordsRequestEntry.setData(ByteBuffer.wrap(jsonInput));
@@ -115,12 +112,12 @@ public class KinesisBinderFunctionalTests {
 
 		Message<List<?>> message = this.messageHolder.get();
 		assertThat(message.getHeaders())
-				.containsKeys(AwsHeaders.CHECKPOINTER,
-						AwsHeaders.SHARD,
-						AwsHeaders.RECEIVED_PARTITION_KEY,
-						AwsHeaders.RECEIVED_STREAM,
-						AwsHeaders.RECEIVED_SEQUENCE_NUMBER)
-				.doesNotContainKeys(AwsHeaders.STREAM, AwsHeaders.PARTITION_KEY);
+			.containsKeys(AwsHeaders.CHECKPOINTER,
+				AwsHeaders.SHARD,
+				AwsHeaders.RECEIVED_PARTITION_KEY,
+				AwsHeaders.RECEIVED_STREAM,
+				AwsHeaders.RECEIVED_SEQUENCE_NUMBER)
+			.doesNotContainKeys(AwsHeaders.STREAM, AwsHeaders.PARTITION_KEY);
 
 		List<?> payload = message.getPayload();
 		assertThat(payload).hasSize(10);
@@ -133,13 +130,13 @@ public class KinesisBinderFunctionalTests {
 
 		assertThat(messageFromBatch.getPayload()).isEqualTo("Message0");
 		assertThat(messageFromBatch.getHeaders())
-				.containsEntry("event.eventType", "createEvent");
+			.containsEntry("event.eventType", "createEvent");
 	}
 
 	@Configuration
 	@EnableAutoConfiguration(exclude = {
-			ContextResourceLoaderAutoConfiguration.class,
-			ContextStackAutoConfiguration.class })
+		ContextResourceLoaderAutoConfiguration.class,
+		ContextStackAutoConfiguration.class })
 	static class TestConfiguration {
 
 

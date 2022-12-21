@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import cloud.localstack.Constants;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AbstractAmazonDynamoDBStreams;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
 import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
@@ -126,7 +126,7 @@ public class SpringDynamoDBAdapterClientTests {
 
 		private static final String STREAM_ARN = String
 				.format("arn:aws:dynamodb:%s:%s:table/%s/stream/%s",
-						Constants.DEFAULT_REGION, Constants.DEFAULT_AWS_ACCOUNT_ID, TABLE_NAME, STREAM_LABEL);
+					Regions.DEFAULT_REGION.getName(), "000000000000", TABLE_NAME, STREAM_LABEL);
 
 		private static final List<Shard> SHARDS =
 				Arrays.asList(

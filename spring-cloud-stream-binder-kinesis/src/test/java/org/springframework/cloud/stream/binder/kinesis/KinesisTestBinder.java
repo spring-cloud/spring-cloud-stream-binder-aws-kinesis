@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.ListStreamsRequest;
@@ -27,7 +29,6 @@ import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 
 import org.springframework.beans.DirectFieldAccessor;
-import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
@@ -39,7 +40,10 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStrea
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
+import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.core.MessageProducer;
 
 /**
@@ -57,7 +61,7 @@ public class KinesisTestBinder extends
 	private final GenericApplicationContext applicationContext;
 
 	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis, AmazonDynamoDBAsync dynamoDbClient,
-			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+		AmazonCloudWatch cloudWatchClient, KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 
 		this.applicationContext = new AnnotationConfigApplicationContext(Config.class);
 
@@ -67,10 +71,11 @@ public class KinesisTestBinder extends
 				amazonKinesis, kinesisBinderConfigurationProperties);
 
 		KinesisMessageChannelBinder binder = new TestKinesisMessageChannelBinder(
-				amazonKinesis, dynamoDbClient, kinesisBinderConfigurationProperties,
+				amazonKinesis, dynamoDbClient, cloudWatchClient, kinesisBinderConfigurationProperties,
 				provisioningProvider);
 
 		binder.setApplicationContext(this.applicationContext);
+		binder.setKinesisClientLibConfigurations(new ArrayList<>());
 
 		setBinder(binder);
 	}
@@ -119,7 +124,8 @@ public class KinesisTestBinder extends
 	/**
 	 * Test configuration.
 	 */
-	@EnableBinding
+	@Configuration
+	@EnableIntegration
 	static class Config {
 
 		@Bean
@@ -134,11 +140,12 @@ public class KinesisTestBinder extends
 
 		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
 				AmazonDynamoDBAsync dynamoDbClient,
+				AmazonCloudWatch cloudWatchClient,
 				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
 				KinesisStreamProvisioner provisioningProvider) {
 
 			super(kinesisBinderConfigurationProperties, provisioningProvider, amazonKinesis,
-					new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")), dynamoDbClient, null, null);
+					new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")), dynamoDbClient, null, cloudWatchClient);
 		}
 
 		/*
@@ -159,10 +166,12 @@ public class KinesisTestBinder extends
 
 			MessageProducer messageProducer = super.createConsumerEndpoint(destination,
 					group, properties);
-			DirectFieldAccessor dfa = new DirectFieldAccessor(messageProducer);
-			dfa.setPropertyValue("describeStreamBackoff", 10);
-			dfa.setPropertyValue("consumerBackoff", 10);
-			dfa.setPropertyValue("idleBetweenPolls", 1);
+			if (messageProducer instanceof KinesisMessageDrivenChannelAdapter) {
+				DirectFieldAccessor dfa = new DirectFieldAccessor(messageProducer);
+				dfa.setPropertyValue("describeStreamBackoff", 10);
+				dfa.setPropertyValue("consumerBackoff", 10);
+				dfa.setPropertyValue("idleBetweenPolls", 1);
+			}
 			return messageProducer;
 		}
 
