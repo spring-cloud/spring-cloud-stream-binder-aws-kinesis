@@ -189,6 +189,8 @@ leaseDuration::
 Default: `20`
 heartbeatPeriod::
 	How often to update DynamoDB to note that the instance is still running (recommendation is to make this at least 3 times smaller than the `leaseDuration` - for example `heartBeatPeriod=1` second, `leaseDuration=10` seconds could be a reasonable configuration, make sure to include a buffer for network latency.)
+Can be set to `0` or negative value to disable heartbeat feature altogether.
+The `KinesisMessageDrivenChannelAdapter` does it own locks renewal eitherway.
 +
 Default: `5`
 refreshPeriod::

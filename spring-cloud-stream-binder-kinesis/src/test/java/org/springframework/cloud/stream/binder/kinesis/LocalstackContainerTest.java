@@ -16,6 +16,9 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
@@ -61,11 +64,21 @@ public interface LocalstackContainerTest {
 		return applyAwsClientOptions(AmazonCloudWatchClientBuilder.standard(), LocalStackContainer.Service.CLOUDWATCH);
 	}
 
+	static AWSCredentialsProvider credentialsProvider() {
+		return new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(
+						LOCAL_STACK_CONTAINER.getAccessKey(),
+						LOCAL_STACK_CONTAINER.getSecretKey()));
+	}
+
 	private static <B extends AwsClientBuilder<B, T>, T> T applyAwsClientOptions(B clientBuilder,
 			LocalStackContainer.Service serviceToBuild) {
 
-		return clientBuilder.withEndpointConfiguration(LOCAL_STACK_CONTAINER.getEndpointConfiguration(serviceToBuild))
-				.withCredentials(LOCAL_STACK_CONTAINER.getDefaultCredentialsProvider())
+		return clientBuilder.withEndpointConfiguration(
+						new AwsClientBuilder.EndpointConfiguration(
+								LOCAL_STACK_CONTAINER.getEndpointOverride(serviceToBuild).toString(),
+								LOCAL_STACK_CONTAINER.getRegion()))
+				.withCredentials(credentialsProvider())
 				.build();
 	}
 
