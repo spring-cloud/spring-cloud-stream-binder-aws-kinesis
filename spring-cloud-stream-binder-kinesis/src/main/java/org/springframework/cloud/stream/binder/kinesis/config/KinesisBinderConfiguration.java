@@ -57,6 +57,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
+import org.springframework.integration.aws.lock.DynamoDbLockRepository;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.endpoint.MessageProducerSupport;
@@ -73,8 +74,8 @@ import org.springframework.integration.support.locks.LockRegistry;
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnMissingBean(Binder.class)
-@EnableConfigurationProperties({ KinesisBinderConfigurationProperties.class, KinesisExtendedBindingProperties.class })
-@Import({ ContextCredentialsAutoConfiguration.class, ContextRegionProviderAutoConfiguration.class })
+@EnableConfigurationProperties({KinesisBinderConfigurationProperties.class, KinesisExtendedBindingProperties.class})
+@Import({ContextCredentialsAutoConfiguration.class, ContextRegionProviderAutoConfiguration.class})
 public class KinesisBinderConfiguration {
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
@@ -130,23 +131,36 @@ public class KinesisBinderConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(LockRegistry.class)
+	@ConditionalOnBean(AmazonDynamoDBAsync.class)
+	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
+			matchIfMissing = true)
+	public DynamoDbLockRepository dynamoDbLockRepository(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
+		if (dynamoDB != null) {
+			KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
+			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDB, locks.getTable());
+			dynamoDbLockRepository.setLeaseDuration(locks.getLeaseDuration());
+			dynamoDbLockRepository.setBillingMode(locks.getBillingMode());
+			dynamoDbLockRepository.setReadCapacity(locks.getReadCapacity());
+			dynamoDbLockRepository.setWriteCapacity(locks.getWriteCapacity());
+			return dynamoDbLockRepository;
+		}
+		else {
+			return null;
+		}
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(AmazonDynamoDBAsync.class)
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
 			matchIfMissing = true)
-	public LockRegistry dynamoDBLockRegistry(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
-		if (dynamoDB != null) {
+	public LockRegistry dynamoDBLockRegistry(
+			@Autowired(required = false) DynamoDbLockRepository dynamoDbLockRepository) {
+		if (dynamoDbLockRepository != null) {
 			KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
-			DynamoDbLockRegistry dynamoDbLockRegistry = new DynamoDbLockRegistry(dynamoDB, locks.getTable());
-			dynamoDbLockRegistry.setRefreshPeriod(locks.getRefreshPeriod());
-			dynamoDbLockRegistry.setHeartbeatPeriod(locks.getHeartbeatPeriod());
-			dynamoDbLockRegistry.setLeaseDuration(locks.getLeaseDuration());
-			dynamoDbLockRegistry.setPartitionKey(locks.getPartitionKey());
-			dynamoDbLockRegistry.setSortKeyName(locks.getSortKeyName());
-			dynamoDbLockRegistry.setSortKey(locks.getSortKey());
-			dynamoDbLockRegistry.setBillingMode(locks.getBillingMode());
-			dynamoDbLockRegistry.setReadCapacity(locks.getReadCapacity());
-			dynamoDbLockRegistry.setWriteCapacity(locks.getWriteCapacity());
+			DynamoDbLockRegistry dynamoDbLockRegistry = new DynamoDbLockRegistry(dynamoDbLockRepository);
+			dynamoDbLockRegistry.setIdleBetweenTries(locks.getRefreshPeriod());
 			return dynamoDbLockRegistry;
 		}
 		else {

@@ -27,7 +27,7 @@ image::images/kinesis-binder.png[width=300,scaledwidth="50%"]
 
 Unlike https://kafka.apache.org/[Apache Kafka] the AWS Kinesis doesn't provide out-of-the-box support for consumer groups.
 The support of this feature is implemented as a part of `MetadataStore` key for shard checkpoints in the `KinesisMessageDrivenChannelAdapter` - `[CONSUMER_GROUP]:[STREAM]:[SHARD_ID]`.
-In addition the `LockRegistry` is used to ensure exclusive access to each shard.
+In addition, the `LockRegistry` is used to ensure exclusive access to each shard.
 This way only one channel adapter in the same consumer group will consumer messages from a single shard in the stream it is configured for.
 
 The partitioning logic in AWS Kinesis is similar to the Apache Kafka support, but with slightly different logic.
@@ -39,13 +39,13 @@ As a result of this hashing mechanism, all data records with the same partition 
 But at the same time we can't select target shard to send explicitly.
 Although calculating the hash manually (and use `explicitHashKeyExpression` for producer, respectively), we may track the target shard by inclusion into its `HashKeyRange`.
 
-By default partition key is a result of the `Object.hash()` from the message `payload`.
+By default, partition key is a result of the `Object.hash()` from the message `payload`.
 
 The Spring Cloud Stream partition handling logic is excluded in case of AWS Kinesis Binder since it is out of use and the provided `producer.partitionKeyExpression` is propagated to the `KinesisMessageHandler` directly.
 
 On the consumer side the `instanceCount` and `instanceIndex` are used to distribute shards between consumers in group evenly.
 This has an effect only for regular `KinesisMessageDrivenChannelAdapter` which can assign specific shards for the target Kinesis consumer.
-With Kinesis Client Library we can only subscriber to the provided stream and shards distribution is done by that client.
+With Kinesis Client Library we can subscribe only to the provided stream and shards distribution is done by that client.
 See more information in the Kinesis Client Library https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[documentation].
 
 == Consumer Groups
@@ -148,7 +148,7 @@ See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.
 +
 Default: `1`
 writeCapacity::
-	The write capacity of the DynamoDb table.
+	The `write` capacity of the DynamoDb table.
 See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.ProvisionedThroughput.Manual[DynamoDB Provisioned Throughput]. This property is used only when `billingMode` is set to `provisioned`
 +
 Default: `1`
@@ -156,7 +156,7 @@ timeToLive::
 	A period in seconds for items expiration.
 See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html[DynamoDB TTL]
 +
-No default - means no records expiration.
+No default - means no record expiration.
 
 === LockRegistry
 LockRegistry is used to ensure exclusive access to each shard so that, only one channel adapter in the same consumer group will consumer messages from a single shard in the stream.
@@ -178,7 +178,7 @@ See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.
 +
 Default: `1`
 writeCapacity::
-	The write capacity of the DynamoDb table.
+	The `write` capacity of the DynamoDb table.
 See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html#HowItWorks.ProvisionedThroughput.Manual[DynamoDB Provisioned Throughput]. This property is used only when `billingMode` is set to `provisioned`
 +
 Default: `1`
@@ -197,18 +197,6 @@ refreshPeriod::
 	How long to wait before trying to get the lock again (if set to 10 seconds, for example, it would attempt to do so every 10 seconds)
 +
 Default: `1000`
-partitionKey::
-	The partition key name of the table.
-+
-Default: `lockKey`
-sortKeyName::
-	The sort key name for DynamoDB table partitioning.
-+
-Default: `sortKey`
-sortKey::
-	The sort key to try and acquire the lock on (specify if and only if the table has sort keys)
-+
-Default: `SpringIntegrationLocks`
 
 === Kinesis Consumer Properties
 
@@ -262,7 +250,7 @@ Default: `LATEST` for anonymous groups and `TRIM_HORIZON` otherwise.
 
 NOTE: When `TRIM_HORIZON` shard iterator type is used, we need to take into account the time lag which happens during pointing the `ShardIterator` to the last untrimmed record in the shard in the system (the oldest data record in the shard).
 So the `getRecords()` will move from that point to the last point, which takes time.
-It is by default 1 day and it can be extended to 7 days.
+It is by default 1 day, and it can be extended to 7 days.
 This happens only for new consumer groups.
 Any subsequent starts of the consumer in the same group are adjusted according the stored checkpoint via `AFTER_SEQUENCE_NUMBER` iterator type.
 

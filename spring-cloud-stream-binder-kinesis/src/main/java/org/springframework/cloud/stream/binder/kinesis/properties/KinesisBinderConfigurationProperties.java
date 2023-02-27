@@ -16,10 +16,12 @@
 
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
+import java.time.Duration;
+
 import com.amazonaws.services.dynamodbv2.model.BillingMode;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
+import org.springframework.integration.aws.lock.DynamoDbLockRepository;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 
 /**
@@ -35,7 +37,7 @@ import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
 @ConfigurationProperties(prefix = "spring.cloud.stream.kinesis.binder")
 public class KinesisBinderConfigurationProperties {
 
-	private String[] headers = new String[] { };
+	private String[] headers = new String[] {};
 
 	private int describeStreamBackoff = 1000;
 
@@ -202,7 +204,7 @@ public class KinesisBinderConfigurationProperties {
 	 */
 	public static class Locks {
 
-		private String table = DynamoDbLockRegistry.DEFAULT_TABLE_NAME;
+		private String table = DynamoDbLockRepository.DEFAULT_TABLE_NAME;
 
 		private BillingMode billingMode = BillingMode.PAY_PER_REQUEST;
 
@@ -210,17 +212,9 @@ public class KinesisBinderConfigurationProperties {
 
 		private long writeCapacity = 1L;
 
-		private String partitionKey = DynamoDbLockRegistry.DEFAULT_PARTITION_KEY_NAME;
+		private Duration refreshPeriod = Duration.ofSeconds(1);
 
-		private String sortKeyName = DynamoDbLockRegistry.DEFAULT_SORT_KEY_NAME;
-
-		private String sortKey = DynamoDbLockRegistry.DEFAULT_SORT_KEY;
-
-		private long refreshPeriod = DynamoDbLockRegistry.DEFAULT_REFRESH_PERIOD_MS;
-
-		private long leaseDuration = 20L;
-
-		private long heartbeatPeriod = 5L;
+		private Duration leaseDuration = DynamoDbLockRepository.DEFAULT_LEASE_DURATION;
 
 		public String getTable() {
 			return this.table;
@@ -254,52 +248,22 @@ public class KinesisBinderConfigurationProperties {
 			this.writeCapacity = writeCapacity;
 		}
 
-		public String getPartitionKey() {
-			return this.partitionKey;
-		}
-
-		public void setPartitionKey(String partitionKey) {
-			this.partitionKey = partitionKey;
-		}
-
-		public String getSortKeyName() {
-			return this.sortKeyName;
-		}
-
-		public void setSortKeyName(String sortKeyName) {
-			this.sortKeyName = sortKeyName;
-		}
-
-		public String getSortKey() {
-			return this.sortKey;
-		}
-
-		public void setSortKey(String sortKey) {
-			this.sortKey = sortKey;
-		}
-
-		public long getRefreshPeriod() {
+		public Duration getRefreshPeriod() {
 			return this.refreshPeriod;
 		}
 
-		public void setRefreshPeriod(long refreshPeriod) {
+		public void setRefreshPeriod(Duration refreshPeriod) {
 			this.refreshPeriod = refreshPeriod;
 		}
 
-		public long getLeaseDuration() {
+		public Duration getLeaseDuration() {
 			return this.leaseDuration;
 		}
 
-		public void setLeaseDuration(long leaseDuration) {
+		public void setLeaseDuration(Duration leaseDuration) {
 			this.leaseDuration = leaseDuration;
 		}
 
-		public long getHeartbeatPeriod() {
-			return this.heartbeatPeriod;
-		}
-
-		public void setHeartbeatPeriod(long heartbeatPeriod) {
-			this.heartbeatPeriod = heartbeatPeriod;
-		}
 	}
+
 }
