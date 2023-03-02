@@ -51,6 +51,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.binder.Binding;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
+import org.springframework.cloud.stream.binder.HeaderMode;
 import org.springframework.cloud.stream.binder.PartitionCapableBinderTests;
 import org.springframework.cloud.stream.binder.Spy;
 import org.springframework.cloud.stream.binder.TestUtils;
@@ -162,6 +163,7 @@ public class KinesisBinderTests extends
 	public void testAnonymousGroup(TestInfo testInfo) throws Exception {
 		KinesisTestBinder binder = getBinder();
 		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
+		producerProperties.setHeaderMode(HeaderMode.none);
 		DirectChannel output = createBindableChannel("output",
 				createProducerBindingProperties(producerProperties));
 
@@ -301,6 +303,7 @@ public class KinesisBinderTests extends
 	public void testBatchListener() throws Exception {
 		KinesisTestBinder binder = getBinder();
 		ExtendedProducerProperties<KinesisProducerProperties> producerProperties = createProducerProperties();
+		producerProperties.setHeaderMode(HeaderMode.none);
 		DirectChannel output = createBindableChannel("output",
 				createProducerBindingProperties(producerProperties));
 
@@ -314,6 +317,7 @@ public class KinesisBinderTests extends
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
 		consumerProperties.getExtension().setListenerMode(ListenerMode.batch);
 		consumerProperties.setUseNativeDecoding(true);
+		consumerProperties.setHeaderMode(HeaderMode.none);
 
 		QueueChannel input = new QueueChannel();
 		Binding<MessageChannel> inputBinding = binder.bindConsumer("testBatchListener",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -44,6 +43,7 @@ import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
@@ -71,12 +71,15 @@ import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.outbound.KplMessageHandler;
 import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.endpoint.MessageProducerSupport;
 import org.springframework.integration.expression.ExpressionUtils;
 import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.ErrorMessageStrategy;
 import org.springframework.integration.support.MessageBuilder;
+import org.springframework.integration.support.json.EmbeddedJsonHeadersMessageMapper;
 import org.springframework.integration.support.locks.LockRegistry;
+import org.springframework.integration.support.management.IntegrationManagement;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -122,6 +125,8 @@ public class KinesisMessageChannelBinder extends
 
 	private final AmazonDynamoDB dynamoDBClient;
 
+	private final String[] headersToEmbed;
+
 	private KinesisExtendedBindingProperties extendedBindingProperties = new KinesisExtendedBindingProperties();
 
 	@Nullable
@@ -137,6 +142,8 @@ public class KinesisMessageChannelBinder extends
 
 	private List<KinesisClientLibConfiguration> kinesisClientLibConfigurations;
 
+	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
 	public KinesisMessageChannelBinder(KinesisBinderConfigurationProperties configurationProperties,
 			KinesisStreamProvisioner provisioningProvider, AmazonKinesisAsync amazonKinesis,
 			AWSCredentialsProvider awsCredentialsProvider,
@@ -144,7 +151,7 @@ public class KinesisMessageChannelBinder extends
 			@Nullable AmazonDynamoDBStreams dynamoDBStreams,
 			@Nullable AmazonCloudWatch cloudWatchClient) {
 
-		super(headersToMap(configurationProperties), provisioningProvider);
+		super(new String[0], provisioningProvider);
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
 		Assert.notNull(awsCredentialsProvider, "'awsCredentialsProvider' must not be null");
 		this.configurationProperties = configurationProperties;
@@ -159,6 +166,7 @@ public class KinesisMessageChannelBinder extends
 		else {
 			this.dynamoDBStreamsAdapter = null;
 		}
+		this.headersToEmbed = headersToMap(configurationProperties);
 	}
 
 	public void setExtendedBindingProperties(KinesisExtendedBindingProperties extendedBindingProperties) {
@@ -179,6 +187,10 @@ public class KinesisMessageChannelBinder extends
 
 	public void setKinesisClientLibConfigurations(List<KinesisClientLibConfiguration> kinesisClientLibConfigurations) {
 		this.kinesisClientLibConfigurations = kinesisClientLibConfigurations;
+	}
+
+	public void setObservationRegistry(@Nullable ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
@@ -230,12 +242,14 @@ public class KinesisMessageChannelBinder extends
 						m.getHeaders().containsKey(BinderHeaders.PARTITION_HEADER)
 								? m.getHeaders().get(BinderHeaders.PARTITION_HEADER)
 								: m.getPayload().hashCode());
-		final AbstractAwsMessageHandler<?> messageHandler;
+		AbstractAwsMessageHandler<?> messageHandler;
 		if (this.configurationProperties.isKplKclEnabled()) {
-			messageHandler = createKplMessageHandler(destination, partitionKeyExpression);
+			messageHandler = createKplMessageHandler(destination, partitionKeyExpression,
+					producerProperties.getExtension().isEmbedHeaders());
 		}
 		else {
-			messageHandler = createKinesisMessageHandler(destination, partitionKeyExpression);
+			messageHandler = createKinesisMessageHandler(destination, partitionKeyExpression,
+					producerProperties.getExtension().isEmbedHeaders());
 		}
 		messageHandler.setSync(producerProperties.getExtension().isSync());
 		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
@@ -248,28 +262,35 @@ public class KinesisMessageChannelBinder extends
 	}
 
 	private AbstractAwsMessageHandler<?> createKinesisMessageHandler(ProducerDestination destination,
-			FunctionExpression<Message<?>> partitionKeyExpression) {
+			FunctionExpression<Message<?>> partitionKeyExpression, boolean embedHeaders) {
 
-		final KinesisMessageHandler messageHandler;
-		messageHandler = new KinesisMessageHandler(this.amazonKinesis);
+		KinesisMessageHandler messageHandler = new KinesisMessageHandler(this.amazonKinesis);
 		messageHandler.setStream(destination.getName());
 		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
+		if (embedHeaders) {
+			messageHandler.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper(this.headersToEmbed));
+		}
 		return messageHandler;
 	}
 
 	private AbstractAwsMessageHandler<?> createKplMessageHandler(ProducerDestination destination,
-			FunctionExpression<Message<?>> partitionKeyExpression) {
+			FunctionExpression<Message<?>> partitionKeyExpression, boolean embedHeaders) {
 
 		final KplMessageHandler messageHandler;
 		messageHandler = new KplMessageHandler(new KinesisProducer(this.kinesisProducerConfiguration));
 		messageHandler.setStream(destination.getName());
 		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
+		if (embedHeaders) {
+			messageHandler.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper(this.headersToEmbed));
+		}
 		return messageHandler;
 	}
 
 	@Override
 	protected void postProcessOutputChannel(MessageChannel outputChannel,
 			ExtendedProducerProperties<KinesisProducerProperties> producerProperties) {
+
+		((IntegrationManagement) outputChannel).registerObservationRegistry(this.observationRegistry);
 
 		if (outputChannel instanceof InterceptableChannel && producerProperties.isPartitioned()) {
 			((InterceptableChannel) outputChannel)
@@ -329,7 +350,7 @@ public class KinesisMessageChannelBinder extends
 			this.streamsInUse.add(destinationToUse.getName());
 		}
 
-		MessageProducer adapter;
+		MessageProducerSupport adapter;
 		if (this.configurationProperties.isKplKclEnabled()) {
 			adapter = createKclConsumerEndpoint(destinationToUse, group, properties);
 		}
@@ -337,11 +358,15 @@ public class KinesisMessageChannelBinder extends
 			adapter = createKinesisConsumerEndpoint(destinationToUse, group, properties);
 		}
 
+		adapter.registerObservationRegistry(this.observationRegistry);
+		adapter.setComponentName(String.format("Consumer for [%s]", destinationToUse.getName()));
+
 		return adapter;
 	}
 
-	private MessageProducer createKclConsumerEndpoint(ConsumerDestination destination, String group,
+	private MessageProducerSupport createKclConsumerEndpoint(ConsumerDestination destination, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
+
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
 		if (kinesisConsumerProperties.getShardId() != null) {
@@ -357,17 +382,19 @@ public class KinesisMessageChannelBinder extends
 		String stream = destination.getName();
 
 		KinesisClientLibConfiguration kinesisClientLibConfiguration =
-			obtainKinesisClientLibConfiguration(properties.getExtension(), stream, group);
+				obtainKinesisClientLibConfiguration(properties.getExtension(), stream, group);
 
 		KclMessageDrivenChannelAdapter adapter =
-			new KclMessageDrivenChannelAdapter(kinesisClientLibConfiguration, amazonKinesisClient,
-				this.cloudWatchClient, this.dynamoDBClient);
+				new KclMessageDrivenChannelAdapter(kinesisClientLibConfiguration, amazonKinesisClient,
+						this.cloudWatchClient, this.dynamoDBClient);
 		String consumerGroup = kinesisClientLibConfiguration.getApplicationName();
 
 		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
 		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
-
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
+		if (properties.getExtension().isEmbedHeaders()) {
+			adapter.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper());
+		}
 
 		if (properties.isUseNativeDecoding()) {
 			adapter.setConverter(null);
@@ -385,7 +412,7 @@ public class KinesisMessageChannelBinder extends
 	}
 
 	private KinesisClientLibConfiguration obtainKinesisClientLibConfiguration(
-		KinesisConsumerProperties properties, String stream, String group) {
+			KinesisConsumerProperties properties, String stream, String group) {
 
 		KinesisClientLibConfiguration candidate = null;
 		for (KinesisClientLibConfiguration conf : this.kinesisClientLibConfigurations) {
@@ -402,35 +429,35 @@ public class KinesisMessageChannelBinder extends
 			String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID() : group;
 
 			candidate = new KinesisClientLibConfiguration(consumerGroup,
-				stream,
-				null,
-				null,
-				InitialPositionInStream.LATEST,
-				this.awsCredentialsProvider,
-				null,
-				null,
-				KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS,
-				properties.getWorkerId() != null ? properties.getWorkerId() : UUID.randomUUID().toString(),
-				KinesisClientLibConfiguration.DEFAULT_MAX_RECORDS,
-				properties.getIdleBetweenPolls(),
-				false,
-				KinesisClientLibConfiguration.DEFAULT_PARENT_SHARD_POLL_INTERVAL_MILLIS,
-				KinesisClientLibConfiguration.DEFAULT_SHARD_SYNC_INTERVAL_MILLIS,
-				KinesisClientLibConfiguration.DEFAULT_CLEANUP_LEASES_UPON_SHARDS_COMPLETION,
-				new ClientConfiguration(),
-				new ClientConfiguration(),
-				new ClientConfiguration(),
-				properties.getConsumerBackoff(),
-				KinesisClientLibConfiguration.DEFAULT_METRICS_BUFFER_TIME_MILLIS,
-				KinesisClientLibConfiguration.DEFAULT_METRICS_MAX_QUEUE_SIZE,
-				KinesisClientLibConfiguration.DEFAULT_VALIDATE_SEQUENCE_NUMBER_BEFORE_CHECKPOINTING,
-				null,
-				KinesisClientLibConfiguration.DEFAULT_SHUTDOWN_GRACE_MILLIS,
-				KinesisClientLibConfiguration.DEFAULT_DDB_BILLING_MODE,
-				new SimpleRecordsFetcherFactory(),
-				Duration.ofMinutes(1).toMillis(),
-				Duration.ofMinutes(5).toMillis(),
-				Duration.ofMinutes(30).toMillis());
+					stream,
+					null,
+					null,
+					InitialPositionInStream.LATEST,
+					this.awsCredentialsProvider,
+					null,
+					null,
+					KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS,
+					properties.getWorkerId() != null ? properties.getWorkerId() : UUID.randomUUID().toString(),
+					KinesisClientLibConfiguration.DEFAULT_MAX_RECORDS,
+					properties.getIdleBetweenPolls(),
+					false,
+					KinesisClientLibConfiguration.DEFAULT_PARENT_SHARD_POLL_INTERVAL_MILLIS,
+					KinesisClientLibConfiguration.DEFAULT_SHARD_SYNC_INTERVAL_MILLIS,
+					KinesisClientLibConfiguration.DEFAULT_CLEANUP_LEASES_UPON_SHARDS_COMPLETION,
+					new ClientConfiguration(),
+					new ClientConfiguration(),
+					new ClientConfiguration(),
+					properties.getConsumerBackoff(),
+					KinesisClientLibConfiguration.DEFAULT_METRICS_BUFFER_TIME_MILLIS,
+					KinesisClientLibConfiguration.DEFAULT_METRICS_MAX_QUEUE_SIZE,
+					KinesisClientLibConfiguration.DEFAULT_VALIDATE_SEQUENCE_NUMBER_BEFORE_CHECKPOINTING,
+					null,
+					KinesisClientLibConfiguration.DEFAULT_SHUTDOWN_GRACE_MILLIS,
+					KinesisClientLibConfiguration.DEFAULT_DDB_BILLING_MODE,
+					new SimpleRecordsFetcherFactory(),
+					Duration.ofMinutes(1).toMillis(),
+					Duration.ofMinutes(5).toMillis(),
+					Duration.ofMinutes(30).toMillis());
 
 			String shardIteratorType = properties.getShardIteratorType();
 
@@ -443,7 +470,7 @@ public class KinesisMessageChannelBinder extends
 				if (typeValue.length > 1) {
 					if (ShardIteratorType.AT_TIMESTAMP.equals(iteratorType)) {
 						kinesisShardOffset
-							.setTimestamp(new Date(Long.parseLong(typeValue[1])));
+								.setTimestamp(new Date(Long.parseLong(typeValue[1])));
 					}
 					else {
 						kinesisShardOffset.setSequenceNumber(typeValue[1]);
@@ -452,29 +479,29 @@ public class KinesisMessageChannelBinder extends
 			}
 
 			kinesisShardOffset =
-				anonymous || StringUtils.hasText(shardIteratorType)
-					? kinesisShardOffset
-					: KinesisShardOffset.trimHorizon();
+					anonymous || StringUtils.hasText(shardIteratorType)
+							? kinesisShardOffset
+							: KinesisShardOffset.trimHorizon();
 
 			if (kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AT_TIMESTAMP)) {
 				candidate.withTimestampAtInitialPositionInStream(kinesisShardOffset.getTimestamp());
 			}
 			else if (kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AT_SEQUENCE_NUMBER) ||
-				kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AFTER_SEQUENCE_NUMBER)) {
+					kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AFTER_SEQUENCE_NUMBER)) {
 
 				throw new IllegalArgumentException("The KCL does not support 'AT_SEQUENCE_NUMBER' " +
-					"or 'AFTER_SEQUENCE_NUMBER' initial position in stream.");
+						"or 'AFTER_SEQUENCE_NUMBER' initial position in stream.");
 			}
 			else {
 				candidate.withInitialPositionInStream(
-					InitialPositionInStream.valueOf(kinesisShardOffset.getIteratorType().name()));
+						InitialPositionInStream.valueOf(kinesisShardOffset.getIteratorType().name()));
 			}
 		}
 
 		return candidate;
 	}
 
-	private MessageProducer createKinesisConsumerEndpoint(ConsumerDestination destination, String group,
+	private MessageProducerSupport createKinesisConsumerEndpoint(ConsumerDestination destination, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
@@ -551,6 +578,9 @@ public class KinesisMessageChannelBinder extends
 						: KinesisShardOffset.trimHorizon());
 
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
+		if (properties.getExtension().isEmbedHeaders()) {
+			adapter.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper());
+		}
 
 		if (properties.isUseNativeDecoding()) {
 			adapter.setConverter(null);
@@ -593,21 +623,17 @@ public class KinesisMessageChannelBinder extends
 	}
 
 	private static String[] headersToMap(KinesisBinderConfigurationProperties configurationProperties) {
-		Assert.notNull(configurationProperties,
-				"'configurationProperties' must not be null");
-		if (ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
-			return BinderHeaders.STANDARD_HEADERS;
+		Assert.notNull(configurationProperties, "'configurationProperties' must not be null");
+		List<String> headers = new ArrayList<>();
+		Collections.addAll(headers, BinderHeaders.STANDARD_HEADERS);
+		if (configurationProperties.isEnableObservation()) {
+			headers.add("traceparent");
+			headers.add("X-B3*");
 		}
-		else {
-			String[] combinedHeadersToMap = Arrays.copyOfRange(
-					BinderHeaders.STANDARD_HEADERS, 0,
-					BinderHeaders.STANDARD_HEADERS.length
-							+ configurationProperties.getHeaders().length);
-			System.arraycopy(configurationProperties.getHeaders(), 0,
-					combinedHeadersToMap, BinderHeaders.STANDARD_HEADERS.length,
-					configurationProperties.getHeaders().length);
-			return combinedHeadersToMap;
+		if (!ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
+			Collections.addAll(headers, configurationProperties.getHeaders());
 		}
+		return headers.toArray(new String[0]);
 	}
 
 }

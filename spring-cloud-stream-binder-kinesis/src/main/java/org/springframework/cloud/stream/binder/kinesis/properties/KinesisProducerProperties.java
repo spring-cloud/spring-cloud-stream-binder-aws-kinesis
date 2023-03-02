@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ public class KinesisProducerProperties {
 
 	private long sendTimeout = 10000;
 
+	private boolean embedHeaders;
+
 	public void setSync(boolean sync) {
 		this.sync = sync;
 	}
@@ -43,6 +45,14 @@ public class KinesisProducerProperties {
 
 	public void setSendTimeout(long sendTimeout) {
 		this.sendTimeout = sendTimeout;
+	}
+
+	public boolean isEmbedHeaders() {
+		return this.embedHeaders;
+	}
+
+	public void setEmbedHeaders(boolean embedHeaders) {
+		this.embedHeaders = embedHeaders;
 	}
 
 }

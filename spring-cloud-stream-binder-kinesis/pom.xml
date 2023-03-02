@@ -70,6 +70,26 @@
 		</dependency>
 
 		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing-integration-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.wavefront</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.micrometer</groupId>
+					<artifactId>micrometer-tracing-bridge-otel</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>
@@ -80,5 +100,17 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.micrometer</groupId>
+				<artifactId>micrometer-tracing-bom</artifactId>
+				<version>1.1.0-M1</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 </project>

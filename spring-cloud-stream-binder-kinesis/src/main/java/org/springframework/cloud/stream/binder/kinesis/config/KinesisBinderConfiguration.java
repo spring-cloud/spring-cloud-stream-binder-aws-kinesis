@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import io.awspring.cloud.autoconfigure.context.ContextCredentialsAutoConfiguration;
 import io.awspring.cloud.autoconfigure.context.ContextRegionProviderAutoConfiguration;
 import io.awspring.cloud.core.region.RegionProvider;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
@@ -244,7 +245,8 @@ public class KinesisBinderConfiguration {
 			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
 			@Autowired(required = false) ProducerMessageHandlerCustomizer<? extends AbstractAwsMessageHandler<Void>> producerMessageHandlerCustomizer,
 			@Autowired(required = false) ConsumerEndpointCustomizer<? extends MessageProducerSupport> consumerEndpointCustomizer,
-			@Autowired List<KinesisClientLibConfiguration> kinesisClientLibConfigurations) {
+			@Autowired List<KinesisClientLibConfiguration> kinesisClientLibConfigurations,
+			@Autowired ObservationRegistry observationRegistry) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder =
 				new KinesisMessageChannelBinder(this.configurationProperties, provisioningProvider, amazonKinesis,
@@ -256,6 +258,9 @@ public class KinesisBinderConfiguration {
 		kinesisMessageChannelBinder.setProducerMessageHandlerCustomizer(producerMessageHandlerCustomizer);
 		kinesisMessageChannelBinder.setConsumerEndpointCustomizer(consumerEndpointCustomizer);
 		kinesisMessageChannelBinder.setKinesisClientLibConfigurations(kinesisClientLibConfigurations);
+		if (this.configurationProperties.isEnableObservation()) {
+			kinesisMessageChannelBinder.setObservationRegistry(observationRegistry);
+		}
 		return kinesisMessageChannelBinder;
 	}
 

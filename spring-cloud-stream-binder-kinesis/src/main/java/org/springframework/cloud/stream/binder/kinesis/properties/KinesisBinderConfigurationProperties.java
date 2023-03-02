@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,11 @@ public class KinesisBinderConfigurationProperties {
 	 * Enables the usage of Amazon KCL/KPL libraries for all message consumption and production.
 	 */
 	private boolean kplKclEnabled;
+
+	/**
+	 * Enable Micrometer observation registry across all the bindings in the binder.
+	 */
+	private boolean enableObservation;
 
 	private final Checkpoint checkpoint = new Checkpoint();
 
@@ -120,6 +125,15 @@ public class KinesisBinderConfigurationProperties {
 
 	public void setKplKclEnabled(boolean kplKclEnabled) {
 		this.kplKclEnabled = kplKclEnabled;
+	}
+
+
+	public boolean isEnableObservation() {
+		return this.enableObservation;
+	}
+
+	public void setEnableObservation(boolean enableObservation) {
+		this.enableObservation = enableObservation;
 	}
 
 	/**

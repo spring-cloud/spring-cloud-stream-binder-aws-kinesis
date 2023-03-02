@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,8 @@ public class KinesisConsumerProperties {
 	 * (only used when KCL is enabled).
 	 */
 	private String workerId;
+
+	private boolean embedHeaders;
 
 	public int getStartTimeout() {
 		return this.startTimeout;
@@ -147,4 +149,13 @@ public class KinesisConsumerProperties {
 	public void setShardId(String shardId) {
 		this.shardId = shardId;
 	}
+
+	public boolean isEmbedHeaders() {
+		return this.embedHeaders;
+	}
+
+	public void setEmbedHeaders(boolean embedHeaders) {
+		this.embedHeaders = embedHeaders;
+	}
+
 }

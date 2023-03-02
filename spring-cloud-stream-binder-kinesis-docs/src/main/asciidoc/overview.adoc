@@ -118,6 +118,14 @@ kplKclEnabled::
     Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[Kinesis Client Library] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[Kinesis Producer Library] for all message consumption and production
 +
 Default: `false`
++
+enableObservation::
+    Enable a Micrometer Observation instrumentation on Kinesis Binder producer and consumer.
+By default, Kinesis binder propagate traces producer to consumer via embedded headers.
+The standard W3C `traceparent` and Brave pattern `X-B3*` for headers are mapped by default.
+The Kinesis Binder observation is fully based on https://docs.spring.io/spring-integration/docs/current/reference/html/system-management.html#micrometer-observation[Spring Integration conventions]
++
+Default: `false`
 
 === MetadataStore
 Support for consumer groups is implemented using https://github.com/spring-projects/spring-integration-aws#metadata-store-for-amazon-dynamodb[DynamoDbMetadataStore].
@@ -184,19 +192,14 @@ See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.
 Default: `1`
 leaseDuration::
 	The length of time that the lease for the lock will be granted for.
-	 If this is set to, for example, 30 seconds, then the lock will expire if the heartbeat is not sent for at least 30 seconds (which would happen if the box or the heartbeat thread dies, for example.)
+If this is set to, for example, 30 seconds, then the lock will be considered as expired after that period and a new owner can acquire it.
+See also See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html[DynamoDB TTL]
 +
 Default: `20`
-heartbeatPeriod::
-	How often to update DynamoDB to note that the instance is still running (recommendation is to make this at least 3 times smaller than the `leaseDuration` - for example `heartBeatPeriod=1` second, `leaseDuration=10` seconds could be a reasonable configuration, make sure to include a buffer for network latency.)
-Can be set to `0` or negative value to disable heartbeat feature altogether.
-The `KinesisMessageDrivenChannelAdapter` does it own locks renewal eitherway.
-+
-Default: `5`
 refreshPeriod::
 	How long to wait before trying to get the lock again (if set to 10 seconds, for example, it would attempt to do so every 10 seconds)
 +
-Default: `1000`
+Default: `1`
 
 === Kinesis Consumer Properties
 

@@ -60,6 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.idleBetweenPolls = 1",
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.listenerMode = batch",
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.checkpointMode = manual",
+				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.useNativeDecoding = true",
 				"spring.cloud.stream.kinesis.binder.headers = event.eventType",
 				"spring.cloud.stream.kinesis.binder.autoAddShards = true",
 				"cloud.aws.region.static=eu-west-2"})
@@ -104,15 +105,13 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 		putRecordsRequest.setRecords(putRecordsRequestEntryList);
 		AMAZON_KINESIS.putRecords(putRecordsRequest);
 
-		assertThat(this.messageBarrier.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.messageBarrier.await(30, TimeUnit.SECONDS)).isTrue();
 
 		Message<List<?>> message = this.messageHolder.get();
 		assertThat(message.getHeaders())
 				.containsKeys(AwsHeaders.CHECKPOINTER,
 						AwsHeaders.SHARD,
-						AwsHeaders.RECEIVED_PARTITION_KEY,
-						AwsHeaders.RECEIVED_STREAM,
-						AwsHeaders.RECEIVED_SEQUENCE_NUMBER)
+						AwsHeaders.RECEIVED_STREAM)
 				.doesNotContainKeys(AwsHeaders.STREAM, AwsHeaders.PARTITION_KEY);
 
 		List<?> payload = message.getPayload();

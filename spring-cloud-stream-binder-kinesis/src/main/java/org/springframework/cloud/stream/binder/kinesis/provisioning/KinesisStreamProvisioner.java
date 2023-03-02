@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,12 +85,16 @@ public class KinesisStreamProvisioner implements
 			logger.info("Using Kinesis stream for outbound: " + name);
 		}
 
+		KinesisProducerProperties kinesisProducerProperties = properties.getExtension();
+		kinesisProducerProperties.setEmbedHeaders(
+				properties.getHeaderMode() == null || HeaderMode.embeddedHeaders.equals(properties.getHeaderMode()));
+		properties.setHeaderMode(HeaderMode.none);
+
 		if (properties.getHeaderMode() == null) {
 			properties.setHeaderMode(HeaderMode.embeddedHeaders);
 		}
 
-		return new KinesisProducerDestination(name,
-				createOrUpdate(name, properties.getPartitionCount()));
+		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
 	}
 
 	@Override
@@ -98,7 +102,12 @@ public class KinesisStreamProvisioner implements
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties)
 			throws ProvisioningException {
 
-		if (properties.getExtension().isDynamoDbStreams()) {
+		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
+		kinesisConsumerProperties.setEmbedHeaders(
+				properties.getHeaderMode() == null || HeaderMode.embeddedHeaders.equals(properties.getHeaderMode()));
+		properties.setHeaderMode(HeaderMode.none);
+
+		if (kinesisConsumerProperties.isDynamoDbStreams()) {
 			if (logger.isInfoEnabled()) {
 				logger.info("Using DynamoDB table in DynamoDB Streams support for inbound: " + name);
 			}
@@ -107,10 +116,6 @@ public class KinesisStreamProvisioner implements
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Using Kinesis stream for inbound: " + name);
-		}
-
-		if (properties.getHeaderMode() == null) {
-			properties.setHeaderMode(HeaderMode.embeddedHeaders);
 		}
 
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
@@ -196,22 +201,22 @@ public class KinesisStreamProvisioner implements
 			try {
 				DescribeStreamResult describeStreamResult = this.amazonKinesis.describeStream(streamName);
 				if (describeStreamResult != null &&
-					StreamStatus.ACTIVE.name().equals(describeStreamResult.getStreamDescription().getStreamStatus())) {
+						StreamStatus.ACTIVE.name().equals(describeStreamResult.getStreamDescription().getStreamStatus())) {
 
 					return;
 				}
 				else if (describeStreamRetries++ > this.configurationProperties.getDescribeStreamRetries()) {
-						ResourceNotFoundException resourceNotFoundException = new ResourceNotFoundException(
+					ResourceNotFoundException resourceNotFoundException = new ResourceNotFoundException(
 							"The stream [" + streamName + "] isn't ACTIVE or doesn't exist.");
-						resourceNotFoundException.setServiceName("Kinesis");
-						throw new ProvisioningException(
+					resourceNotFoundException.setServiceName("Kinesis");
+					throw new ProvisioningException(
 							"Kinesis org.springframework.cloud.stream.binder.kinesis.provisioning error",
 							resourceNotFoundException);
 				}
 			}
 			catch (LimitExceededException ex) {
 				logger.info("Got LimitExceededException when describing stream [" + streamName + "]. " +
-					"Backing off for [" + this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
+						"Backing off for [" + this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
 			}
 
 			try {
@@ -220,7 +225,7 @@ public class KinesisStreamProvisioner implements
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
 				throw new ProvisioningException(
-					"The [describeStream] thread for the stream [" + streamName + "] has been interrupted.", ex);
+						"The [describeStream] thread for the stream [" + streamName + "] has been interrupted.", ex);
 			}
 		}
 	}
@@ -268,7 +273,7 @@ public class KinesisStreamProvisioner implements
 			}
 			catch (LimitExceededException ex) {
 				logger.info("Got LimitExceededException when describing stream [" + streamName + "]. "
-					+ "Backing off for [" + this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
+						+ "Backing off for [" + this.configurationProperties.getDescribeStreamBackoff() + "] millis.");
 			}
 
 			if (describeStreamResult == null || !StreamStatus.ACTIVE.toString().equals(
