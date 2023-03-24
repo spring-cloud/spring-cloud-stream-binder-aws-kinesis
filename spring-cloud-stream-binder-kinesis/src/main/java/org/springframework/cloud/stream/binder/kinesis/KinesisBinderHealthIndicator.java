@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.model.LimitExceededException;
-import com.amazonaws.services.kinesis.model.ListShardsRequest;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.LimitExceededException;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -42,25 +42,28 @@ public class KinesisBinderHealthIndicator implements HealthIndicator {
 
 	@Override
 	public Health health() {
-		AmazonKinesisAsync amazonKinesis = this.kinesisMessageChannelBinder.getAmazonKinesis();
+		KinesisAsyncClient amazonKinesis = this.kinesisMessageChannelBinder.getAmazonKinesis();
 		List<String> streamsInUse = new ArrayList<>(this.kinesisMessageChannelBinder.getStreamsInUse());
 		for (String stream : streamsInUse) {
 			while (true) {
 				try {
-					amazonKinesis.listShards(new ListShardsRequest().withStreamName(stream).withMaxResults(1));
+					amazonKinesis.listShards(request -> request.streamName(stream).maxResults(1)).join();
 					break;
 				}
-				catch (LimitExceededException ex) {
-					try {
-						TimeUnit.SECONDS.sleep(1);
+				catch (CompletionException ex) {
+					Throwable cause = ex.getCause();
+					if (cause instanceof LimitExceededException) {
+						try {
+							TimeUnit.SECONDS.sleep(1);
+						}
+						catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							return Health.down(ex).build();
+						}
 					}
-					catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
+					else {
 						return Health.down(ex).build();
 					}
-				}
-				catch (Exception ex) {
-					return Health.down(ex).build();
 				}
 			}
 		}

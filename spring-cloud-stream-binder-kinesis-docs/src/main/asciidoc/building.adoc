@@ -7,8 +7,8 @@
 
 To build the source you will need to install JDK {jdkversion}.
 
-The build uses the Maven wrapper so you don't have to install a specific version of Maven.
-To enable the tests, you should have https://github.com/mhart/kinesalite[Kinesalite] server running before building.
+The build uses the Maven wrapper, so you don't have to install a specific version of Maven.
+To enable the tests, you should have Docker running before building.
 
 The main build command is
 
@@ -18,7 +18,7 @@ $ ./mvnw clean install
 
 You can also add `-DskipTests` if you like, to avoid running the tests.
 
-NOTE: You can also install Maven (>=3.3.3) yourself and run the `mvn` command in place of `./mvnw` in the examples below.
+NOTE: You can also install Maven (>=3.5.0) yourself and run the `mvn` command in place of `./mvnw` in the examples below.
 If you do that you also might need to add `-P spring` if your local Maven settings do not contain repository declarations for spring pre-release artifacts.
 
 NOTE: Be aware that you might need to increase the amount of memory available to Maven by setting a `MAVEN_OPTS` environment variable with a value like `-Xmx512m -XX:MaxPermSize=128m`.

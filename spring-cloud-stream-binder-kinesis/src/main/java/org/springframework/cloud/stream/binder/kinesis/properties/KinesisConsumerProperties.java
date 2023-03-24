@@ -50,8 +50,6 @@ public class KinesisConsumerProperties {
 
 	private String shardIteratorType;
 
-	private boolean dynamoDbStreams;
-
 	private String shardId;
 
 	/**
@@ -132,14 +130,6 @@ public class KinesisConsumerProperties {
 
 	public void setWorkerId(String workerId) {
 		this.workerId = workerId;
-	}
-
-	public boolean isDynamoDbStreams() {
-		return this.dynamoDbStreams;
-	}
-
-	public void setDynamoDbStreams(boolean dynamoDbStreams) {
-		this.dynamoDbStreams = dynamoDbStreams;
 	}
 
 	public String getShardId() {

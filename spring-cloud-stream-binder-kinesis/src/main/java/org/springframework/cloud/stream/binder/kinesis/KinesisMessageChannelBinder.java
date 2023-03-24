@@ -16,34 +16,27 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
-import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
-import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
-import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.SimpleRecordsFetcherFactory;
-import com.amazonaws.services.kinesis.model.InvalidArgumentException;
-import com.amazonaws.services.kinesis.model.Shard;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import io.micrometer.observation.ObservationRegistry;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.InvalidArgumentException;
+import software.amazon.awssdk.services.kinesis.model.Shard;
+import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
+import software.amazon.kinesis.common.InitialPositionInStream;
+import software.amazon.kinesis.common.InitialPositionInStreamExtended;
 
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder;
 import org.springframework.cloud.stream.binder.BinderHeaders;
@@ -52,7 +45,6 @@ import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.ExtendedPropertiesBinder;
 import org.springframework.cloud.stream.binder.PartitionKeyExtractorStrategy;
-import org.springframework.cloud.stream.binder.kinesis.adapter.SpringDynamoDBAdapterClient;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
@@ -61,7 +53,6 @@ import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisConsu
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
-import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.integration.aws.inbound.kinesis.KclMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
@@ -115,15 +106,13 @@ public class KinesisMessageChannelBinder extends
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
-	private final AmazonDynamoDBStreamsAdapterClient dynamoDBStreamsAdapter;
+	private final KinesisAsyncClient amazonKinesis;
 
-	private final AmazonKinesisAsync amazonKinesis;
+	private final AwsCredentialsProvider awsCredentialsProvider;
 
-	private final AWSCredentialsProvider awsCredentialsProvider;
+	private final CloudWatchAsyncClient cloudWatchClient;
 
-	private final AmazonCloudWatch cloudWatchClient;
-
-	private final AmazonDynamoDB dynamoDBClient;
+	private final DynamoDbAsyncClient dynamoDBClient;
 
 	private final String[] headersToEmbed;
 
@@ -140,16 +129,13 @@ public class KinesisMessageChannelBinder extends
 
 	private EvaluationContext evaluationContext;
 
-	private List<KinesisClientLibConfiguration> kinesisClientLibConfigurations;
-
 	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	public KinesisMessageChannelBinder(KinesisBinderConfigurationProperties configurationProperties,
-			KinesisStreamProvisioner provisioningProvider, AmazonKinesisAsync amazonKinesis,
-			AWSCredentialsProvider awsCredentialsProvider,
-			@Nullable AmazonDynamoDB dynamoDBClient,
-			@Nullable AmazonDynamoDBStreams dynamoDBStreams,
-			@Nullable AmazonCloudWatch cloudWatchClient) {
+			KinesisStreamProvisioner provisioningProvider, KinesisAsyncClient amazonKinesis,
+			AwsCredentialsProvider awsCredentialsProvider,
+			@Nullable DynamoDbAsyncClient dynamoDBClient,
+			@Nullable CloudWatchAsyncClient cloudWatchClient) {
 
 		super(new String[0], provisioningProvider);
 		Assert.notNull(amazonKinesis, "'amazonKinesis' must not be null");
@@ -160,12 +146,6 @@ public class KinesisMessageChannelBinder extends
 		this.dynamoDBClient = dynamoDBClient;
 		this.awsCredentialsProvider = awsCredentialsProvider;
 
-		if (dynamoDBStreams != null) {
-			this.dynamoDBStreamsAdapter = new SpringDynamoDBAdapterClient(dynamoDBStreams);
-		}
-		else {
-			this.dynamoDBStreamsAdapter = null;
-		}
 		this.headersToEmbed = headersToMap(configurationProperties);
 	}
 
@@ -183,10 +163,6 @@ public class KinesisMessageChannelBinder extends
 
 	public void setKinesisProducerConfiguration(KinesisProducerConfiguration kinesisProducerConfiguration) {
 		this.kinesisProducerConfiguration = kinesisProducerConfiguration;
-	}
-
-	public void setKinesisClientLibConfigurations(List<KinesisClientLibConfiguration> kinesisClientLibConfigurations) {
-		this.kinesisClientLibConfigurations = kinesisClientLibConfigurations;
 	}
 
 	public void setObservationRegistry(@Nullable ObservationRegistry observationRegistry) {
@@ -213,7 +189,7 @@ public class KinesisMessageChannelBinder extends
 		return this.extendedBindingProperties.getExtendedPropertiesEntryClass();
 	}
 
-	public AmazonKinesisAsync getAmazonKinesis() {
+	public KinesisAsyncClient getAmazonKinesis() {
 		return this.amazonKinesis;
 	}
 
@@ -234,8 +210,8 @@ public class KinesisMessageChannelBinder extends
 
 	@Override
 	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
-			ExtendedProducerProperties<KinesisProducerProperties> producerProperties,
-			MessageChannel errorChannel) {
+			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel channel,
+			@Nullable MessageChannel errorChannel) {
 
 		FunctionExpression<Message<?>> partitionKeyExpression =
 				new FunctionExpression<>((m) ->
@@ -251,14 +227,31 @@ public class KinesisMessageChannelBinder extends
 			messageHandler = createKinesisMessageHandler(destination, partitionKeyExpression,
 					producerProperties.getExtension().isEmbedHeaders());
 		}
-		messageHandler.setSync(producerProperties.getExtension().isSync());
+		messageHandler.setAsync(!producerProperties.getExtension().isSync());
 		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
-		messageHandler.setFailureChannel(errorChannel);
 		messageHandler.setBeanFactory(getBeanFactory());
+
+		if (errorChannel != null) {
+			((InterceptableChannel) channel)
+					.addInterceptor(new ChannelInterceptor() {
+
+						@Override
+						public Message<?> preSend(Message<?> message, MessageChannel channel) {
+							return MessageBuilder.fromMessage(message).setErrorChannel(errorChannel).build();
+						}
+
+					});
+		}
 
 		this.streamsInUse.add(destination.getName());
 
 		return messageHandler;
+	}
+
+	@Override
+	protected MessageHandler createProducerMessageHandler(ProducerDestination destination,
+			ExtendedProducerProperties<KinesisProducerProperties> producerProperties, MessageChannel errorChannel) {
+		return null;
 	}
 
 	private AbstractAwsMessageHandler<?> createKinesisMessageHandler(ProducerDestination destination,
@@ -276,8 +269,7 @@ public class KinesisMessageChannelBinder extends
 	private AbstractAwsMessageHandler<?> createKplMessageHandler(ProducerDestination destination,
 			FunctionExpression<Message<?>> partitionKeyExpression, boolean embedHeaders) {
 
-		final KplMessageHandler messageHandler;
-		messageHandler = new KplMessageHandler(new KinesisProducer(this.kinesisProducerConfiguration));
+		KplMessageHandler messageHandler = new KplMessageHandler(new KinesisProducer(this.kinesisProducerConfiguration));
 		messageHandler.setStream(destination.getName());
 		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
 		if (embedHeaders) {
@@ -332,34 +324,18 @@ public class KinesisMessageChannelBinder extends
 			String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
-		ConsumerDestination destinationToUse = destination;
-
-		if (properties.getExtension().isDynamoDbStreams()) {
-			DescribeTableResult describeTableResult = this.dynamoDBClient.describeTable(destinationToUse.getName());
-			String latestStreamArn = describeTableResult.getTable().getLatestStreamArn();
-			if (StringUtils.hasText(latestStreamArn)) {
-				destinationToUse = new KinesisConsumerDestination(latestStreamArn, Collections.emptyList());
-			}
-			else {
-				throw new ProvisioningException("The DynamoDB table ["
-						+ destinationToUse.getName()
-						+ "] doesn't have Streams enabled.");
-			}
-		}
-		else {
-			this.streamsInUse.add(destinationToUse.getName());
-		}
+		this.streamsInUse.add(destination.getName());
 
 		MessageProducerSupport adapter;
 		if (this.configurationProperties.isKplKclEnabled()) {
-			adapter = createKclConsumerEndpoint(destinationToUse, group, properties);
+			adapter = createKclConsumerEndpoint(destination, group, properties);
 		}
 		else {
-			adapter = createKinesisConsumerEndpoint(destinationToUse, group, properties);
+			adapter = createKinesisConsumerEndpoint(destination, group, properties);
 		}
 
 		adapter.registerObservationRegistry(this.observationRegistry);
-		adapter.setComponentName(String.format("Consumer for [%s]", destinationToUse.getName()));
+		adapter.setComponentName(String.format("Consumer for [%s]", destination.getName()));
 
 		return adapter;
 	}
@@ -374,23 +350,55 @@ public class KinesisMessageChannelBinder extends
 					"Ignoring 'shardId' property");
 		}
 
-		AmazonKinesis amazonKinesisClient =
-				kinesisConsumerProperties.isDynamoDbStreams()
-						? this.dynamoDBStreamsAdapter
-						: this.amazonKinesis;
-
-		String stream = destination.getName();
-
-		KinesisClientLibConfiguration kinesisClientLibConfiguration =
-				obtainKinesisClientLibConfiguration(properties.getExtension(), stream, group);
-
 		KclMessageDrivenChannelAdapter adapter =
-				new KclMessageDrivenChannelAdapter(kinesisClientLibConfiguration, amazonKinesisClient,
-						this.cloudWatchClient, this.dynamoDBClient);
-		String consumerGroup = kinesisClientLibConfiguration.getApplicationName();
+				new KclMessageDrivenChannelAdapter(this.amazonKinesis, this.cloudWatchClient, this.dynamoDBClient,
+						destination.getName());
 
+		boolean anonymous = !StringUtils.hasText(group);
+		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID() : group;
+
+		String workerId =
+				kinesisConsumerProperties.getWorkerId() != null
+						? kinesisConsumerProperties.getWorkerId()
+						: UUID.randomUUID().toString();
+
+		String shardIteratorType = kinesisConsumerProperties.getShardIteratorType();
+
+		InitialPositionInStreamExtended kinesisShardOffset =
+				InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.LATEST);
+
+		if (StringUtils.hasText(shardIteratorType)) {
+			String[] typeValue = shardIteratorType.split(":", 2);
+			ShardIteratorType iteratorType = ShardIteratorType.valueOf(typeValue[0]);
+			if (typeValue.length > 1) {
+				if (ShardIteratorType.AT_TIMESTAMP.equals(iteratorType)) {
+					kinesisShardOffset =
+							InitialPositionInStreamExtended.newInitialPositionAtTimestamp(
+									new Date(Long.parseLong(typeValue[1])));
+				}
+				else {
+					throw new IllegalArgumentException("The KCL does not support 'AT_SEQUENCE_NUMBER' " +
+							"or 'AFTER_SEQUENCE_NUMBER' initial position in stream.");
+				}
+			}
+			else {
+				kinesisShardOffset =
+						InitialPositionInStreamExtended.newInitialPosition(
+								InitialPositionInStream.valueOf(iteratorType.name()));
+			}
+		}
+
+		kinesisShardOffset =
+				anonymous || StringUtils.hasText(shardIteratorType)
+						? kinesisShardOffset
+						: InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.TRIM_HORIZON);
+
+		adapter.setConsumerGroup(consumerGroup);
+		adapter.setWorkerId(workerId);
+		adapter.setStreamInitialSequence(kinesisShardOffset);
 		adapter.setCheckpointMode(kinesisConsumerProperties.getCheckpointMode());
 		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
+		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 		if (properties.getExtension().isEmbedHeaders()) {
 			adapter.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper());
@@ -411,103 +419,15 @@ public class KinesisMessageChannelBinder extends
 		return adapter;
 	}
 
-	private KinesisClientLibConfiguration obtainKinesisClientLibConfiguration(
-			KinesisConsumerProperties properties, String stream, String group) {
-
-		KinesisClientLibConfiguration candidate = null;
-		for (KinesisClientLibConfiguration conf : this.kinesisClientLibConfigurations) {
-			if (stream.equals(conf.getStreamName())) {
-				candidate = conf;
-				if (Objects.equals(group, conf.getApplicationName())) {
-					break;
-				}
-			}
-		}
-
-		if (candidate == null) {
-			boolean anonymous = !StringUtils.hasText(group);
-			String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID() : group;
-
-			candidate = new KinesisClientLibConfiguration(consumerGroup,
-					stream,
-					null,
-					null,
-					InitialPositionInStream.LATEST,
-					this.awsCredentialsProvider,
-					null,
-					null,
-					KinesisClientLibConfiguration.DEFAULT_FAILOVER_TIME_MILLIS,
-					properties.getWorkerId() != null ? properties.getWorkerId() : UUID.randomUUID().toString(),
-					KinesisClientLibConfiguration.DEFAULT_MAX_RECORDS,
-					properties.getIdleBetweenPolls(),
-					false,
-					KinesisClientLibConfiguration.DEFAULT_PARENT_SHARD_POLL_INTERVAL_MILLIS,
-					KinesisClientLibConfiguration.DEFAULT_SHARD_SYNC_INTERVAL_MILLIS,
-					KinesisClientLibConfiguration.DEFAULT_CLEANUP_LEASES_UPON_SHARDS_COMPLETION,
-					new ClientConfiguration(),
-					new ClientConfiguration(),
-					new ClientConfiguration(),
-					properties.getConsumerBackoff(),
-					KinesisClientLibConfiguration.DEFAULT_METRICS_BUFFER_TIME_MILLIS,
-					KinesisClientLibConfiguration.DEFAULT_METRICS_MAX_QUEUE_SIZE,
-					KinesisClientLibConfiguration.DEFAULT_VALIDATE_SEQUENCE_NUMBER_BEFORE_CHECKPOINTING,
-					null,
-					KinesisClientLibConfiguration.DEFAULT_SHUTDOWN_GRACE_MILLIS,
-					KinesisClientLibConfiguration.DEFAULT_DDB_BILLING_MODE,
-					new SimpleRecordsFetcherFactory(),
-					Duration.ofMinutes(1).toMillis(),
-					Duration.ofMinutes(5).toMillis(),
-					Duration.ofMinutes(30).toMillis());
-
-			String shardIteratorType = properties.getShardIteratorType();
-
-			KinesisShardOffset kinesisShardOffset = KinesisShardOffset.latest();
-
-			if (StringUtils.hasText(shardIteratorType)) {
-				String[] typeValue = shardIteratorType.split(":", 2);
-				ShardIteratorType iteratorType = ShardIteratorType.valueOf(typeValue[0]);
-				kinesisShardOffset = new KinesisShardOffset(iteratorType);
-				if (typeValue.length > 1) {
-					if (ShardIteratorType.AT_TIMESTAMP.equals(iteratorType)) {
-						kinesisShardOffset
-								.setTimestamp(new Date(Long.parseLong(typeValue[1])));
-					}
-					else {
-						kinesisShardOffset.setSequenceNumber(typeValue[1]);
-					}
-				}
-			}
-
-			kinesisShardOffset =
-					anonymous || StringUtils.hasText(shardIteratorType)
-							? kinesisShardOffset
-							: KinesisShardOffset.trimHorizon();
-
-			if (kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AT_TIMESTAMP)) {
-				candidate.withTimestampAtInitialPositionInStream(kinesisShardOffset.getTimestamp());
-			}
-			else if (kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AT_SEQUENCE_NUMBER) ||
-					kinesisShardOffset.getIteratorType().equals(ShardIteratorType.AFTER_SEQUENCE_NUMBER)) {
-
-				throw new IllegalArgumentException("The KCL does not support 'AT_SEQUENCE_NUMBER' " +
-						"or 'AFTER_SEQUENCE_NUMBER' initial position in stream.");
-			}
-			else {
-				candidate.withInitialPositionInStream(
-						InitialPositionInStream.valueOf(kinesisShardOffset.getIteratorType().name()));
-			}
-		}
-
-		return candidate;
-	}
-
 	private MessageProducerSupport createKinesisConsumerEndpoint(ConsumerDestination destination, String group,
 			ExtendedConsumerProperties<KinesisConsumerProperties> properties) {
 
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 
 		if (properties.getInstanceCount() > 1 && properties.getExtension().getShardId() != null) {
-			throw new InvalidArgumentException("'instanceCount' more than 1 and 'shardId' cannot be provided together.");
+			throw InvalidArgumentException.builder()
+					.message("'instanceCount' more than 1 and 'shardId' cannot be provided together.")
+					.build();
 		}
 
 		Set<KinesisShardOffset> shardOffsets = null;
@@ -523,7 +443,7 @@ public class KinesisMessageChannelBinder extends
 			if (typeValue.length > 1) {
 				if (ShardIteratorType.AT_TIMESTAMP.equals(iteratorType)) {
 					kinesisShardOffset
-							.setTimestamp(new Date(Long.parseLong(typeValue[1])));
+							.setTimestamp(Instant.ofEpochMilli(Long.parseLong(typeValue[1])));
 				}
 				else {
 					kinesisShardOffset.setSequenceNumber(typeValue[1]);
@@ -540,7 +460,7 @@ public class KinesisMessageChannelBinder extends
 				if ((i % properties.getInstanceCount()) == properties.getInstanceIndex()) {
 					KinesisShardOffset shardOffset = new KinesisShardOffset(kinesisShardOffset);
 					shardOffset.setStream(destination.getName());
-					shardOffset.setShard(shards.get(i).getShardId());
+					shardOffset.setShard(shards.get(i).shardId());
 					shardOffsets.add(shardOffset);
 				}
 			}
@@ -548,24 +468,19 @@ public class KinesisMessageChannelBinder extends
 
 		KinesisMessageDrivenChannelAdapter adapter;
 
-		AmazonKinesis amazonKinesisClient =
-				kinesisConsumerProperties.isDynamoDbStreams()
-						? this.dynamoDBStreamsAdapter
-						: this.amazonKinesis;
-
 		String shardId = kinesisConsumerProperties.getShardId();
 
 		if (CollectionUtils.isEmpty(shardOffsets) && shardId == null) {
-			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient, destination.getName());
+			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
 		}
 		else if (shardId != null) {
 			KinesisShardOffset shardOffset = new KinesisShardOffset(kinesisShardOffset);
 			shardOffset.setStream(destination.getName());
 			shardOffset.setShard(shardId);
-			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient, shardOffset);
+			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, shardOffset);
 		}
 		else {
-			adapter = new KinesisMessageDrivenChannelAdapter(amazonKinesisClient,
+			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis,
 					shardOffsets.toArray(new KinesisShardOffset[0]));
 		}
 

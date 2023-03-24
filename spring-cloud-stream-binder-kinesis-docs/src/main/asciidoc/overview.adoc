@@ -16,11 +16,13 @@ For using the AWS Kinesis Binder, you just need to add it to your Spring Cloud S
 </dependency>
 ----
 
+NOTE: Starting with version `4.0`, this project is fully based on AWS SDK v2 and therefore has a lot of breaking changes and incompatibilities with the previous version.
+
 == Kinesis Binder Overview
 
 The Spring Cloud Stream Binder for AWS Kinesis provides the binding implementation for the Spring Cloud Stream.
 This implementation uses Spring Integration AWS Kinesis Channel Adapters at its foundation.
-The following captures how the Kinesis Binder implementation maps each of the configured destination to a AWS Kinesis Streams:
+The following captures how the Kinesis Binder implementation maps each of the configured destination to AWS Kinesis Streams:
 
 .Kinesis Binder
 image::images/kinesis-binder.png[width=300,scaledwidth="50%"]
@@ -45,8 +47,6 @@ The Spring Cloud Stream partition handling logic is excluded in case of AWS Kine
 
 On the consumer side the `instanceCount` and `instanceIndex` are used to distribute shards between consumers in group evenly.
 This has an effect only for regular `KinesisMessageDrivenChannelAdapter` which can assign specific shards for the target Kinesis consumer.
-With Kinesis Client Library we can subscribe only to the provided stream and shards distribution is done by that client.
-See more information in the Kinesis Client Library https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[documentation].
 
 == Consumer Groups
 Consumer groups are implemented with focus on High availability, Message ordering and guaranteed Message delivery in Spring cloud stream.
@@ -115,7 +115,7 @@ It can be superseded by the `partitionCount` setting of the producer or by the v
 +
 Default: `1`
 kplKclEnabled::
-    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html[Kinesis Client Library] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[Kinesis Producer Library] for all message consumption and production
+    Enable the usage of https://docs.aws.amazon.com/streams/latest/dev/kcl2-standard-consumer-java-example.html[Kinesis Client Library] / https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html[Kinesis Producer Library] for all message consumption and production
 +
 Default: `false`
 +
@@ -129,7 +129,7 @@ Default: `false`
 
 === MetadataStore
 Support for consumer groups is implemented using https://github.com/spring-projects/spring-integration-aws#metadata-store-for-amazon-dynamodb[DynamoDbMetadataStore].
-The `partitionKey` name used in the table is `KEY`.
+The `partitionKey` name used in the table is `metadataKey`.
 This is not configurable.
 
 DynamoDB Checkpoint properties are prefixed with `spring.cloud.stream.kinesis.binder.checkpoint.`
@@ -236,10 +236,6 @@ recordsLimit::
   The maximum number of records to poll per `GetRecords` request.
   Must not be greater than `10000`.
 +
-Default: `10000`
-idleBetweenPolls::
-  The sleep interval used in the main loop between shards polling cycles, in milliseconds. Must not be less than `250`.
-+
 Default: `1000`
 consumerBackoff::
   The amount of time the consumer will wait to attempt another `GetRecords` operation after a read with no results, in milliseconds.
@@ -256,16 +252,6 @@ So the `getRecords()` will move from that point to the last point, which takes t
 It is by default 1 day, and it can be extended to 7 days.
 This happens only for new consumer groups.
 Any subsequent starts of the consumer in the same group are adjusted according the stored checkpoint via `AFTER_SEQUENCE_NUMBER` iterator type.
-
-dynamoDbStreams::
-  The `boolean` flag indicating that Kinesis consumer channel adapter should adapt DynamoDB Streams functionality instead of regular Kinesis streams.
-The `spring.cloud.stream.bindings.<bindingTarget>.destination` value must be a DynamoDB table name.
-Default: `false`.
-
-Starting with version 2.0.1, beans of `KinesisClientLibConfiguration` type can be provided in the application context to have a full control over Kinesis Client Library configuration options.
-The stream and consumer group (plus workerId) must be provided in the respective `KinesisClientLibConfiguration` bean.
-When `KclMessageDrivenChannelAdapter` endpoint is configured in the binder, it selects an appropriate `KinesisClientLibConfiguration` from the application context according a destination (stream) for binding.
-If there is no `KinesisClientLibConfiguration` bean for its stream, the `KclMessageDrivenChannelAdapter` falls back to original configuration with defaults options for its internal `KinesisClientLibConfiguration`.
 
 shardId::
 An explicit shard id to consume from.
@@ -290,25 +276,19 @@ sendTimeout::
 Default: `10000`
 
 Also, if you'd like to produce a batch of records into Kinesis stream, the message payload must be as a `PutRecordsRequest` instance and general Spring Cloud Stream producer property `useNativeEncoding` must be set to `true`, so Spring Cloud Stream won't try to convert a `PutRecordsRequest` into a `byte[]`. The content of the `PutRecordsRequest` is now end-user responsibility.
+
 [[kinesis-error-channels]]
 == Error Channels
 
 The binder can be configured to send producer exceptions to an error channel.
 See https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/spring-cloud-stream.html#spring-cloud-stream-overview-error-handling[the section on Spring Cloud Stream error handling] for more information.
 
-The payload of the `ErrorMessage` for a send failure is an `AwsRequestFailureException` with properties:
+The payload of the `ErrorMessage` for a `send` failure is an `AwsRequestFailureException` with properties:
 
 * `failedMessage` - the spring-messaging `Message<?>` that failed to be sent.
-* `request` - the raw `AmazonWebServiceRequest` (either `PutRecordRequest` or `PutRecordsRequest`) that was created from the `failedMessage`.
+* `request` - the raw `AwsRequest` (either `PutRecordRequest` or `PutRecordsRequest`) that was created from the `failedMessage`.
 
 There is no automatic handling of these exceptions (such as sending to a dead letter queue), but you can consume these exceptions with your own Spring Integration flow.
-
-[[dynamodb-streams]]
-== DynamoDB Streams
-
-Starting with version 1.2, the `KinesisMessageChannelBinder` supports DynamoDB Streams for Kinesis consumer channel adapter.
-The functionality is based on the https://github.com/awslabs/dynamodb-streams-kinesis-adapter[DynamoDB Streams Kinesis Adapter] and every Kinesis consumer endpoint selects an appropriate Kinesis Client according the `spring.cloud.stream.kinesis.bindings.<bindingTarget>.consumer.dynamoDbStreams` boolean flag.
-In this case a value for `spring.cloud.stream.bindings.<bindingTarget>.destination` must be a DynamoDB table name.
 
 [[optional-resources]]
 == Optional Resources
@@ -401,8 +381,7 @@ If you're going to allow spring-cloud-stream-binder-kinesis to create the resour
 == Running locally with localstack
 
 Sometimes we don't have the necessary permissions to connect to the real Kinesis and DynamoDB from our developer's machine.
-In moments like this, it's pretty useful to setup Localstack in your project, so you can run everything locally, without
-having to worry about permissions and enterprise restrictions.
+In moments like this, it's pretty useful to setup Localstack in your project, so you can run everything locally, without having to worry about permissions and enterprise restrictions.
 
 Create a *docker-compose.yaml* file, in the root of your project, to quickly start localstack
 
@@ -412,7 +391,7 @@ version: '3.5'
 
 services:
   localstack:
-    image: localstack/localstack:0.12.10
+    image: localstack/localstack:1.4.0
     environment:
       - AWS_DEFAULT_REGION=sa-east-1
       - EDGE_PORT=4566
@@ -471,8 +450,8 @@ aws --endpoint-url=http://localhost:4566 kinesis put-record --stream-name my-tes
 [[telling-the-binder-to-use-your-local-endpoint]]
 === Telling the binder to use your local endpoint
 
-By default, the Kinesis and DynamoDB Client will try to hit the real AWS Endpoint. To change this behavior,
-you have to declare a new @Bean, and override the endpoint.
+By default, the Kinesis and DynamoDB Client will try to hit the real AWS Endpoint.
+To change this behavior, you have to declare a new `@Bean`, and override the endpoint.
 
 For example:
 
@@ -481,16 +460,18 @@ For example:
 @Configuration
 @Profile("local")
 class DynamoDBConfigLocal {
+
     @Value("\${cloud.aws.region.static}")
-    val region: String = ""
+    lateinit val region: String
 
     private val endpointUrl: String = "http://localhost:4566"
 
     @Bean
     @Primary
-    fun amazonDynamoDBAsync(): AmazonDynamoDBAsync {
-        return AmazonDynamoDBAsyncClientBuilder.standard()
-            .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(this.endpointUrl, region))
+    fun amazonDynamoDBAsync(): DynamoDbAsync {
+        return DynamoDbAsyncClient.builder()
+            .region(region)
+            .endpointOverride(Url(endpointUrl))
             .build()
     }
 
@@ -502,17 +483,18 @@ class DynamoDBConfigLocal {
 @Configuration
 @Profile("local")
 class KinesisConfigLocal {
+
     @Value("\${cloud.aws.region.static}")
-    val region: String = ""
+    lateinit val region: String
 
     private val endpointUrl: String = "http://localhost:4566"
 
     @Bean
-    fun amazonKinesis(awsCredentialsProvider: AWSCredentialsProvider): AmazonKinesisAsync {
-        return AmazonKinesisAsyncClientBuilder
-            .standard()
-            .withCredentials(awsCredentialsProvider)
-            .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(endpointUrl, region))
+    fun amazonKinesis(awsCredentialsProvider: AwsCredentialsProvider): KinesisAsyncClient {
+        return KinesisAsyncClient.builder()
+            .credentialsProvider(awsCredentialsProvider)
+            .region(region)
+            .endpointOverride(Url(endpointUrl))
             .build()
     }
 
@@ -522,10 +504,12 @@ class KinesisConfigLocal {
 Now, remember to pass the following environment variables when running locally:
 [source, shell script]
 ----
-SPRING_PROFILES_ACTIVE=local AWS_CBOR_DISABLE=true gradle bootRun
+SPRING_PROFILES_ACTIVE=local gradle bootRun
 ----
-This will make sure that these beans are only instantiated when running locally, and will also disable CBOR, which is not
-supported for the localstack's kinesis stream.
+This will make sure that these beans are only instantiated when running locally, which is not supported for the localstack's kinesis stream.
+
+Another way to test against LocalStack is to use `Testcontainers` with a `localstack/localstack` image container.
+The `LocalstackContainerTest` interface in this project can be a good sample how to configure container and how to use AWS clients.
 
 [[health-indicator]]
 == Kinesis Binder Health Indicator

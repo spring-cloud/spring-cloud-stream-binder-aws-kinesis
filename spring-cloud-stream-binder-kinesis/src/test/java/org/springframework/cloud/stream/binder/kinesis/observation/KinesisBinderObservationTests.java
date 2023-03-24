@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 import brave.handler.SpanHandler;
 import brave.test.TestSpanHandler;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.brave.bridge.BraveFinishedSpan;
 import io.micrometer.tracing.test.simple.SpansAssert;
@@ -34,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -71,7 +71,7 @@ import static org.awaitility.Awaitility.await;
 				"spring.cloud.stream.kinesis.binder.enable-observation=true",
 				"logging.level.org.springframework.cloud.stream.binder.kinesis.observation=debug",
 				"management.tracing.sampling.probability=1.0",
-				"cloud.aws.region.static=eu-west-2"})
+				"spring.cloud.aws.region.static=eu-west-2"})
 @AutoConfigureObservability
 @DirtiesContext
 public class KinesisBinderObservationTests implements LocalstackContainerTest {
@@ -82,7 +82,7 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 
 	private static final TestSpanHandler SPANS = new TestSpanHandler();
 
-	private static AmazonKinesisAsync AMAZON_KINESIS;
+	private static KinesisAsyncClient AMAZON_KINESIS;
 
 	@Autowired
 	private CountDownLatch messageBarrier;
@@ -125,7 +125,7 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 		}
 
 		@Bean(destroyMethod = "")
-		public AmazonKinesisAsync amazonKinesis() {
+		public KinesisAsyncClient amazonKinesis() {
 			return AMAZON_KINESIS;
 		}
 

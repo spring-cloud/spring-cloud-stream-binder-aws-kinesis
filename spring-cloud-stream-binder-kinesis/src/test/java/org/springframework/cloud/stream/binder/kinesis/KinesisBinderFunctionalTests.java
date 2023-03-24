@@ -16,7 +16,6 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -24,14 +23,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import com.amazonaws.SDKGlobalConfiguration;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.model.PutRecordsRequest;
-import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.PutRecordsRequest;
+import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -63,13 +62,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.useNativeDecoding = true",
 				"spring.cloud.stream.kinesis.binder.headers = event.eventType",
 				"spring.cloud.stream.kinesis.binder.autoAddShards = true",
-				"cloud.aws.region.static=eu-west-2"})
+				"spring.cloud.aws.region.static=eu-west-2"})
 @DirtiesContext
 public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 
 	static final String KINESIS_STREAM = "test_stream";
 
-	private static AmazonKinesisAsync AMAZON_KINESIS;
+	private static KinesisAsyncClient AMAZON_KINESIS;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -83,27 +82,31 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 	@BeforeAll
 	static void setup() {
 		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
-		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY, "true");
 	}
 
 	@Test
 	void testKinesisFunction() throws JsonProcessingException, InterruptedException {
-		PutRecordsRequest putRecordsRequest = new PutRecordsRequest();
-		putRecordsRequest.setStreamName(KINESIS_STREAM);
+		PutRecordsRequest.Builder putRecordsRequest =
+				PutRecordsRequest.builder()
+						.streamName(KINESIS_STREAM);
+
 		List<PutRecordsRequestEntry> putRecordsRequestEntryList = new ArrayList<>();
+
 		for (int i = 0; i < 10; i++) {
 			Message<String> eventMessages =
 					MessageBuilder.withPayload("Message" + i)
 							.setHeader("event.eventType", "createEvent")
 							.build();
-			PutRecordsRequestEntry putRecordsRequestEntry = new PutRecordsRequestEntry();
-			byte[] jsonInput = objectMapper.writeValueAsBytes(eventMessages);
-			putRecordsRequestEntry.setData(ByteBuffer.wrap(jsonInput));
-			putRecordsRequestEntry.setPartitionKey("1");
+			PutRecordsRequestEntry putRecordsRequestEntry =
+					PutRecordsRequestEntry.builder()
+							.partitionKey("1")
+							.data(SdkBytes.fromByteArray(objectMapper.writeValueAsBytes(eventMessages)))
+							.build();
 			putRecordsRequestEntryList.add(putRecordsRequestEntry);
 		}
-		putRecordsRequest.setRecords(putRecordsRequestEntryList);
-		AMAZON_KINESIS.putRecords(putRecordsRequest);
+		putRecordsRequest.records(putRecordsRequestEntryList);
+
+		AMAZON_KINESIS.putRecords(putRecordsRequest.build());
 
 		assertThat(this.messageBarrier.await(30, TimeUnit.SECONDS)).isTrue();
 
@@ -134,7 +137,7 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 
 
 		@Bean(destroyMethod = "")
-		public AmazonKinesisAsync amazonKinesis() {
+		public KinesisAsyncClient amazonKinesis() {
 			return AMAZON_KINESIS;
 		}
 

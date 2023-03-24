@@ -18,7 +18,7 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
 
 import java.time.Duration;
 
-import com.amazonaws.services.dynamodbv2.model.BillingMode;
+import software.amazon.awssdk.services.dynamodb.model.BillingMode;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.integration.aws.lock.DynamoDbLockRepository;

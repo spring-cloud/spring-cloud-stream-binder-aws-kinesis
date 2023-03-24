@@ -16,17 +16,13 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.model.ListStreamsRequest;
-import com.amazonaws.services.kinesis.model.ListStreamsResult;
-import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.binder.AbstractTestBinder;
@@ -56,12 +52,13 @@ public class KinesisTestBinder extends
 		AbstractTestBinder<KinesisMessageChannelBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
 				ExtendedProducerProperties<KinesisProducerProperties>> {
 
-	private final AmazonKinesisAsync amazonKinesis;
+	private final KinesisAsyncClient amazonKinesis;
 
 	private final GenericApplicationContext applicationContext;
 
-	public KinesisTestBinder(AmazonKinesisAsync amazonKinesis, AmazonDynamoDBAsync dynamoDbClient,
-		AmazonCloudWatch cloudWatchClient, KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
+	public KinesisTestBinder(KinesisAsyncClient amazonKinesis, DynamoDbAsyncClient dynamoDbClient,
+			CloudWatchAsyncClient cloudWatchClient,
+			KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties) {
 
 		this.applicationContext = new AnnotationConfigApplicationContext(Config.class);
 
@@ -75,7 +72,6 @@ public class KinesisTestBinder extends
 				provisioningProvider);
 
 		binder.setApplicationContext(this.applicationContext);
-		binder.setKinesisClientLibConfigurations(new ArrayList<>());
 
 		setBinder(binder);
 	}
@@ -86,39 +82,20 @@ public class KinesisTestBinder extends
 
 	@Override
 	public void cleanup() {
-		ListStreamsRequest listStreamsRequest = new ListStreamsRequest();
-		ListStreamsResult listStreamsResult = this.amazonKinesis
-				.listStreams(listStreamsRequest);
-
-		List<String> streamNames = listStreamsResult.getStreamNames();
-
-		while (listStreamsResult.getHasMoreStreams()) {
-			if (streamNames.size() > 0) {
-				listStreamsRequest.setExclusiveStartStreamName(
-						streamNames.get(streamNames.size() - 1));
-			}
-			listStreamsResult = this.amazonKinesis.listStreams(listStreamsRequest);
-			streamNames.addAll(listStreamsResult.getStreamNames());
-		}
-
-		for (String stream : streamNames) {
-			this.amazonKinesis.deleteStream(stream);
-			while (true) {
-				try {
-					this.amazonKinesis.describeStream(stream);
-					try {
-						Thread.sleep(100);
-					}
-					catch (InterruptedException ex) {
-						Thread.currentThread().interrupt();
-						throw new IllegalStateException(ex);
-					}
-				}
-				catch (ResourceNotFoundException ex) {
-					break;
-				}
-			}
-		}
+		this.amazonKinesis.listStreams()
+				.thenCompose(reply ->
+						CompletableFuture.allOf(
+								reply.streamNames()
+										.stream()
+										.map(streamName ->
+												this.amazonKinesis.deleteStream(request ->
+																request.streamName(streamName))
+														.thenCompose(result ->
+																this.amazonKinesis.waiter()
+																		.waitUntilStreamNotExists(request ->
+																				request.streamName(streamName))))
+										.toArray(CompletableFuture[]::new)))
+				.join();
 	}
 
 	/**
@@ -138,14 +115,15 @@ public class KinesisTestBinder extends
 	private static class TestKinesisMessageChannelBinder
 			extends KinesisMessageChannelBinder {
 
-		TestKinesisMessageChannelBinder(AmazonKinesisAsync amazonKinesis,
-				AmazonDynamoDBAsync dynamoDbClient,
-				AmazonCloudWatch cloudWatchClient,
+		TestKinesisMessageChannelBinder(KinesisAsyncClient amazonKinesis,
+				DynamoDbAsyncClient dynamoDbClient,
+				CloudWatchAsyncClient cloudWatchClient,
 				KinesisBinderConfigurationProperties kinesisBinderConfigurationProperties,
 				KinesisStreamProvisioner provisioningProvider) {
 
 			super(kinesisBinderConfigurationProperties, provisioningProvider, amazonKinesis,
-					new AWSStaticCredentialsProvider(new BasicAWSCredentials("", "")), dynamoDbClient, null, cloudWatchClient);
+					StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")), dynamoDbClient,
+					cloudWatchClient);
 		}
 
 		/*

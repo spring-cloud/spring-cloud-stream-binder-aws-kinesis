@@ -19,27 +19,23 @@ package org.springframework.cloud.stream.binder.kinesis.config;
 import java.util.List;
 import java.util.Set;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
-import io.awspring.cloud.autoconfigure.context.ContextCredentialsAutoConfiguration;
-import io.awspring.cloud.autoconfigure.context.ContextRegionProviderAutoConfiguration;
-import io.awspring.cloud.core.region.RegionProvider;
 import io.micrometer.observation.ObservationRegistry;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -56,7 +52,6 @@ import org.springframework.cloud.stream.config.ConsumerEndpointCustomizer;
 import org.springframework.cloud.stream.config.ProducerMessageHandlerCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.integration.aws.lock.DynamoDbLockRegistry;
 import org.springframework.integration.aws.lock.DynamoDbLockRepository;
 import org.springframework.integration.aws.metadata.DynamoDbMetadataStore;
@@ -73,28 +68,27 @@ import org.springframework.integration.support.locks.LockRegistry;
  * @author Arnaud Lecollaire
  * @author Asiel Caballero
  */
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 @ConditionalOnMissingBean(Binder.class)
 @EnableConfigurationProperties({KinesisBinderConfigurationProperties.class, KinesisExtendedBindingProperties.class})
-@Import({ContextCredentialsAutoConfiguration.class, ContextRegionProviderAutoConfiguration.class})
 public class KinesisBinderConfiguration {
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
-	private final AWSCredentialsProvider awsCredentialsProvider;
+	private final AwsCredentialsProvider awsCredentialsProvider;
 
-	private final String region;
+	private final Region region;
 
 	private final boolean hasInputs;
 
 	public KinesisBinderConfiguration(KinesisBinderConfigurationProperties configurationProperties,
-			AWSCredentialsProvider awsCredentialsProvider,
-			RegionProvider regionProvider,
+			AwsCredentialsProvider awsCredentialsProvider,
+			AwsRegionProvider regionProvider,
 			List<Bindable> bindables) {
 
 		this.configurationProperties = configurationProperties;
 		this.awsCredentialsProvider = awsCredentialsProvider;
-		this.region = regionProvider.getRegion().getName();
+		this.region = regionProvider.getRegion();
 		this.hasInputs =
 				bindables.stream()
 						.map(Bindable::getInputs)
@@ -105,25 +99,25 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AmazonKinesisAsync amazonKinesis() {
-		return AmazonKinesisAsyncClientBuilder.standard()
-				.withCredentials(this.awsCredentialsProvider)
-				.withRegion(this.region)
+	public KinesisAsyncClient amazonKinesis() {
+		return KinesisAsyncClient.builder()
+				.credentialsProvider(this.awsCredentialsProvider)
+				.region(this.region)
 				.build();
 	}
 
 	@Bean
-	public KinesisStreamProvisioner provisioningProvider(AmazonKinesisAsync amazonKinesis) {
+	public KinesisStreamProvisioner provisioningProvider(KinesisAsyncClient amazonKinesis) {
 		return new KinesisStreamProvisioner(amazonKinesis, this.configurationProperties);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AmazonDynamoDBAsync dynamoDB() {
+	public DynamoDbAsyncClient dynamoDB() {
 		if (this.hasInputs) {
-			return AmazonDynamoDBAsyncClientBuilder.standard()
-					.withCredentials(this.awsCredentialsProvider)
-					.withRegion(this.region)
+			return DynamoDbAsyncClient.builder()
+					.credentialsProvider(this.awsCredentialsProvider)
+					.region(this.region)
 					.build();
 		}
 		else {
@@ -133,10 +127,10 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(LockRegistry.class)
-	@ConditionalOnBean(AmazonDynamoDBAsync.class)
+	@ConditionalOnBean(DynamoDbAsyncClient.class)
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
 			matchIfMissing = true)
-	public DynamoDbLockRepository dynamoDbLockRepository(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
+	public DynamoDbLockRepository dynamoDbLockRepository(@Autowired(required = false) DynamoDbAsyncClient dynamoDB) {
 		if (dynamoDB != null) {
 			KinesisBinderConfigurationProperties.Locks locks = this.configurationProperties.getLocks();
 			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDB, locks.getTable());
@@ -153,7 +147,7 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean(AmazonDynamoDBAsync.class)
+	@ConditionalOnBean(DynamoDbAsyncClient.class)
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
 			matchIfMissing = true)
 	public LockRegistry dynamoDBLockRegistry(
@@ -171,10 +165,10 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean(AmazonDynamoDBAsync.class)
+	@ConditionalOnBean(DynamoDbAsyncClient.class)
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled", havingValue = "false",
 			matchIfMissing = true)
-	public ConcurrentMetadataStore kinesisCheckpointStore(@Autowired(required = false) AmazonDynamoDBAsync dynamoDB) {
+	public ConcurrentMetadataStore kinesisCheckpointStore(@Autowired(required = false) DynamoDbAsyncClient dynamoDB) {
 		if (dynamoDB != null) {
 			KinesisBinderConfigurationProperties.Checkpoint checkpoint = this.configurationProperties.getCheckpoint();
 			DynamoDbMetadataStore kinesisCheckpointStore = new DynamoDbMetadataStore(dynamoDB, checkpoint.getTable());
@@ -195,26 +189,12 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AmazonDynamoDBStreams dynamoDBStreams() {
-		if (this.hasInputs) {
-			return AmazonDynamoDBStreamsClientBuilder.standard()
-					.withCredentials(this.awsCredentialsProvider)
-					.withRegion(this.region)
-					.build();
-		}
-		else {
-			return null;
-		}
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
-	public AmazonCloudWatchAsync cloudWatch() {
+	public CloudWatchAsyncClient cloudWatch() {
 		if (this.hasInputs) {
-			return AmazonCloudWatchAsyncClientBuilder.standard()
-					.withCredentials(this.awsCredentialsProvider)
-					.withRegion(this.region)
+			return CloudWatchAsyncClient.builder()
+					.credentialsProvider(this.awsCredentialsProvider)
+					.region(this.region)
 					.build();
 		}
 		else {
@@ -227,37 +207,35 @@ public class KinesisBinderConfiguration {
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
 	public KinesisProducerConfiguration kinesisProducerConfiguration() {
 		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
-		kinesisProducerConfiguration.setCredentialsProvider(this.awsCredentialsProvider);
-		kinesisProducerConfiguration.setRegion(this.region);
+		kinesisProducerConfiguration.setCredentialsProvider(
+				new AWSCredentialsProviderAdapter(this.awsCredentialsProvider));
+		kinesisProducerConfiguration.setRegion(this.region.id());
 		return kinesisProducerConfiguration;
 	}
 
 	@Bean
 	public KinesisMessageChannelBinder kinesisMessageChannelBinder(
 			KinesisStreamProvisioner provisioningProvider,
-			AmazonKinesisAsync amazonKinesis,
+			KinesisAsyncClient amazonKinesis,
 			KinesisExtendedBindingProperties kinesisExtendedBindingProperties,
 			@Autowired(required = false) ConcurrentMetadataStore kinesisCheckpointStore,
 			@Autowired(required = false) LockRegistry lockRegistry,
-			@Autowired(required = false) AmazonDynamoDB dynamoDBClient,
-			@Autowired(required = false) AmazonDynamoDBStreams dynamoDBStreams,
-			@Autowired(required = false) AmazonCloudWatch cloudWatchClient,
+			@Autowired(required = false) DynamoDbAsyncClient dynamoDBClient,
+			@Autowired(required = false) CloudWatchAsyncClient cloudWatchClient,
 			@Autowired(required = false) KinesisProducerConfiguration kinesisProducerConfiguration,
 			@Autowired(required = false) ProducerMessageHandlerCustomizer<? extends AbstractAwsMessageHandler<Void>> producerMessageHandlerCustomizer,
 			@Autowired(required = false) ConsumerEndpointCustomizer<? extends MessageProducerSupport> consumerEndpointCustomizer,
-			@Autowired List<KinesisClientLibConfiguration> kinesisClientLibConfigurations,
 			@Autowired ObservationRegistry observationRegistry) {
 
 		KinesisMessageChannelBinder kinesisMessageChannelBinder =
 				new KinesisMessageChannelBinder(this.configurationProperties, provisioningProvider, amazonKinesis,
-						this.awsCredentialsProvider, dynamoDBClient, dynamoDBStreams, cloudWatchClient);
+						this.awsCredentialsProvider, dynamoDBClient, cloudWatchClient);
 		kinesisMessageChannelBinder.setCheckpointStore(kinesisCheckpointStore);
 		kinesisMessageChannelBinder.setLockRegistry(lockRegistry);
 		kinesisMessageChannelBinder.setExtendedBindingProperties(kinesisExtendedBindingProperties);
 		kinesisMessageChannelBinder.setKinesisProducerConfiguration(kinesisProducerConfiguration);
 		kinesisMessageChannelBinder.setProducerMessageHandlerCustomizer(producerMessageHandlerCustomizer);
 		kinesisMessageChannelBinder.setConsumerEndpointCustomizer(consumerEndpointCustomizer);
-		kinesisMessageChannelBinder.setKinesisClientLibConfigurations(kinesisClientLibConfigurations);
 		if (this.configurationProperties.isEnableObservation()) {
 			kinesisMessageChannelBinder.setObservationRegistry(observationRegistry);
 		}
@@ -275,6 +253,27 @@ public class KinesisBinderConfiguration {
 				KinesisMessageChannelBinder kinesisMessageChannelBinder) {
 
 			return new KinesisBinderHealthIndicator(kinesisMessageChannelBinder);
+		}
+
+	}
+
+	private static final class AWSCredentialsProviderAdapter implements AWSCredentialsProvider {
+
+		private final AWSCredentials awsCredentials;
+
+		AWSCredentialsProviderAdapter(AwsCredentialsProvider awsCredentialsProvider) {
+			AwsCredentials credentials = awsCredentialsProvider.resolveCredentials();
+			this.awsCredentials = new BasicAWSCredentials(credentials.secretAccessKey(), credentials.accessKeyId());
+		}
+
+		@Override
+		public AWSCredentials getCredentials() {
+			return this.awsCredentials;
+		}
+
+		@Override
+		public void refresh() {
+
 		}
 
 	}

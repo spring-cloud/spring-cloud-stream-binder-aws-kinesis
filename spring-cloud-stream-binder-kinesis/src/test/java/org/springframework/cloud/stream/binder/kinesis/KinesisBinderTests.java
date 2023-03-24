@@ -16,36 +16,29 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.amazonaws.SDKGlobalConfiguration;
-import com.amazonaws.handlers.AsyncHandler;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
-import com.amazonaws.services.kinesis.model.DescribeStreamRequest;
-import com.amazonaws.services.kinesis.model.DescribeStreamResult;
-import com.amazonaws.services.kinesis.model.PutRecordRequest;
-import com.amazonaws.services.kinesis.model.PutRecordResult;
-import com.amazonaws.services.kinesis.model.Record;
-import com.amazonaws.services.kinesis.model.Shard;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
-import com.amazonaws.services.kinesis.model.StreamDescription;
-import com.amazonaws.services.kinesis.model.StreamStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.BDDMockito;
-import org.mockito.stubbing.Answer;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse;
+import software.amazon.awssdk.services.kinesis.model.PutRecordRequest;
+import software.amazon.awssdk.services.kinesis.model.Record;
+import software.amazon.awssdk.services.kinesis.model.Shard;
+import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
+import software.amazon.awssdk.services.kinesis.model.StreamStatus;
+import software.amazon.kinesis.common.InitialPositionInStream;
+import software.amazon.kinesis.common.InitialPositionInStreamExtended;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.binder.Binding;
@@ -93,14 +86,13 @@ public class KinesisBinderTests extends
 				ExtendedProducerProperties<KinesisProducerProperties>>
 		implements LocalstackContainerTest {
 
-	private static final String CLASS_UNDER_TEST_NAME = KinesisBinderTests.class
-			.getSimpleName();
+	private static final String CLASS_UNDER_TEST_NAME = KinesisBinderTests.class.getSimpleName();
 
-	private static AmazonKinesisAsync AMAZON_KINESIS;
+	private static KinesisAsyncClient AMAZON_KINESIS;
 
-	private static AmazonDynamoDBAsync DYNAMO_DB;
+	private static DynamoDbAsyncClient DYNAMO_DB;
 
-	private static AmazonCloudWatch CLOUD_WATCH;
+	private static CloudWatchAsyncClient CLOUD_WATCH;
 
 
 	public KinesisBinderTests() {
@@ -112,7 +104,6 @@ public class KinesisBinderTests extends
 		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
 		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
 		CLOUD_WATCH = LocalstackContainerTest.cloudWatchClient();
-		System.setProperty(SDKGlobalConfiguration.AWS_CBOR_DISABLE_SYSTEM_PROPERTY, "true");
 	}
 
 	@Test
@@ -135,26 +126,25 @@ public class KinesisBinderTests extends
 		consumerProperties.getExtension().setShardIteratorType(
 				ShardIteratorType.AT_TIMESTAMP.name() + ":" + testDate.getTime());
 		String testStreamName = "nonexisting" + System.currentTimeMillis();
-		Binding<?> binding = binder.bindConsumer(testStreamName, "test", output,
-				consumerProperties);
+		Binding<?> binding = binder.bindConsumer(testStreamName, "test", output, consumerProperties);
 		binding.unbind();
 
-		DescribeStreamResult streamResult = AMAZON_KINESIS.describeStream(testStreamName);
-		String createdStreamName = streamResult.getStreamDescription().getStreamName();
-		int createdShards = streamResult.getStreamDescription().getShards().size();
-		String createdStreamStatus = streamResult.getStreamDescription()
-				.getStreamStatus();
+		DescribeStreamResponse streamResult =
+				AMAZON_KINESIS.describeStream(request -> request.streamName(testStreamName))
+						.join();
+		String createdStreamName = streamResult.streamDescription().streamName();
+		int createdShards = streamResult.streamDescription().shards().size();
+		StreamStatus createdStreamStatus = streamResult.streamDescription().streamStatus();
 
 		assertThat(createdStreamName).isEqualTo(testStreamName);
-		assertThat(createdShards).isEqualTo(consumerProperties.getInstanceCount()
-				* consumerProperties.getConcurrency());
-		assertThat(createdStreamStatus).isEqualTo(StreamStatus.ACTIVE.toString());
+		assertThat(createdShards).isEqualTo(consumerProperties.getInstanceCount() * consumerProperties.getConcurrency());
+		assertThat(createdStreamStatus).isEqualTo(StreamStatus.ACTIVE);
 
-		KinesisShardOffset shardOffset = TestUtils.getPropertyValue(binding,
-				"lifecycle.streamInitialSequence", KinesisShardOffset.class);
+		KinesisShardOffset shardOffset =
+				TestUtils.getPropertyValue(binding, "lifecycle.streamInitialSequence", KinesisShardOffset.class);
 		assertThat(shardOffset.getIteratorType())
 				.isEqualTo(ShardIteratorType.AT_TIMESTAMP);
-		assertThat(shardOffset.getTimestamp()).isEqualTo(testDate);
+		assertThat(Date.from(shardOffset.getTimestamp())).isEqualTo(testDate);
 	}
 
 	@Test
@@ -193,17 +183,17 @@ public class KinesisBinderTests extends
 				.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN)
 				.build());
 
-		Message<byte[]> receivedMessage1 = (Message<byte[]>) receive(input1);
+		Message<byte[]> receivedMessage1 = (Message<byte[]>) receive(input1, 10);
 		assertThat(receivedMessage1).isNotNull();
 		assertThat(new String(receivedMessage1.getPayload())).isEqualTo(testPayload1);
 
-		Message<byte[]> receivedMessage2 = (Message<byte[]>) receive(input2);
+		Message<byte[]> receivedMessage2 = (Message<byte[]>) receive(input2, 10);
 		assertThat(receivedMessage2).isNotNull();
 		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload1);
 
 		binding2.unbind();
 
-		String testPayload2 = "foo-" + UUID.randomUUID().toString();
+		String testPayload2 = "foo-" + UUID.randomUUID();
 		output.send(MessageBuilder.withPayload(testPayload2)
 				.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN)
 				.build());
@@ -211,27 +201,27 @@ public class KinesisBinderTests extends
 		binding2 = binder.bindConsumer(
 				String.format("defaultGroup%s0", getDestinationNameDelimiter()), null,
 				input2, consumerProperties);
-		String testPayload3 = "foo-" + UUID.randomUUID().toString();
+		String testPayload3 = "foo-" + UUID.randomUUID();
 		output.send(MessageBuilder.withPayload(testPayload3)
 				.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN)
 				.build());
 
-		receivedMessage1 = (Message<byte[]>) receive(input1);
+		receivedMessage1 = (Message<byte[]>) receive(input1, 10);
 		assertThat(receivedMessage1).isNotNull();
 		assertThat(new String(receivedMessage1.getPayload())).isEqualTo(testPayload2);
-		receivedMessage1 = (Message<byte[]>) receive(input1);
+		receivedMessage1 = (Message<byte[]>) receive(input1, 10);
 		assertThat(receivedMessage1).isNotNull();
 		assertThat(new String(receivedMessage1.getPayload())).isNotNull();
 
-		receivedMessage2 = (Message<byte[]>) receive(input2);
+		receivedMessage2 = (Message<byte[]>) receive(input2, 10);
 		assertThat(receivedMessage2).isNotNull();
 		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload1);
 
-		receivedMessage2 = (Message<byte[]>) receive(input2);
+		receivedMessage2 = (Message<byte[]>) receive(input2, 10);
 		assertThat(receivedMessage2).isNotNull();
 		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload2);
 
-		receivedMessage2 = (Message<byte[]>) receive(input2);
+		receivedMessage2 = (Message<byte[]>) receive(input2, 10);
 		assertThat(receivedMessage2).isNotNull();
 		assertThat(new String(receivedMessage2.getPayload())).isEqualTo(testPayload3);
 
@@ -241,41 +231,36 @@ public class KinesisBinderTests extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void testProducerErrorChannel() throws Exception {
 		KinesisTestBinder binder = getBinder();
 
-		final RuntimeException putRecordException = new RuntimeException(
-				"putRecordRequestEx");
+		final RuntimeException putRecordException = new RuntimeException("putRecordRequestEx");
 		final AtomicReference<Object> sent = new AtomicReference<>();
-		AmazonKinesisAsync amazonKinesisMock = mock(AmazonKinesisAsync.class);
+		KinesisAsyncClient amazonKinesisMock = mock(KinesisAsyncClient.class);
 		BDDMockito
-				.given(amazonKinesisMock.putRecordAsync(any(PutRecordRequest.class),
-						any(AsyncHandler.class)))
-				.willAnswer((Answer<Future<PutRecordResult>>) (invocation) -> {
+				.given(amazonKinesisMock.putRecord(any(PutRecordRequest.class)))
+				.willAnswer((invocation) -> {
 					PutRecordRequest request = invocation.getArgument(0);
-					sent.set(request.getData());
-					AsyncHandler<?, ?> handler = invocation.getArgument(1);
-					handler.onError(putRecordException);
-					return mock(Future.class);
+					sent.set(request.data());
+					return CompletableFuture.failedFuture(putRecordException);
 				});
 
-		new DirectFieldAccessor(binder.getBinder()).setPropertyValue("amazonKinesis",
-				amazonKinesisMock);
+		new DirectFieldAccessor(binder.getBinder()).setPropertyValue("amazonKinesis", amazonKinesisMock);
 
 		ExtendedProducerProperties<KinesisProducerProperties> producerProps = createProducerProperties();
+		producerProps.getExtension().setSync(false);
 		producerProps.setErrorChannelEnabled(true);
 		producerProps.populateBindingName("foobar");
-		DirectChannel moduleOutputChannel = createBindableChannel("output",
-				createProducerBindingProperties(producerProps));
-		Binding<MessageChannel> producerBinding = binder.bindProducer("ec.0",
-				moduleOutputChannel, producerProps);
+		DirectChannel moduleOutputChannel =
+				createBindableChannel("output", createProducerBindingProperties(producerProps));
+		Binding<MessageChannel> producerBinding =
+				binder.bindProducer("ec.0", moduleOutputChannel, producerProps);
 
-		ApplicationContext applicationContext = TestUtils.getPropertyValue(
-				binder.getBinder(), "applicationContext", ApplicationContext.class);
-		String s = testBinder.getBinder().getBinderIdentity() + "." + producerProps.getBindingName() + ".errors";
-		SubscribableChannel ec = applicationContext.getBean(s,
-				SubscribableChannel.class);
+		ApplicationContext applicationContext =
+				TestUtils.getPropertyValue(binder.getBinder(), "applicationContext", ApplicationContext.class);
+		String errorChannelName =
+				testBinder.getBinder().getBinderIdentity() + "." + producerProps.getBindingName() + ".errors";
+		SubscribableChannel ec = applicationContext.getBean(errorChannelName, SubscribableChannel.class);
 		final AtomicReference<Message<?>> errorMessage = new AtomicReference<>();
 		final CountDownLatch latch = new CountDownLatch(1);
 		ec.subscribe((message) -> {
@@ -290,11 +275,10 @@ public class KinesisBinderTests extends
 		assertThat(errorMessage.get()).isInstanceOf(ErrorMessage.class);
 		assertThat(errorMessage.get().getPayload())
 				.isInstanceOf(AwsRequestFailureException.class);
-		AwsRequestFailureException exception = (AwsRequestFailureException) errorMessage
-				.get().getPayload();
+		AwsRequestFailureException exception =
+				(AwsRequestFailureException) errorMessage.get().getPayload();
 		assertThat(exception.getCause()).isSameAs(putRecordException);
-		assertThat(((PutRecordRequest) exception.getRequest()).getData())
-				.isSameAs(sent.get());
+		assertThat(((PutRecordRequest) exception.getRequest()).data()).isSameAs(sent.get());
 		producerBinding.unbind();
 	}
 
@@ -323,7 +307,7 @@ public class KinesisBinderTests extends
 		Binding<MessageChannel> inputBinding = binder.bindConsumer("testBatchListener",
 				null, input, consumerProperties);
 
-		Message<List<?>> receivedMessage = (Message<List<?>>) receive(input);
+		Message<List<?>> receivedMessage = (Message<List<?>>) receive(input, 10);
 		assertThat(receivedMessage).isNotNull();
 		assertThat(receivedMessage.getPayload().size()).isEqualTo(3);
 
@@ -342,6 +326,7 @@ public class KinesisBinderTests extends
 		KinesisTestBinder binder = getBinder(configurationProperties);
 		DirectChannel output = createBindableChannel("output", new BindingProperties());
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		consumerProperties.setAutoStartup(false);
 		Date testDate = new Date();
 		consumerProperties.getExtension()
 				.setShardIteratorType(ShardIteratorType.AT_TIMESTAMP.name() + ":" + testDate.getTime());
@@ -350,11 +335,10 @@ public class KinesisBinderTests extends
 		Lifecycle lifecycle = TestUtils.getPropertyValue(binding, "lifecycle", Lifecycle.class);
 		assertThat(lifecycle).isInstanceOf(KclMessageDrivenChannelAdapter.class);
 
-		KinesisClientLibConfiguration config =
-				TestUtils.getPropertyValue(lifecycle, "config", KinesisClientLibConfiguration.class);
+		InitialPositionInStreamExtended initialSequence =
+				TestUtils.getPropertyValue(lifecycle, "streamInitialSequence", InitialPositionInStreamExtended.class);
 
-		assertThat(config.getInitialPositionInStream()).isEqualTo(InitialPositionInStream.AT_TIMESTAMP);
-		assertThat(config.getTimestampAtInitialPositionInStream()).isEqualTo(testDate);
+		assertThat(initialSequence).isEqualTo(InitialPositionInStreamExtended.newInitialPositionAtTimestamp(testDate));
 
 		binding.unbind();
 	}
@@ -366,15 +350,17 @@ public class KinesisBinderTests extends
 		KinesisTestBinder binder = getBinder(configurationProperties);
 		DirectChannel output = createBindableChannel("output", new BindingProperties());
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		consumerProperties.setAutoStartup(false);
 		Binding<?> binding = binder.bindConsumer("testKclStream", null, output, consumerProperties);
 
 		Lifecycle lifecycle = TestUtils.getPropertyValue(binding, "lifecycle", Lifecycle.class);
 		assertThat(lifecycle).isInstanceOf(KclMessageDrivenChannelAdapter.class);
 
-		KinesisClientLibConfiguration config =
-				TestUtils.getPropertyValue(lifecycle, "config", KinesisClientLibConfiguration.class);
+		InitialPositionInStreamExtended initialSequence =
+				TestUtils.getPropertyValue(lifecycle, "streamInitialSequence", InitialPositionInStreamExtended.class);
 
-		assertThat(config.getInitialPositionInStream()).isEqualTo(InitialPositionInStream.TRIM_HORIZON);
+		assertThat(initialSequence)
+				.isEqualTo(InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.TRIM_HORIZON));
 
 		binding.unbind();
 	}
@@ -385,7 +371,7 @@ public class KinesisBinderTests extends
 
 		String stream = "existing" + System.currentTimeMillis();
 
-		AMAZON_KINESIS.createStream(stream, 2);
+		AMAZON_KINESIS.createStream(request -> request.streamName(stream).shardCount(2)).join();
 
 		List<Shard> shards = describeStream(stream);
 
@@ -406,41 +392,15 @@ public class KinesisBinderTests extends
 	}
 
 	private List<Shard> describeStream(String stream) {
-		String exclusiveStartShardId = null;
-
-		DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest()
-				.withStreamName(stream);
-
-		List<Shard> shardList = new ArrayList<>();
-
-		while (true) {
-			DescribeStreamResult describeStreamResult;
-
-			describeStreamRequest.withExclusiveStartShardId(exclusiveStartShardId);
-			describeStreamResult = AMAZON_KINESIS.describeStream(describeStreamRequest);
-			StreamDescription streamDescription = describeStreamResult
-					.getStreamDescription();
-			if (StreamStatus.ACTIVE.toString()
-					.equals(streamDescription.getStreamStatus())) {
-				shardList.addAll(streamDescription.getShards());
-
-				if (streamDescription.getHasMoreShards()) {
-					exclusiveStartShardId = shardList.get(shardList.size() - 1)
-							.getShardId();
-					continue;
-				}
-				else {
-					return shardList;
-				}
-			}
-			try {
-				Thread.sleep(100);
-			}
-			catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
-				throw new IllegalStateException(ex);
-			}
-		}
+		return AMAZON_KINESIS.describeStream(request -> request.streamName(stream))
+				.thenCompose(reply ->
+						AMAZON_KINESIS.waiter().waitUntilStreamExists(request -> request.streamName(stream)))
+				.join()
+				.matched()
+				.response()
+				.get()
+				.streamDescription()
+				.shards();
 	}
 
 	@Override
@@ -470,8 +430,8 @@ public class KinesisBinderTests extends
 
 	@Override
 	protected ExtendedConsumerProperties<KinesisConsumerProperties> createConsumerProperties() {
-		ExtendedConsumerProperties<KinesisConsumerProperties> kinesisConsumerProperties = new ExtendedConsumerProperties<>(
-				new KinesisConsumerProperties());
+		ExtendedConsumerProperties<KinesisConsumerProperties> kinesisConsumerProperties =
+				new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
 		// set the default values that would normally be propagated by Spring Cloud Stream
 		kinesisConsumerProperties.setInstanceCount(1);
 		kinesisConsumerProperties.setInstanceIndex(0);
@@ -480,7 +440,7 @@ public class KinesisBinderTests extends
 	}
 
 	private ExtendedProducerProperties<KinesisProducerProperties> createProducerProperties() {
-		return this.createProducerProperties(null);
+		return createProducerProperties(null);
 	}
 
 	@Override
