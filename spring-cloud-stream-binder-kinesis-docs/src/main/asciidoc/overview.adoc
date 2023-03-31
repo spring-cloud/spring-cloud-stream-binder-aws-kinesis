@@ -310,7 +310,8 @@ Here are the policies statements that your application role need:
         {
             "Effect": "Allow",
             "Action": [
-                "kinesis:SubscribeToShard",
+                "kinesis:ListShards",
+		"kinesis:SubscribeToShard",
                 "kinesis:DescribeStreamSummary",
                 "kinesis:DescribeStreamConsumer",
                 "kinesis:GetShardIterator",
