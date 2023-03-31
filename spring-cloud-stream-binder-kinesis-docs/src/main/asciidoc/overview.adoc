@@ -346,6 +346,16 @@ Here are the policies statements that your application role need:
             "arn:aws:dynamodb:<region>:<account>:table/<name-of-metadata-table>",
             "arn:aws:dynamodb:<region>:<account>:table/<name-of-lock-table>"
           ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kms:GenerateDataKey",
+		"kms:Decrypt"
+            ],
+            "Resource": [
+                "arn:aws:kms:<region>:<account>:key/<kms-key-uuid>"
+            ]
         }
     ]
 }
