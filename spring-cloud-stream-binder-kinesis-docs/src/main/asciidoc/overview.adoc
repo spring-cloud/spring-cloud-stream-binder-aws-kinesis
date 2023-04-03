@@ -391,7 +391,7 @@ version: '3.5'
 
 services:
   localstack:
-    image: localstack/localstack:1.4.0
+    image: localstack/localstack:2.0.0
     environment:
       - AWS_DEFAULT_REGION=sa-east-1
       - EDGE_PORT=4566
