@@ -310,7 +310,8 @@ Here are the policies statements that your application role need:
         {
             "Effect": "Allow",
             "Action": [
-                "kinesis:SubscribeToShard",
+                "kinesis:ListShards",
+		"kinesis:SubscribeToShard",
                 "kinesis:DescribeStreamSummary",
                 "kinesis:DescribeStreamConsumer",
                 "kinesis:GetShardIterator",
@@ -371,6 +372,26 @@ If you're going to allow spring-cloud-stream-binder-kinesis to create the resour
             "Resource": [
                 "arn:aws:dynamodb:<region>:<account>:table/<table_name>",
                 "arn:aws:kinesis:<region>:<account>:stream/<stream_name>"
+            ]
+        }
+    ]
+}
+----
+
+If [Server-Side Encryption](https://docs.aws.amazon.com/streams/latest/dev/what-is-sse.html) is enabled, you'll need the following set of policies to encrypt and decrypt Kinesis messages. 
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kms:GenerateDataKey",
+		"kms:Decrypt"
+            ],
+            "Resource": [
+                "arn:aws:kms:<region>:<account>:key/<kms-key-uuid>"
             ]
         }
     ]
