@@ -21,7 +21,7 @@
 		<spring-integration-aws.version>3.0.0-SNAPSHOT</spring-integration-aws.version>
 		<amazon-kinesis-client.version>2.4.8</amazon-kinesis-client.version>
 		<amazon-kinesis-producer.version>0.15.5</amazon-kinesis-producer.version>
-		<testcontainers.version>1.17.6</testcontainers.version>
+		<testcontainers.version>1.18.0</testcontainers.version>
 		<micrometer-tracing.version>1.1.0-M2</micrometer-tracing.version>
 	</properties>
 
@@ -32,6 +32,30 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>io.awspring.cloud</groupId>
+				<artifactId>spring-cloud-aws-dependencies</artifactId>
+				<version>${spring-cloud-aws.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>io.micrometer</groupId>
+				<artifactId>micrometer-tracing-bom</artifactId>
+				<version>${micrometer-tracing.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-stream-binder-kinesis</artifactId>
@@ -65,31 +89,6 @@
 				<version>${spring-cloud-stream.version}</version>
 				<scope>test</scope>
 			</dependency>
-
-			<dependency>
-				<groupId>io.awspring.cloud</groupId>
-				<artifactId>spring-cloud-aws-dependencies</artifactId>
-				<version>${spring-cloud-aws.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-
-			<dependency>
-				<groupId>org.testcontainers</groupId>
-				<artifactId>testcontainers-bom</artifactId>
-				<version>${testcontainers.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-
-			<dependency>
-				<groupId>io.micrometer</groupId>
-				<artifactId>micrometer-tracing-bom</artifactId>
-				<version>${micrometer-tracing.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-
 		</dependencies>
 	</dependencyManagement>
 

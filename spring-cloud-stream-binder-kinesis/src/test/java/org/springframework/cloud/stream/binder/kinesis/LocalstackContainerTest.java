@@ -47,12 +47,7 @@ public interface LocalstackContainerTest {
 	 * The shared {@link LocalStackContainer} instance.
 	 */
 	LocalStackContainer LOCAL_STACK_CONTAINER =
-			new LocalStackContainer(
-					DockerImageName.parse("localstack/localstack:2.0.0"))
-					.withServices(
-							LocalStackContainer.Service.DYNAMODB,
-							LocalStackContainer.Service.KINESIS,
-							LocalStackContainer.Service.CLOUDWATCH);
+			new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.0.0"));
 
 	@BeforeAll
 	static void startContainer() {
