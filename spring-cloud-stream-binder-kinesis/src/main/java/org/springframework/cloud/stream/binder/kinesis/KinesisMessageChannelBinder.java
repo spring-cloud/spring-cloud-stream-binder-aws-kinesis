@@ -61,6 +61,7 @@ import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.outbound.AbstractAwsMessageHandler;
 import org.springframework.integration.aws.outbound.KinesisMessageHandler;
 import org.springframework.integration.aws.outbound.KplMessageHandler;
+import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.endpoint.MessageProducerSupport;
 import org.springframework.integration.expression.ExpressionUtils;
@@ -230,6 +231,7 @@ public class KinesisMessageChannelBinder extends
 		messageHandler.setAsync(!producerProperties.getExtension().isSync());
 		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
 		messageHandler.setBeanFactory(getBeanFactory());
+		messageHandler.setOutputChannel(new NullChannel());
 
 		if (errorChannel != null) {
 			((InterceptableChannel) channel)
