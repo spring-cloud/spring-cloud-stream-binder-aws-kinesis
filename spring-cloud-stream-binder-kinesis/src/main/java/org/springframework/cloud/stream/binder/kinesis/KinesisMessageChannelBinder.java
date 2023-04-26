@@ -313,7 +313,7 @@ public class KinesisMessageChannelBinder extends
 								public Message<?> preSend(Message<?> message, MessageChannel channel) {
 									Object partitionKey = this.partitionKeyExtractorStrategy.extractKey(message);
 									return MessageBuilder.fromMessage(message)
-											.setHeader(BinderHeaders.PARTITION_OVERRIDE, partitionKey)
+											.setHeader(BinderHeaders.PARTITION_HEADER, partitionKey)
 											.build();
 								}
 

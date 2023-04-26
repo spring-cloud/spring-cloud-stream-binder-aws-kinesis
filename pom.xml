@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.cloud</groupId>
 		<artifactId>spring-cloud-build</artifactId>
-		<version>4.0.1</version>
+		<version>4.0.2</version>
 		<relativePath/>
 	</parent>
 
@@ -16,13 +16,13 @@
 
 	<properties>
 		<java.version>17</java.version>
-		<spring-cloud-stream.version>4.0.1</spring-cloud-stream.version>
+		<spring-cloud-stream.version>4.0.2</spring-cloud-stream.version>
 		<spring-cloud-aws.version>3.0.0-RC2</spring-cloud-aws.version>
 		<spring-integration-aws.version>3.0.0-SNAPSHOT</spring-integration-aws.version>
 		<amazon-kinesis-client.version>2.4.8</amazon-kinesis-client.version>
-		<amazon-kinesis-producer.version>0.15.5</amazon-kinesis-producer.version>
+		<amazon-kinesis-producer.version>0.15.6</amazon-kinesis-producer.version>
 		<testcontainers.version>1.18.0</testcontainers.version>
-		<micrometer-tracing.version>1.1.0-M2</micrometer-tracing.version>
+		<micrometer-tracing.version>1.1.0-RC1</micrometer-tracing.version>
 	</properties>
 
 	<modules>
