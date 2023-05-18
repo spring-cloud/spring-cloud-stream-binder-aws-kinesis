@@ -403,7 +403,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 		if (properties.getExtension().isEmbedHeaders()) {
-			adapter.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper());
+			adapter.setEmbeddedHeadersMapper(new LegacyEmbeddedHeadersSupportBytesMessageMapper());
 		}
 
 		if (properties.isUseNativeDecoding()) {
@@ -496,7 +496,7 @@ public class KinesisMessageChannelBinder extends
 
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 		if (properties.getExtension().isEmbedHeaders()) {
-			adapter.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper());
+			adapter.setEmbeddedHeadersMapper(new LegacyEmbeddedHeadersSupportBytesMessageMapper());
 		}
 
 		if (properties.isUseNativeDecoding()) {
