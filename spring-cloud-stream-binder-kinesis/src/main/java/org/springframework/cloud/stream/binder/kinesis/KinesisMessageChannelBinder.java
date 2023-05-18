@@ -69,7 +69,6 @@ import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.support.ErrorMessageStrategy;
 import org.springframework.integration.support.MessageBuilder;
-import org.springframework.integration.support.json.EmbeddedJsonHeadersMessageMapper;
 import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.integration.support.management.IntegrationManagement;
 import org.springframework.lang.Nullable;
@@ -115,7 +114,7 @@ public class KinesisMessageChannelBinder extends
 
 	private final DynamoDbAsyncClient dynamoDBClient;
 
-	private final String[] headersToEmbed;
+	private final LegacyEmbeddedHeadersSupportBytesMessageMapper embeddedHeadersMapper;
 
 	private KinesisExtendedBindingProperties extendedBindingProperties = new KinesisExtendedBindingProperties();
 
@@ -147,7 +146,10 @@ public class KinesisMessageChannelBinder extends
 		this.dynamoDBClient = dynamoDBClient;
 		this.awsCredentialsProvider = awsCredentialsProvider;
 
-		this.headersToEmbed = headersToMap(configurationProperties);
+		this.embeddedHeadersMapper =
+				new LegacyEmbeddedHeadersSupportBytesMessageMapper(
+						configurationProperties.isLegacyEmbeddedHeadersFormat(),
+						headersToMap(configurationProperties));
 	}
 
 	public void setExtendedBindingProperties(KinesisExtendedBindingProperties extendedBindingProperties) {
@@ -263,7 +265,7 @@ public class KinesisMessageChannelBinder extends
 		messageHandler.setStream(destination.getName());
 		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
 		if (embedHeaders) {
-			messageHandler.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper(this.headersToEmbed));
+			messageHandler.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
 		return messageHandler;
 	}
@@ -275,7 +277,7 @@ public class KinesisMessageChannelBinder extends
 		messageHandler.setStream(destination.getName());
 		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
 		if (embedHeaders) {
-			messageHandler.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper(this.headersToEmbed));
+			messageHandler.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
 		return messageHandler;
 	}
@@ -403,7 +405,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 		if (properties.getExtension().isEmbedHeaders()) {
-			adapter.setEmbeddedHeadersMapper(new LegacyEmbeddedHeadersSupportBytesMessageMapper());
+			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
 
 		if (properties.isUseNativeDecoding()) {
@@ -496,7 +498,7 @@ public class KinesisMessageChannelBinder extends
 
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 		if (properties.getExtension().isEmbedHeaders()) {
-			adapter.setEmbeddedHeadersMapper(new LegacyEmbeddedHeadersSupportBytesMessageMapper());
+			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
 
 		if (properties.isUseNativeDecoding()) {

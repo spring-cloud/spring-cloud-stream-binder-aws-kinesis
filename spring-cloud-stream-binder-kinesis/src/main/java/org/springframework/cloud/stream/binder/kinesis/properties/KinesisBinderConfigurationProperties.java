@@ -59,6 +59,11 @@ public class KinesisBinderConfigurationProperties {
 	 */
 	private boolean enableObservation;
 
+	/**
+	 * Enable serializing Kinesis records with legacy embedded headers format.
+	 */
+	private boolean legacyEmbeddedHeadersFormat;
+
 	private final Checkpoint checkpoint = new Checkpoint();
 
 	private final Locks locks = new Locks();
@@ -134,6 +139,14 @@ public class KinesisBinderConfigurationProperties {
 
 	public void setEnableObservation(boolean enableObservation) {
 		this.enableObservation = enableObservation;
+	}
+
+	public boolean isLegacyEmbeddedHeadersFormat() {
+		return this.legacyEmbeddedHeadersFormat;
+	}
+
+	public void setLegacyEmbeddedHeadersFormat(boolean legacyEmbeddedHeadersFormat) {
+		this.legacyEmbeddedHeadersFormat = legacyEmbeddedHeadersFormat;
 	}
 
 	/**

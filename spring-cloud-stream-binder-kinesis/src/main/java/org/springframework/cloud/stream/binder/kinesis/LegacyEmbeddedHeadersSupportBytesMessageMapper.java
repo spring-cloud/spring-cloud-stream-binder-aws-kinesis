@@ -24,6 +24,7 @@ import org.springframework.integration.mapping.BytesMessageMapper;
 import org.springframework.integration.support.json.EmbeddedJsonHeadersMessageMapper;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHeaders;
 
 /**
  * The {@link BytesMessageMapper} implementation to support an embedded headers
@@ -41,9 +42,16 @@ import org.springframework.messaging.Message;
  */
 class LegacyEmbeddedHeadersSupportBytesMessageMapper implements BytesMessageMapper {
 
-	private final EmbeddedJsonHeadersMessageMapper delegate = new EmbeddedJsonHeadersMessageMapper();
+	private final EmbeddedJsonHeadersMessageMapper delegate;
 
-	LegacyEmbeddedHeadersSupportBytesMessageMapper() {
+	private final String[] headersToEmbed;
+
+	private final boolean legacyEmbeddedHeadersFormat;
+
+	LegacyEmbeddedHeadersSupportBytesMessageMapper(boolean legacyEmbeddedHeadersFormat, String[] headersToEmbed) {
+		this.legacyEmbeddedHeadersFormat = legacyEmbeddedHeadersFormat;
+		this.delegate = new EmbeddedJsonHeadersMessageMapper(headersToEmbed);
+		this.headersToEmbed = headersToEmbed;
 	}
 
 	@Override
@@ -72,8 +80,18 @@ class LegacyEmbeddedHeadersSupportBytesMessageMapper implements BytesMessageMapp
 
 	@Override
 	public byte[] fromMessage(Message<?> message) {
-		throw new UnsupportedOperationException(
-				"The new embedded headers format is produced via 'EmbeddedJsonHeadersMessageMapper'");
+		if (this.legacyEmbeddedHeadersFormat) {
+			MessageValues transformed = new MessageValues(message);
+			Object contentType = transformed.get(MessageHeaders.CONTENT_TYPE);
+			// transform content type headers to String, so that they can be properly embedded in JSON
+			if (contentType != null) {
+				transformed.put(MessageHeaders.CONTENT_TYPE, contentType.toString());
+			}
+			return EmbeddedHeaderUtils.embedHeaders(transformed, this.headersToEmbed);
+		}
+		else {
+			return this.delegate.fromMessage(message);
+		}
 	}
 
 }

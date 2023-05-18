@@ -69,6 +69,7 @@ import static org.awaitility.Awaitility.await;
 				"spring.cloud.stream.bindings.kinesisConsumer-in-0.destination=" + KinesisBinderObservationTests.KINESIS_STREAM,
 				"spring.cloud.stream.bindings.kinesisConsumer-in-0.group=observation-group",
 				"spring.cloud.stream.kinesis.binder.enable-observation=true",
+				"spring.cloud.stream.kinesis.binder.legacy-embedded-headers-format=true",
 				"logging.level.org.springframework.cloud.stream.binder.kinesis.observation=debug",
 				"management.tracing.sampling.probability=1.0",
 				"spring.cloud.aws.region.static=eu-west-2"})
