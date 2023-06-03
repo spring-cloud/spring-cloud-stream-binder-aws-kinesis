@@ -412,8 +412,9 @@ version: '3.5'
 
 services:
   localstack:
-    image: localstack/localstack:2.0.0
+    image: localstack/localstack:2.1.0
     environment:
+      - EAGER_SERVICE_LOADING=1
       - AWS_DEFAULT_REGION=sa-east-1
       - EDGE_PORT=4566
       - SERVICES=kinesis, dynamodb
@@ -421,7 +422,7 @@ services:
       - '4566:4566'
     volumes:
       - localstack:/tmp/localstack
-      - './setup-localstack.sh:/docker-entrypoint-initaws.d/setup-localstack.sh'
+      - './setup-localstack.sh:/etc/localstack/init/ready.d/setup-localstack.sh'  # ready hook
 
 volumes:
   localstack:
