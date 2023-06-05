@@ -414,7 +414,6 @@ services:
   localstack:
     image: localstack/localstack:2.1.0
     environment:
-      - EAGER_SERVICE_LOADING=1
       - AWS_DEFAULT_REGION=sa-east-1
       - EDGE_PORT=4566
       - SERVICES=kinesis, dynamodb
