@@ -21,7 +21,7 @@
 		<spring-integration-aws.version>3.0.0</spring-integration-aws.version>
 		<amazon-kinesis-client.version>2.5.0</amazon-kinesis-client.version>
 		<amazon-kinesis-producer.version>0.15.7</amazon-kinesis-producer.version>
-		<testcontainers.version>1.18.2</testcontainers.version>
+		<testcontainers.version>1.18.3</testcontainers.version>
 		<micrometer-tracing.version>1.1.1</micrometer-tracing.version>
 	</properties>
 
