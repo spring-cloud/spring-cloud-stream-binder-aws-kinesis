@@ -47,7 +47,7 @@ public interface LocalstackContainerTest {
 	 * The shared {@link LocalStackContainer} instance.
 	 */
 	LocalStackContainer LOCAL_STACK_CONTAINER =
-			new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.0.0"));
+			new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.1.0"));
 
 	@BeforeAll
 	static void startContainer() {
@@ -55,15 +55,15 @@ public interface LocalstackContainerTest {
 	}
 
 	static DynamoDbAsyncClient dynamoDbClient() {
-		return applyAwsClientOptions(DynamoDbAsyncClient.builder(), LocalStackContainer.Service.DYNAMODB);
+		return applyAwsClientOptions(DynamoDbAsyncClient.builder());
 	}
 
 	static KinesisAsyncClient kinesisClient() {
-		return applyAwsClientOptions(KinesisAsyncClient.builder(), LocalStackContainer.Service.KINESIS);
+		return applyAwsClientOptions(KinesisAsyncClient.builder());
 	}
 
 	static CloudWatchAsyncClient cloudWatchClient() {
-		return applyAwsClientOptions(CloudWatchAsyncClient.builder(), LocalStackContainer.Service.CLOUDWATCH);
+		return applyAwsClientOptions(CloudWatchAsyncClient.builder());
 	}
 
 	static AwsCredentialsProvider credentialsProvider() {
@@ -71,13 +71,12 @@ public interface LocalstackContainerTest {
 				AwsBasicCredentials.create(LOCAL_STACK_CONTAINER.getAccessKey(), LOCAL_STACK_CONTAINER.getSecretKey()));
 	}
 
-	private static <B extends AwsClientBuilder<B, T>, T> T applyAwsClientOptions(B clientBuilder,
-			LocalStackContainer.Service serviceToBuild) {
+	private static <B extends AwsClientBuilder<B, T>, T> T applyAwsClientOptions(B clientBuilder) {
 
 		return clientBuilder
 				.region(Region.of(LOCAL_STACK_CONTAINER.getRegion()))
 				.credentialsProvider(credentialsProvider())
-				.endpointOverride(LOCAL_STACK_CONTAINER.getEndpointOverride(serviceToBuild))
+				.endpointOverride(LOCAL_STACK_CONTAINER.getEndpoint())
 				.build();
 	}
 }
