@@ -213,7 +213,7 @@ listenerMode::
   The mode in which records are processed.
   If `record`, each `Message` will contain `byte[]` from a single `Record.data`.
   If `batch`, each `Message` will contain a `List<byte[]>` extracted from the consumed records.
-  When `useNativeDecoding = true` is used on the consumer together with the `listenerMode = batch`, there is no any out-of-the-box conversion happened and a result message contains a payload like `List<com.amazonaws.services.kinesis.model.Record>`.
+  When `useNativeDecoding = true` is used on the consumer together with the `listenerMode = batch`, there is no any out-of-the-box conversion happened and a result message contains a payload like `List<software.amazon.awssdk.services.kinesis.model.Record>`.
   It's up to target application to convert those records manually.
 +
 Default: `record`
