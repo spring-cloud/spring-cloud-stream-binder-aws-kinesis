@@ -30,10 +30,8 @@ import io.micrometer.tracing.brave.bridge.BraveFinishedSpan;
 import io.micrometer.tracing.test.simple.SpansAssert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -71,8 +69,7 @@ import static org.awaitility.Awaitility.await;
 				"spring.cloud.stream.kinesis.binder.enable-observation=true",
 				"spring.cloud.stream.kinesis.binder.legacy-embedded-headers-format=true",
 				"logging.level.org.springframework.cloud.stream.binder.kinesis.observation=debug",
-				"management.tracing.sampling.probability=1.0",
-				"spring.cloud.aws.region.static=eu-west-2"})
+				"management.tracing.sampling.probability=1.0"})
 @AutoConfigureObservability
 @DirtiesContext
 public class KinesisBinderObservationTests implements LocalstackContainerTest {
@@ -83,18 +80,11 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 
 	private static final TestSpanHandler SPANS = new TestSpanHandler();
 
-	private static KinesisAsyncClient AMAZON_KINESIS;
-
 	@Autowired
 	private CountDownLatch messageBarrier;
 
 	@Autowired
 	private AtomicReference<Message<String>> messageHolder;
-
-	@BeforeAll
-	static void setup() {
-		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
-	}
 
 	@Test
 	void observationIsPropagatedFromSupplierToConsumer() throws InterruptedException {
@@ -123,11 +113,6 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 		@Bean
 		SpanHandler spanHandler() {
 			return SPANS;
-		}
-
-		@Bean(destroyMethod = "")
-		public KinesisAsyncClient amazonKinesis() {
-			return AMAZON_KINESIS;
 		}
 
 		@Bean

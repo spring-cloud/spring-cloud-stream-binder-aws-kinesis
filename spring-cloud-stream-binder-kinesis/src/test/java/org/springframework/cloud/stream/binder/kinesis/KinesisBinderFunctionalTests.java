@@ -25,10 +25,8 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.SdkBytes;
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequest;
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
 
@@ -61,14 +59,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.checkpointMode = manual",
 				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.useNativeDecoding = true",
 				"spring.cloud.stream.kinesis.binder.headers = event.eventType",
-				"spring.cloud.stream.kinesis.binder.autoAddShards = true",
-				"spring.cloud.aws.region.static=eu-west-2"})
+				"spring.cloud.stream.kinesis.binder.autoAddShards = true"})
 @DirtiesContext
 public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 
 	static final String KINESIS_STREAM = "test_stream";
-
-	private static KinesisAsyncClient AMAZON_KINESIS;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -78,11 +73,6 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 
 	@Autowired
 	private AtomicReference<Message<List<?>>> messageHolder;
-
-	@BeforeAll
-	static void setup() {
-		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
-	}
 
 	@Test
 	void testKinesisFunction() throws JsonProcessingException, InterruptedException {
@@ -106,7 +96,7 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 		}
 		putRecordsRequest.records(putRecordsRequestEntryList);
 
-		AMAZON_KINESIS.putRecords(putRecordsRequest.build());
+		LocalstackContainerTest.kinesisClient().putRecords(putRecordsRequest.build());
 
 		assertThat(this.messageBarrier.await(30, TimeUnit.SECONDS)).isTrue();
 
@@ -135,11 +125,6 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 	@EnableAutoConfiguration
 	static class TestConfiguration {
 
-
-		@Bean(destroyMethod = "")
-		public KinesisAsyncClient amazonKinesis() {
-			return AMAZON_KINESIS;
-		}
 
 		@Bean
 		public LockRegistry lockRegistry() {

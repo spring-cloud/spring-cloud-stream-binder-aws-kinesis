@@ -29,6 +29,9 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+
 /**
  * The base contract for JUnit tests based on the container for Localstack.
  * The Testcontainers 'reuse' option must be disabled,so, Ryuk container is started
@@ -52,6 +55,14 @@ public interface LocalstackContainerTest {
 	@BeforeAll
 	static void startContainer() {
 		LOCAL_STACK_CONTAINER.start();
+	}
+
+	@DynamicPropertySource
+	static void registerProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.cloud.aws.endpoint", LOCAL_STACK_CONTAINER::getEndpoint);
+		registry.add("spring.cloud.aws.region.static", LOCAL_STACK_CONTAINER::getRegion);
+		registry.add("spring.cloud.aws.credentials.access-key", LOCAL_STACK_CONTAINER::getAccessKey);
+		registry.add("spring.cloud.aws.credentials.secret-key", LOCAL_STACK_CONTAINER::getSecretKey);
 	}
 
 	static DynamoDbAsyncClient dynamoDbClient() {

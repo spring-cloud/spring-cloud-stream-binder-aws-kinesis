@@ -23,19 +23,30 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+import io.awspring.cloud.autoconfigure.core.AwsClientBuilderConfigurer;
+import io.awspring.cloud.autoconfigure.core.AwsClientCustomizer;
+import io.awspring.cloud.autoconfigure.core.CredentialsProviderAutoConfiguration;
+import io.awspring.cloud.autoconfigure.core.RegionProviderAutoConfiguration;
+import io.awspring.cloud.autoconfigure.dynamodb.DynamoDbProperties;
+import io.awspring.cloud.autoconfigure.metrics.CloudWatchProperties;
 import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -69,13 +80,22 @@ import org.springframework.integration.support.locks.LockRegistry;
  * @author Asiel Caballero
  */
 @AutoConfiguration
+@AutoConfigureAfter({CredentialsProviderAutoConfiguration.class, RegionProviderAutoConfiguration.class})
 @ConditionalOnMissingBean(Binder.class)
-@EnableConfigurationProperties({KinesisBinderConfigurationProperties.class, KinesisExtendedBindingProperties.class})
+@EnableConfigurationProperties({
+		KinesisBinderConfigurationProperties.class,
+		KinesisExtendedBindingProperties.class,
+		KinesisProperties.class,
+		DynamoDbProperties.class,
+		CloudWatchProperties.class
+})
 public class KinesisBinderConfiguration {
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
 
 	private final AwsCredentialsProvider awsCredentialsProvider;
+
+	private final AwsClientBuilderConfigurer awsClientBuilderConfigurer;
 
 	private final Region region;
 
@@ -84,10 +104,12 @@ public class KinesisBinderConfiguration {
 	public KinesisBinderConfiguration(KinesisBinderConfigurationProperties configurationProperties,
 			AwsCredentialsProvider awsCredentialsProvider,
 			AwsRegionProvider regionProvider,
+			AwsClientBuilderConfigurer awsClientBuilderConfigurer,
 			List<Bindable> bindables) {
 
 		this.configurationProperties = configurationProperties;
 		this.awsCredentialsProvider = awsCredentialsProvider;
+		this.awsClientBuilderConfigurer = awsClientBuilderConfigurer;
 		this.region = regionProvider.getRegion();
 		this.hasInputs =
 				bindables.stream()
@@ -99,11 +121,11 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public KinesisAsyncClient amazonKinesis() {
-		return KinesisAsyncClient.builder()
-				.credentialsProvider(this.awsCredentialsProvider)
-				.region(this.region)
-				.build();
+	public KinesisAsyncClient amazonKinesis(KinesisProperties properties,
+			ObjectProvider<AwsClientCustomizer<KinesisAsyncClientBuilder>> configurer) {
+
+		return awsClientBuilderConfigurer
+				.configure(KinesisAsyncClient.builder(), properties, configurer.getIfAvailable()).build();
 	}
 
 	@Bean
@@ -113,12 +135,12 @@ public class KinesisBinderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DynamoDbAsyncClient dynamoDB() {
+	public DynamoDbAsyncClient dynamoDB(DynamoDbProperties properties,
+			ObjectProvider<AwsClientCustomizer<DynamoDbAsyncClientBuilder>> configurer) {
+
 		if (this.hasInputs) {
-			return DynamoDbAsyncClient.builder()
-					.credentialsProvider(this.awsCredentialsProvider)
-					.region(this.region)
-					.build();
+			return awsClientBuilderConfigurer
+					.configure(DynamoDbAsyncClient.builder(), properties, configurer.getIfAvailable()).build();
 		}
 		else {
 			return null;
@@ -190,12 +212,11 @@ public class KinesisBinderConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
-	public CloudWatchAsyncClient cloudWatch() {
+	public CloudWatchAsyncClient cloudWatch(CloudWatchProperties properties,
+			ObjectProvider<AwsClientCustomizer<CloudWatchAsyncClientBuilder>> configurer) {
 		if (this.hasInputs) {
-			return CloudWatchAsyncClient.builder()
-					.credentialsProvider(this.awsCredentialsProvider)
-					.region(this.region)
-					.build();
+			return awsClientBuilderConfigurer
+					.configure(CloudWatchAsyncClient.builder(), properties, configurer.getIfAvailable()).build();
 		}
 		else {
 			return null;

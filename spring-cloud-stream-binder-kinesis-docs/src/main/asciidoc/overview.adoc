@@ -80,6 +80,10 @@ This section contains settings specific to the Kinesis Binder and bound channels
 
 For general binding configuration options and properties, please refer to the https://docs.spring.io/spring-cloud-stream/docs/current/reference/htmlsingle/#_configuration_options[Spring Cloud Stream core documentation].
 
+Also, Kinesis Binder exposes `KinesisAsyncClient`, `DynamoDbAsyncClient`, and `CloudWatchAsyncClient` beans into its child application context.
+By default, these beans rely on the auto-configuration from Spring Cloud AWS.
+See `CredentialsProperties`, `RegionProperties`, and `AwsClientProperties` extensions for more information.
+
 [[kinesis-binder-properties]]
 === Kinesis Binder Properties
 
@@ -472,62 +476,14 @@ aws --endpoint-url=http://localhost:4566 kinesis put-record --stream-name my-tes
 === Telling the binder to use your local endpoint
 
 By default, the Kinesis and DynamoDB Client will try to hit the real AWS Endpoint.
-To change this behavior, you have to declare a new `@Bean`, and override the endpoint.
+To change this behavior, there is just enough to provide these properties for Spring Cloud AWS auto-configuration:
 
-For example:
-
-[source, kotlin]
 ----
-@Configuration
-@Profile("local")
-class DynamoDBConfigLocal {
-
-    @Value("\${cloud.aws.region.static}")
-    lateinit val region: String
-
-    private val endpointUrl: String = "http://localhost:4566"
-
-    @Bean
-    @Primary
-    fun amazonDynamoDBAsync(): DynamoDbAsync {
-        return DynamoDbAsyncClient.builder()
-            .region(region)
-            .endpointOverride(Url(endpointUrl))
-            .build()
-    }
-
-}
+spring.cloud.aws.endpoint
+spring.cloud.aws.region.static
+spring.cloud.aws.credentials.access-key
+spring.cloud.aws.credentials.secret-key
 ----
-
-[source, kotlin]
-----
-@Configuration
-@Profile("local")
-class KinesisConfigLocal {
-
-    @Value("\${cloud.aws.region.static}")
-    lateinit val region: String
-
-    private val endpointUrl: String = "http://localhost:4566"
-
-    @Bean
-    fun amazonKinesis(awsCredentialsProvider: AwsCredentialsProvider): KinesisAsyncClient {
-        return KinesisAsyncClient.builder()
-            .credentialsProvider(awsCredentialsProvider)
-            .region(region)
-            .endpointOverride(Url(endpointUrl))
-            .build()
-    }
-
-}
-----
-
-Now, remember to pass the following environment variables when running locally:
-[source, shell script]
-----
-SPRING_PROFILES_ACTIVE=local gradle bootRun
-----
-This will make sure that these beans are only instantiated when running locally, which is not supported for the localstack's kinesis stream.
 
 Another way to test against LocalStack is to use `Testcontainers` with a `localstack/localstack` image container.
 The `LocalstackContainerTest` interface in this project can be a good sample how to configure container and how to use AWS clients.
