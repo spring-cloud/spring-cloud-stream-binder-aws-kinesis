@@ -22,6 +22,7 @@ import java.util.Set;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.WebIdentityTokenCredentialsProvider;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import io.awspring.cloud.autoconfigure.core.AwsClientBuilderConfigurer;
 import io.awspring.cloud.autoconfigure.core.AwsClientCustomizer;
@@ -30,6 +31,7 @@ import io.awspring.cloud.autoconfigure.core.RegionProviderAutoConfiguration;
 import io.awspring.cloud.autoconfigure.dynamodb.DynamoDbProperties;
 import io.awspring.cloud.autoconfigure.metrics.CloudWatchProperties;
 import io.micrometer.observation.ObservationRegistry;
+import java.util.UUID;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -43,6 +45,7 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -118,6 +121,12 @@ public class KinesisBinderConfiguration {
 						.findFirst()
 						.isPresent();
 	}
+
+        @Value("${spring.cloud.aws.credentials.sts.role-arn}")
+        private String roleArn;
+
+        @Value("${spring.cloud.aws.credentials.sts.web-identity-token-file}")
+        private String webIdentityTokenFile;
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -228,8 +237,12 @@ public class KinesisBinderConfiguration {
 	@ConditionalOnProperty(name = "spring.cloud.stream.kinesis.binder.kpl-kcl-enabled")
 	public KinesisProducerConfiguration kinesisProducerConfiguration() {
 		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
-		kinesisProducerConfiguration.setCredentialsProvider(
-				new AWSCredentialsProviderAdapter(this.awsCredentialsProvider));
+                WebIdentityTokenCredentialsProviderwebIdentityTokenCredentialsProvider = WebIdentityTokenCredentialsProvider.builder()
+                    .roleArn(roleArn)
+                    .roleSessionName(UUID.randomUUID().toString())
+                    .webIdentityTokenFile(webIdentityTokenFile)
+                    .build();
+		kinesisProducerConfiguration.setCredentialsProvider(webIdentityTokenCredentialsProvider);
 		kinesisProducerConfiguration.setRegion(this.region.id());
 		return kinesisProducerConfiguration;
 	}
