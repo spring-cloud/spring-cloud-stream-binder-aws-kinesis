@@ -22,6 +22,7 @@ import java.util.Set;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
 import io.awspring.cloud.autoconfigure.core.AwsClientBuilderConfigurer;
 import io.awspring.cloud.autoconfigure.core.AwsClientCustomizer;
@@ -32,6 +33,7 @@ import io.awspring.cloud.autoconfigure.metrics.CloudWatchProperties;
 import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
@@ -280,16 +282,22 @@ public class KinesisBinderConfiguration {
 
 	private static final class AWSCredentialsProviderAdapter implements AWSCredentialsProvider {
 
-		private final AWSCredentials awsCredentials;
+		private final AwsCredentialsProvider awsCredentialsProvider;
 
 		AWSCredentialsProviderAdapter(AwsCredentialsProvider awsCredentialsProvider) {
-			AwsCredentials credentials = awsCredentialsProvider.resolveCredentials();
-			this.awsCredentials = new BasicAWSCredentials(credentials.secretAccessKey(), credentials.accessKeyId());
+			this.awsCredentialsProvider = awsCredentialsProvider;
 		}
 
 		@Override
 		public AWSCredentials getCredentials() {
-			return this.awsCredentials;
+			AwsCredentials credentials = awsCredentialsProvider.resolveCredentials();
+			if (credentials instanceof AwsSessionCredentials sessionCredentials) {
+				return new BasicSessionCredentials(sessionCredentials.accessKeyId(),
+						sessionCredentials.secretAccessKey(), sessionCredentials.sessionToken());
+			}
+			else {
+				return new BasicAWSCredentials(credentials.accessKeyId(), credentials.secretAccessKey());
+			}
 		}
 
 		@Override
