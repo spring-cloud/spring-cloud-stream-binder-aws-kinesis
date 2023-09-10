@@ -60,6 +60,7 @@ import org.springframework.cloud.stream.binder.kinesis.KinesisBinderHealthIndica
 import org.springframework.cloud.stream.binder.kinesis.KinesisMessageChannelBinder;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisExtendedBindingProperties;
+import org.springframework.cloud.stream.binder.kinesis.properties.SpringCloudAwsCredentialsStsProperties;
 import org.springframework.cloud.stream.binder.kinesis.provisioning.KinesisStreamProvisioner;
 import org.springframework.cloud.stream.binding.Bindable;
 import org.springframework.cloud.stream.config.ConsumerEndpointCustomizer;
@@ -90,11 +91,14 @@ import org.springframework.integration.support.locks.LockRegistry;
 		KinesisExtendedBindingProperties.class,
 		KinesisProperties.class,
 		DynamoDbProperties.class,
-		CloudWatchProperties.class
+		CloudWatchProperties.class,
+		SpringCloudAwsCredentialsStsProperties.class
 })
 public class KinesisBinderConfiguration {
 
 	private final KinesisBinderConfigurationProperties configurationProperties;
+
+	private final SpringCloudAwsCredentialsStsProperties springCloudAwsCredentialsStsProperties;
 
 	private final AwsCredentialsProvider awsCredentialsProvider;
 
@@ -105,12 +109,14 @@ public class KinesisBinderConfiguration {
 	private final boolean hasInputs;
 
 	public KinesisBinderConfiguration(KinesisBinderConfigurationProperties configurationProperties,
+			SpringCloudAwsCredentialsStsProperties springCloudAwsCredentialsStsProperties,
 			AwsCredentialsProvider awsCredentialsProvider,
 			AwsRegionProvider regionProvider,
 			AwsClientBuilderConfigurer awsClientBuilderConfigurer,
 			List<Bindable> bindables) {
 
 		this.configurationProperties = configurationProperties;
+		this.springCloudAwsCredentialsStsProperties = springCloudAwsCredentialsStsProperties;
 		this.awsCredentialsProvider = awsCredentialsProvider;
 		this.awsClientBuilderConfigurer = awsClientBuilderConfigurer;
 		this.region = regionProvider.getRegion();
@@ -121,12 +127,6 @@ public class KinesisBinderConfiguration {
 						.findFirst()
 						.isPresent();
 	}
-
-        @Value("${spring.cloud.aws.credentials.sts.role-arn}")
-        private String roleArn;
-
-        @Value("${spring.cloud.aws.credentials.sts.web-identity-token-file}")
-        private String webIdentityTokenFile;
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -238,9 +238,9 @@ public class KinesisBinderConfiguration {
 	public KinesisProducerConfiguration kinesisProducerConfiguration() {
 		KinesisProducerConfiguration kinesisProducerConfiguration = new KinesisProducerConfiguration();
                 WebIdentityTokenCredentialsProviderwebIdentityTokenCredentialsProvider = WebIdentityTokenCredentialsProvider.builder()
-                    .roleArn(roleArn)
+                    .roleArn(springCloudAwsCredentialsStsProperties.getRoleArn())
                     .roleSessionName(UUID.randomUUID().toString())
-                    .webIdentityTokenFile(webIdentityTokenFile)
+                    .webIdentityTokenFile(springCloudAwsCredentialsStsProperties.getWebIdentityTokenFile())
                     .build();
 		kinesisProducerConfiguration.setCredentialsProvider(webIdentityTokenCredentialsProvider);
 		kinesisProducerConfiguration.setRegion(this.region.id());
