@@ -548,6 +548,7 @@ public class KinesisMessageChannelBinder extends
 		if (configurationProperties.isEnableObservation()) {
 			headers.add("traceparent");
 			headers.add("X-B3*");
+			headers.add("b3");
 		}
 		if (!ObjectUtils.isEmpty(configurationProperties.getHeaders())) {
 			Collections.addAll(headers, configurationProperties.getHeaders());
