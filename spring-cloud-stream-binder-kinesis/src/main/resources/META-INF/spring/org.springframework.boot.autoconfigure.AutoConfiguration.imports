@@ -1,1 +1,1 @@
-org.springframework.cloud.stream.binder.kafka.config.ExtendedBindingHandlerMappingsProviderConfiguration
+org.springframework.cloud.stream.binder.kinesis.config.ExtendedBindingHandlerMappingsProviderConfiguration
