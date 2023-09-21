@@ -16,6 +16,9 @@
 
 package org.springframework.cloud.stream.binder.kinesis;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -50,8 +53,10 @@ public interface LocalstackContainerTest {
 	 * The shared {@link LocalStackContainer} instance.
 	 */
 	LocalStackContainer LOCAL_STACK_CONTAINER =
-			new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.1.0"));
-
+			new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.2.0"))
+					.withEnv(Optional.ofNullable(System.getenv("GITHUB_API_TOKEN"))
+							.map(value -> Map.of("GITHUB_API_TOKEN", value))
+							.orElse(Map.of()));
 	@BeforeAll
 	static void startContainer() {
 		LOCAL_STACK_CONTAINER.start();
