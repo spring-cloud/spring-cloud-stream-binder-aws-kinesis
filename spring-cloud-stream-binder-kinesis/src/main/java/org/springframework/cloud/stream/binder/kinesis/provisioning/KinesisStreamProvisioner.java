@@ -43,6 +43,7 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.cloud.stream.provisioning.ProvisioningProvider;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * The {@link ProvisioningProvider} implementation for Amazon Kinesis.
@@ -103,14 +104,27 @@ public class KinesisStreamProvisioner implements
 		kinesisConsumerProperties.setEmbedHeaders(
 				properties.getHeaderMode() == null || HeaderMode.embeddedHeaders.equals(properties.getHeaderMode()));
 		properties.setHeaderMode(HeaderMode.none);
-
-		if (logger.isInfoEnabled()) {
-			logger.info("Using Kinesis stream for inbound: " + name);
-		}
-
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
 
-		return new KinesisConsumerDestination(name, createOrUpdate(name, shardCount));
+		if (!properties.isMultiplex()) {
+			List<Shard> shardList = provisionKinesisConsumerDestination(name, shardCount);
+			return new KinesisConsumerDestination(name, shardList);
+		}
+		else {
+			String[] streams = StringUtils.commaDelimitedListToStringArray(name);
+			for (String stream : streams) {
+				provisionKinesisConsumerDestination(stream.trim(), shardCount);
+			}
+			return new KinesisConsumerDestination(name, List.of());
+		}
+	}
+
+	private List<Shard> provisionKinesisConsumerDestination(String stream, int shards) {
+		if (logger.isInfoEnabled()) {
+			logger.info("Using Kinesis stream for inbound: " + stream);
+		}
+
+		return createOrUpdate(stream, shards);
 	}
 
 	private List<Shard> createOrUpdate(String stream, int shards) {

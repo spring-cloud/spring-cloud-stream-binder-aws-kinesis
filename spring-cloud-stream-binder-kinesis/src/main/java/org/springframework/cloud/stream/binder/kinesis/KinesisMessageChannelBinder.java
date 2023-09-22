@@ -18,6 +18,7 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -354,9 +355,14 @@ public class KinesisMessageChannelBinder extends
 					"Ignoring 'shardId' property");
 		}
 
+		String[] streams =
+				Arrays.stream(StringUtils.commaDelimitedListToStringArray(destination.getName()))
+						.map(String::trim)
+						.toArray(String[]::new);
+
 		KclMessageDrivenChannelAdapter adapter =
 				new KclMessageDrivenChannelAdapter(this.amazonKinesis, this.cloudWatchClient, this.dynamoDBClient,
-						destination.getName());
+						streams);
 
 		boolean anonymous = !StringUtils.hasText(group);
 		String consumerGroup = anonymous ? "anonymous." + UUID.randomUUID() : group;
@@ -456,6 +462,7 @@ public class KinesisMessageChannelBinder extends
 		}
 
 		if (properties.getInstanceCount() > 1) {
+			Assert.state(!properties.isMultiplex(), "Cannot use multi-stream binding together with 'instance-index'");
 			shardOffsets = new HashSet<>();
 			KinesisConsumerDestination kinesisConsumerDestination = (KinesisConsumerDestination) destination;
 			List<Shard> shards = kinesisConsumerDestination.getShards();
@@ -475,9 +482,14 @@ public class KinesisMessageChannelBinder extends
 		String shardId = kinesisConsumerProperties.getShardId();
 
 		if (CollectionUtils.isEmpty(shardOffsets) && shardId == null) {
-			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, destination.getName());
+			String[] streams =
+					Arrays.stream(StringUtils.commaDelimitedListToStringArray(destination.getName()))
+							.map(String::trim)
+							.toArray(String[]::new);
+			adapter = new KinesisMessageDrivenChannelAdapter(this.amazonKinesis, streams);
 		}
 		else if (shardId != null) {
+			Assert.state(!properties.isMultiplex(), "Cannot use multi-stream binding together with 'shard-id'");
 			KinesisShardOffset shardOffset = new KinesisShardOffset(kinesisShardOffset);
 			shardOffset.setStream(destination.getName());
 			shardOffset.setShard(shardId);

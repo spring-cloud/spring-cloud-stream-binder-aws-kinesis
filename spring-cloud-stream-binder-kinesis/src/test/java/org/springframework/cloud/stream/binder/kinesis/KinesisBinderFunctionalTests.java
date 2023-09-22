@@ -18,6 +18,7 @@ package org.springframework.cloud.stream.binder.kinesis;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,6 +26,7 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequest;
@@ -33,8 +35,12 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.binder.Binding;
+import org.springframework.cloud.stream.binding.BindingService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
+import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.support.AwsHeaders;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.metadata.SimpleMetadataStore;
@@ -42,6 +48,7 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.integration.support.json.JacksonJsonUtils;
 import org.springframework.integration.support.locks.DefaultLockRegistry;
 import org.springframework.integration.support.locks.LockRegistry;
+import org.springframework.integration.test.util.TestUtils;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.test.annotation.DirtiesContext;
@@ -53,7 +60,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
 		properties = {
-				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.destination=" + KinesisBinderFunctionalTests.KINESIS_STREAM,
+				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.multiplex=true",
+				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.destination=some_other_stream, " + KinesisBinderFunctionalTests.KINESIS_STREAM,
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.idleBetweenPolls = 1",
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.listenerMode = batch",
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.checkpointMode = manual",
@@ -74,6 +82,10 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 	@Autowired
 	private AtomicReference<Message<List<?>>> messageHolder;
 
+	@Autowired
+	private BindingService bindingService;
+
+	@SuppressWarnings("unchecked")
 	@Test
 	void testKinesisFunction() throws JsonProcessingException, InterruptedException {
 		PutRecordsRequest.Builder putRecordsRequest =
@@ -119,6 +131,34 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 		assertThat(messageFromBatch.getPayload()).isEqualTo("Message0");
 		assertThat(messageFromBatch.getHeaders())
 				.containsEntry("event.eventType", "createEvent");
+
+		List<Binding<?>> consumerBindings =
+				this.bindingService.getConsumerBindings("eventConsumerBatchProcessingWithHeaders-in-0");
+
+		assertThat(consumerBindings).hasSize(1);
+
+		Binding<?> binding = consumerBindings.get(0);
+
+		KinesisMessageDrivenChannelAdapter kinesisMessageDrivenChannelAdapter =
+				TestUtils.getPropertyValue(binding, "lifecycle", KinesisMessageDrivenChannelAdapter.class);
+
+		Map<KinesisShardOffset, ?> shardConsumers =
+				TestUtils.getPropertyValue(kinesisMessageDrivenChannelAdapter, "shardConsumers", Map.class);
+		assertThat(shardConsumers)
+				.hasSize(2)
+				.hasKeySatisfying(keySatisfyingCondition(KINESIS_STREAM))
+				.hasKeySatisfying(keySatisfyingCondition("some_other_stream"));
+	}
+
+	private static Condition<KinesisShardOffset> keySatisfyingCondition(String streamName) {
+		return new Condition<>() {
+
+			@Override
+			public boolean matches(KinesisShardOffset value) {
+				return value.getStream().equals(streamName);
+			}
+
+		};
 	}
 
 	@Configuration
