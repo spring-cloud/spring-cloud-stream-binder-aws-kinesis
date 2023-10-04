@@ -236,9 +236,17 @@ workerId::
   The worker identifier used to distinguish different workers/processes (only used when Kinesis Client Library is enabled).
 +
 No default - if not set, default value inside spring-integration-aws will be used (random UUID).
+fanOut::
+The KCL retrieval mode: `true` - fan-out, `false` - polling.
++
+Default: `true`
 recordsLimit::
   The maximum number of records to poll per `GetRecords` request.
   Must not be greater than `10000`.
++
+Default: `1000`
+idleBetweenPolls::
+  The delay between Kinesis records request to satisfy AWS throughput requirements.
 +
 Default: `1000`
 consumerBackoff::
@@ -265,6 +273,11 @@ When `shardId` property is used, it is ignored for Kinesis Client Library and st
 Also, in case of an `instanceCount > 1`, application will throw validation exception.
 The `instanceCount` and `shardId` are considered as mutually exclusive.
 
+embedHeaders::
+Whether to extract headers and payload from Kinesis record data.
++
+Default: `false`
+
 === Kinesis Producer Properties
 
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<bindingTarget>.producer.`.
@@ -280,6 +293,11 @@ sendTimeout::
 Default: `10000`
 
 Also, if you'd like to produce a batch of records into Kinesis stream, the message payload must be as a `PutRecordsRequest` instance and general Spring Cloud Stream producer property `useNativeEncoding` must be set to `true`, so Spring Cloud Stream won't try to convert a `PutRecordsRequest` into a `byte[]`. The content of the `PutRecordsRequest` is now end-user responsibility.
+
+embedHeaders::
+Whether to serialize message headers and payload into Kinesis record data.
++
+Default: `false`
 
 [[kinesis-error-channels]]
 == Error Channels

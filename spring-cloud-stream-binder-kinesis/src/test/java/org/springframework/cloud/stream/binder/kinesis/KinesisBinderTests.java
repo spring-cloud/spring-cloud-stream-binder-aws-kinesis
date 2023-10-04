@@ -351,6 +351,7 @@ public class KinesisBinderTests extends
 		DirectChannel output = createBindableChannel("output", new BindingProperties());
 		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
 		consumerProperties.setAutoStartup(false);
+		consumerProperties.getExtension().setFanOut(false);
 		Binding<?> binding = binder.bindConsumer("testKclStream", null, output, consumerProperties);
 
 		Lifecycle lifecycle = TestUtils.getPropertyValue(binding, "lifecycle", Lifecycle.class);
@@ -361,6 +362,8 @@ public class KinesisBinderTests extends
 
 		assertThat(initialSequence)
 				.isEqualTo(InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.TRIM_HORIZON));
+
+		assertThat(TestUtils.getPropertyValue(lifecycle, "fanOut", Boolean.class)).isFalse();
 
 		binding.unbind();
 	}

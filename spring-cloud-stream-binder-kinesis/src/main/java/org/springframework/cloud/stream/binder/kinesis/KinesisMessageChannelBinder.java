@@ -410,6 +410,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setCheckpointsInterval(kinesisConsumerProperties.getCheckpointInterval());
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
+		adapter.setFanOut(kinesisConsumerProperties.isFanOut());
 		if (properties.getExtension().isEmbedHeaders()) {
 			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}

@@ -58,6 +58,12 @@ public class KinesisConsumerProperties {
 	 */
 	private String workerId;
 
+
+	/**
+	 * The KCL fan-out or polling retrieval mode.
+	 */
+	private boolean fanOut = true;
+
 	private boolean embedHeaders;
 
 	public int getStartTimeout() {
@@ -146,6 +152,14 @@ public class KinesisConsumerProperties {
 
 	public void setEmbedHeaders(boolean embedHeaders) {
 		this.embedHeaders = embedHeaders;
+	}
+
+	public boolean isFanOut() {
+		return this.fanOut;
+	}
+
+	public void setFanOut(boolean fanOut) {
+		this.fanOut = fanOut;
 	}
 
 }
