@@ -6,23 +6,22 @@
 	<parent>
 		<groupId>org.springframework.cloud</groupId>
 		<artifactId>spring-cloud-build</artifactId>
-		<version>4.0.4</version>
+		<version>4.1.0-SNAPSHOT</version>
 		<relativePath/>
 	</parent>
 
 	<artifactId>spring-cloud-stream-binder-kinesis-parent</artifactId>
-	<version>4.0.1-SNAPSHOT</version>
+	<version>4.0.1</version>
 	<packaging>pom</packaging>
 
 	<properties>
 		<java.version>17</java.version>
-		<spring-cloud-stream.version>4.0.3</spring-cloud-stream.version>
-		<spring-cloud-aws.version>3.0.1</spring-cloud-aws.version>
-		<spring-integration-aws.version>3.0.2-SNAPSHOT</spring-integration-aws.version>
-		<amazon-kinesis-client.version>2.5.1</amazon-kinesis-client.version>
-		<amazon-kinesis-producer.version>0.15.7</amazon-kinesis-producer.version>
-		<testcontainers.version>1.18.3</testcontainers.version>
-		<micrometer-tracing.version>1.1.2</micrometer-tracing.version>
+		<spring-cloud-stream.version>4.0.4</spring-cloud-stream.version>
+		<spring-cloud-aws.version>3.0.2</spring-cloud-aws.version>
+		<spring-integration-aws.version>3.0.2</spring-integration-aws.version>
+		<amazon-kinesis-client.version>2.5.2</amazon-kinesis-client.version>
+		<amazon-kinesis-producer.version>0.15.8</amazon-kinesis-producer.version>
+		<testcontainers.version>1.19.1</testcontainers.version>
 	</properties>
 
 	<modules>
@@ -57,14 +56,6 @@
 			</dependency>
 
 			<dependency>
-				<groupId>io.micrometer</groupId>
-				<artifactId>micrometer-tracing-bom</artifactId>
-				<version>${micrometer-tracing.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-
-			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-stream-binder-kinesis</artifactId>
 				<version>${project.version}</version>
@@ -93,10 +84,6 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-antrun-plugin</artifactId>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
 					<configuration>
 						<quiet>true</quiet>
@@ -108,12 +95,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>${maven-compiler-plugin.version}</version>
-				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
-					<compilerArgument>-parameters</compilerArgument>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
