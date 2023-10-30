@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Configuration;
 public class ExtendedBindingHandlerMappingsProviderConfiguration {
 
 	@Bean
-	public MappingsProvider kafkaExtendedPropertiesDefaultMappingsProvider() {
+	public MappingsProvider kinesisExtendedPropertiesDefaultMappingsProvider() {
 		return () ->
 				Map.of(ConfigurationPropertyName.of("spring.cloud.stream.kinesis.bindings"),
 						ConfigurationPropertyName.of("spring.cloud.stream.kinesis.default"));
