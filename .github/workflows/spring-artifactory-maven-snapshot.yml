@@ -35,6 +35,7 @@ jobs:
             --use-wrapper \
             --server-id-resolve repo.spring.io \
             --server-id-deploy repo.spring.io \
+            --repo-resolve-releases milestone \
             --repo-resolve-snapshots snapshot \
             --repo-deploy-snapshots libs-snapshot-local
           echo JFROG_CLI_BUILD_NAME=${{ github.event.repository.name }}-${{ github.ref_name }} >> $GITHUB_ENV
