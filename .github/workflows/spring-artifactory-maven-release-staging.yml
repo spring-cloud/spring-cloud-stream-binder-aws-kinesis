@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       mavenArgs:
-        description: 'Additional mvn command arguments: goals, plugins etc. The `clean` and `deploy` are included.'
+        description: 'Additional mvn command arguments: goals, plugins etc. The `install` is included.'
         required: false
         type: string
 
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: test-results
-          path: '*/target/surefire-reports/*.*'
+          path: '**/target/surefire-reports/**/*.*'
           retention-days: 3
 
       - name: Tag Release and Next Development Version
