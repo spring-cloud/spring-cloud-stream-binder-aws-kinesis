@@ -51,7 +51,7 @@ jobs:
 
       - name: Set Release Version
         run: |
-          jf mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false
+          jf mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -B -ntp
 
       - name: Build and Publish
         run: |
@@ -73,7 +73,7 @@ jobs:
           git commit -a -m "[artifactory-release] Release version ${{ inputs.releaseVersion }}"
           git tag "v${{ inputs.releaseVersion }}"
           git push --tags origin
-          jf mvn versions:set -DnewVersion=${{ inputs.nextDevelopmentVersion }} -DgenerateBackupPoms=false
+          jf mvn versions:set -DnewVersion=${{ inputs.nextDevelopmentVersion }} -DgenerateBackupPoms=false -B -ntp
           git commit -a -m "[artifactory-release] Next development version"
           git push origin
 
