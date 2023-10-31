@@ -58,6 +58,14 @@ jobs:
           jf mvn install ${{ inputs.mavenArgs }}
           jf rt build-publish
 
+      - name: Capture Test Results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: '*/target/surefire-reports/*.*'
+          retention-days: 3
+
       - name: Tag Release and Next Development Version
         run: |
           git config --global user.name 'Spring Builds'
