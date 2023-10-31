@@ -33,9 +33,9 @@ jobs:
         run: |
           jf mvnc \
             --use-wrapper \
-            --repo-resolve-releases milestone \
-            --repo-resolve-snapshots snapshot \
-            --repo-deploy-snapshots libs-snapshot-local
+            --repo-resolve-releases=milestone \
+            --repo-resolve-snapshots=snapshot \
+            --repo-deploy-snapshots=libs-snapshot-local
           echo JFROG_CLI_BUILD_NAME=${{ github.event.repository.name }}-${{ github.ref_name }} >> $GITHUB_ENV
           echo JFROG_CLI_BUILD_NUMBER=$GITHUB_RUN_NUMBER >> $GITHUB_ENV
 
