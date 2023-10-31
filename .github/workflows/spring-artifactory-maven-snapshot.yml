@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       mavenArgs:
-        description: 'Additional mvn command arguments: goals, plugins etc. The `deploy` is included.'
+        description: 'Additional mvn command arguments: goals, plugins etc. The `install` is included.'
         required: false
         type: string
 
@@ -32,8 +32,7 @@ jobs:
       - name: Configure JFrog Cli
         run: |
           jf mvnc \
-            --server-id-resolve=repo.spring.io \
-            --server-id-deploy=repo.spring.io \
+            --use-wrapper=true \
             --repo-resolve-releases=libs-milestone \
             --repo-resolve-snapshots=snapshot \
             --repo-deploy-releases=libs-milestone-local \
@@ -43,6 +42,6 @@ jobs:
 
       - name: Build and Publish
         run: |
-          jf mvn install deploy ${{ inputs.mavenArgs }}
+          jf mvn install ${{ inputs.mavenArgs }}
           jf rt build-publish
 
