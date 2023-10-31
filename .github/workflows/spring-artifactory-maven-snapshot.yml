@@ -34,7 +34,7 @@ jobs:
           jf mvnc \
             --server-id-resolve=repo.spring.io \
             --server-id-deploy=repo.spring.io \
-            --repo-resolve-releases=milestone \
+            --repo-resolve-releases=libs-milestone \
             --repo-resolve-snapshots=snapshot \
             --repo-deploy-releases=libs-milestone-local \
             --repo-deploy-snapshots=libs-snapshot-local
@@ -43,6 +43,6 @@ jobs:
 
       - name: Build and Publish
         run: |
-          jf mvn deploy ${{ inputs.mavenArgs }}
+          jf mvn install deploy ${{ inputs.mavenArgs }}
           jf rt build-publish
 
