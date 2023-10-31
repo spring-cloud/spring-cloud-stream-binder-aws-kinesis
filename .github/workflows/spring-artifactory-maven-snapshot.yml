@@ -32,7 +32,8 @@ jobs:
       - name: Configure JFrog Cli
         run: |
           jf mvnc \
-            --use-wrapper \
+            --server-id-resolve=repo.spring.io \
+            --server-id-deploy=repo.spring.io \
             --repo-resolve-releases=milestone \
             --repo-resolve-snapshots=snapshot \
             --repo-deploy-snapshots=libs-snapshot-local
