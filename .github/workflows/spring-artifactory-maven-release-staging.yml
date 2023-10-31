@@ -43,8 +43,8 @@ jobs:
           jf mvnc \
             --server-id-resolve repo.spring.io \
             --server-id-deploy repo.spring.io \
-            --repo-resolve ${{ (contains(inputs.releaseVersion, 'M') || contains(inputs.releaseVersion, 'RC')) && 'milestone' || 'release' }} \
-            --repo-deploy libs-staging-local
+            --repo-resolve-releases milestone \
+            --repo-deploy-releases libs-staging-local
           echo JFROG_CLI_BUILD_NAME=${{ github.event.repository.name }}-${{ inputs.releaseVersion }} >> $GITHUB_ENV
           echo JFROG_CLI_BUILD_NUMBER=$GITHUB_RUN_NUMBER >> $GITHUB_ENV
 
