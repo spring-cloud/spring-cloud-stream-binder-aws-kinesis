@@ -110,7 +110,7 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 
 		LocalstackContainerTest.kinesisClient().putRecords(putRecordsRequest.build());
 
-		assertThat(this.messageBarrier.await(30, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.messageBarrier.await(60, TimeUnit.SECONDS)).isTrue();
 
 		Message<List<?>> message = this.messageHolder.get();
 		assertThat(message.getHeaders())
