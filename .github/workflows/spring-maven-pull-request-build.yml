@@ -1,0 +1,31 @@
+name: Pull Request Build with Maven
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: adopt
+          java-version: 17
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: ./mvnw verify
+
+      - name: Capture Test Results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: '*/target/surefire-reports/*.*'
+          retention-days: 3
