@@ -27,7 +27,7 @@ jobs:
         with:
           version: 2.50.4
         env:
-          JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
+          JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
 
       - name: Configure JFrog Cli
         run: |
