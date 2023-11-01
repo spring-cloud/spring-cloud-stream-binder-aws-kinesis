@@ -30,13 +30,14 @@ jobs:
 
       - uses: jfrog/setup-jfrog-cli@v3
         with:
-          version: 1.46.4
+          version: 2.50.4
         env:
           JF_ENV_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
 
       - name: Configure JFrog Cli
         run: |
-          jfrog mvnc \
+          jf mvnc \
+            --use-wrapper=true \
             --repo-resolve-releases=libs-milestone \
             --repo-resolve-snapshots=snapshot \
             --repo-deploy-releases=libs-staging-local \
