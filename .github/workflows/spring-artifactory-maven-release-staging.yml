@@ -65,8 +65,10 @@ jobs:
       - name: Next Development Version
         id: next-version
         run: |
-          echo nextIncremental='${{ (contains(inputs.releaseVersion, '-M') || contains(inputs.releaseVersion, '-RC')) && '${parsedVersion.incrementalVersion}' || '${parsedVersion.nextIncrementalVersion}' }}'
-          echo version=jfrog rt mvn build-helper:parse-version help:evaluate -DnextDevelopmentVersion='${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.'$nextIncremental-SNAPSHOT -DforceStdout -Dexpression=nextDevelopmentVersion -q -N >> $GITHUB_OUTPUT
+          echo version=$(jfrog rt mvn build-helper:parse-version help:evaluate \
+                  -DnextDevelopmentVersion='${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${{ (contains(inputs.releaseVersion, '-M') || contains(inputs.releaseVersion, '-RC')) && '${parsedVersion.incrementalVersion}' || '${parsedVersion.nextIncrementalVersion}' }}'-SNAPSHOT \
+                  -DforceStdout -Dexpression=nextDevelopmentVersion -q -N) \
+                  >> $GITHUB_OUTPUT
 
       - name: Tag Release
         run: |
