@@ -9,6 +9,4 @@ on:
 jobs:
   build_snapshot:
     uses: ./.github/workflows/spring-artifactory-maven-snapshot.yml
-    with:
-      mavenArgs: '-Pdocs,spring -U'
     secrets: inherit

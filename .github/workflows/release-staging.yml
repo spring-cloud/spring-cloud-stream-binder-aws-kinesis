@@ -14,5 +14,5 @@ jobs:
     uses: ./.github/workflows/spring-artifactory-maven-release-staging.yml
     with:
       releaseVersion: ${{ inputs.releaseVersion }}
-      mavenArgs: '-Pdocs,spring -DskipTests'
+      mavenArgs: '-DskipTests'
     secrets: inherit

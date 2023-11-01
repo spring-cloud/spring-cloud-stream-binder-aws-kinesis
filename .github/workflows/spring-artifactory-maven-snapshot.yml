@@ -42,7 +42,7 @@ jobs:
 
       - name: Build and Publish
         run: |
-          jf mvn install -B -ntp ${{ inputs.mavenArgs }}
+          jf mvn install -B ${{ inputs.mavenArgs }}
           jf rt build-publish
 
       - name: Capture Test Results

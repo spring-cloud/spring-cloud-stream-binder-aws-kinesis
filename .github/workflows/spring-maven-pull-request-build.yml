@@ -20,7 +20,7 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven
-        run: ./mvnw verify -B -ntp
+        run: ./mvnw verify -B
 
       - name: Capture Test Results
         if: failure()
