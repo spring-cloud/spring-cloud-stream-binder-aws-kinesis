@@ -7,10 +7,6 @@ on:
         description: 'Release version like 3.0.0-M1, 3.1.0-RC1, 3.2.0 etc.'
         required: true
         type: string
-      nextDevelopmentVersion:
-        description: 'Next development version like 3.1.1-SNAPSHOT'
-        required: true
-        type: string
       mavenArgs:
         description: 'Additional mvn command arguments: goals, plugins etc. The `install` is included.'
         required: false
@@ -50,11 +46,11 @@ jobs:
 
       - name: Set Release Version
         run: |
-          jfrog rt mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -B -ntp
+          jfrog rt mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
 
       - name: Build and Publish
         run: |
-          jfrog rt mvn clean install -B -ntp ${{ inputs.mavenArgs }}
+          jfrog rt mvn install -B -ntp ${{ inputs.mavenArgs }}
           jf rt build-publish
 
       - name: Capture Test Results
@@ -65,18 +61,24 @@ jobs:
           path: '**/target/surefire-reports/**/*.*'
           retention-days: 3
 
-      - name: Tag Release and Next Development Version
+      - name: Next Development Version
+        id: next-version
+        run: |
+          echo nextIncremental=${{ (contains(inputs.releaseVersion, '-M') || contains(inputs.releaseVersion, '-RC')) && '${parsedVersion.incrementalVersion}' || '${parsedVersion.nextIncrementalVersion}' }}
+          echo version=jfrog rt mvn build-helper:parse-version help:evaluate -DnextDevelopmentVersion='${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.'$nextIncremental-SNAPSHOT -DforceStdout -Dexpression=nextDevelopmentVersion -q -N >> $GITHUB_OUTPUT
+
+      - name: Tag Release
         run: |
           git config --global user.name 'Spring Builds'
           git config --global user.email 'builds@springframework.org'
           git commit -a -m "[artifactory-release] Release version ${{ inputs.releaseVersion }}"
           git tag "v${{ inputs.releaseVersion }}"
           git push --tags origin
-          jfrog rt mvn versions:set -DnewVersion=${{ inputs.nextDevelopmentVersion }} -DgenerateBackupPoms=false -B -ntp
+          jfrog rt mvn versions:set -DnewVersion=${{ steps.next-version.outputs.version }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
           git commit -a -m "[artifactory-release] Next development version"
           git push origin
 
       - name: Print Build Info
         run: |
-          echo "::notice ::Artifactory Build Name=$JFROG_CLI_BUILD_NAME"
-          echo "::notice ::Artifactory Build Number=$JFROG_CLI_BUILD_NUMBER"
+          echo ::notice ::Artifactory Build Name=$JFROG_CLI_BUILD_NAME
+          echo ::notice ::Artifactory Build Number=$JFROG_CLI_BUILD_NUMBER
