@@ -47,11 +47,11 @@ jobs:
 
       - name: Set Release Version
         run: |
-          jfrog rt mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B
+          jf mvn versions:set -DnewVersion=${{ inputs.releaseVersion }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
 
       - name: Build and Publish
         run: |
-          jfrog rt mvn install -B ${{ inputs.mavenArgs }}
+          jf mvn install -B -ntp ${{ inputs.mavenArgs }}
           jf rt build-publish
 
       - name: Capture Test Results
@@ -64,11 +64,9 @@ jobs:
 
       - name: Next Development Version
         id: next-version
-        run: |
-          echo version=$(jfrog rt mvn build-helper:parse-version help:evaluate \
+        run: echo "version=$(jf mvn build-helper:parse-version help:evaluate \
                   -DnextDevelopmentVersion='${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${{ (contains(inputs.releaseVersion, '-M') || contains(inputs.releaseVersion, '-RC')) && '${parsedVersion.incrementalVersion}' || '${parsedVersion.nextIncrementalVersion}' }}'-SNAPSHOT \
-                  -DforceStdout -Dexpression=nextDevelopmentVersion -q -N) \
-                  >> $GITHUB_OUTPUT
+                  -DforceStdout -Dexpression=nextDevelopmentVersion -q -N)" >> $GITHUB_OUTPUT
 
       - name: Tag Release
         run: |
@@ -77,7 +75,7 @@ jobs:
           git commit -a -m "[artifactory-release] Release version ${{ inputs.releaseVersion }}"
           git tag "v${{ inputs.releaseVersion }}"
           git push --tags origin
-          jfrog rt mvn versions:set -DnewVersion=${{ steps.next-version.outputs.version }} -DgenerateBackupPoms=false -DprocessAllModules=true -B
+          jf mvn versions:set -DnewVersion=${{ steps.next-version.outputs.version }} -DgenerateBackupPoms=false -DprocessAllModules=true -B -ntp
           git commit -a -m "[artifactory-release] Next development version"
           git push origin
 
