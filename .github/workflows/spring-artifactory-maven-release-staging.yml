@@ -67,8 +67,8 @@ jobs:
         run: |
           echo "version=\
             $(jf mvn build-helper:parse-version help:evaluate \
-            -DnextDevelopmentVersion= \
-            ''${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${{ (contains(inputs.releaseVersion, '-M') || contains(inputs.releaseVersion, '-RC')) && '${parsedVersion.incrementalVersion}' || '${parsedVersion.nextIncrementalVersion}' }}''-SNAPSHOT \
+            -DnextDevelopmentVersion=\
+            '${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${{ (contains(inputs.releaseVersion, '-M') || contains(inputs.releaseVersion, '-RC')) && '${parsedVersion.incrementalVersion}' || '${parsedVersion.nextIncrementalVersion}' }}'-SNAPSHOT \
             -DforceStdout -Dexpression=nextDevelopmentVersion -q -N)" \
             >> $GITHUB_OUTPUT
 
