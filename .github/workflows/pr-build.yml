@@ -7,4 +7,4 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/spring-maven-pull-request-build.yml
+    uses: artembilan/spring-messaging-build-tools/.github/workflows/spring-maven-pull-request-build.yml

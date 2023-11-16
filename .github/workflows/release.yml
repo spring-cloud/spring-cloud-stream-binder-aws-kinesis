@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+run-name: Release current version for branch ${{ github.ref_name }}
+
+jobs:
+  release:
+    uses: artembilan/spring-messaging-build-tools/.github/workflows/spring-artifactory-release.yml@main
+    with:
+      buildToolArgs: dist
+    secrets:
+      GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
+      JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
+      SPRING_RELEASE_SLACK_WEBHOOK_URL: ${{ secrets.SPRING_RELEASE_SLACK_WEBHOOK_URL }}
+      OSSRH_URL: ${{ secrets.OSSRH_URL }}
+      OSSRH_S01_TOKEN_USERNAME: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
+      OSSRH_S01_TOKEN_PASSWORD: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
+      OSSRH_STAGING_PROFILE_NAME: ${{ secrets.OSSRH_STAGING_PROFILE_NAME }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}

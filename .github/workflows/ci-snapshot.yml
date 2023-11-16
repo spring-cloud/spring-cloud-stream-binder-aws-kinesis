@@ -8,5 +8,6 @@ on:
 
 jobs:
   build_snapshot:
-    uses: ./.github/workflows/spring-artifactory-maven-snapshot.yml
-    secrets: inherit
+    uses: artembilan/spring-messaging-build-tools/.github/workflows/spring-artifactory-maven-snapshot.yml@main
+    secrets:
+      JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
