@@ -8,8 +8,6 @@ run-name: Release current version for branch ${{ github.ref_name }}
 jobs:
   release:
     uses: artembilan/spring-messaging-build-tools/.github/workflows/spring-artifactory-release.yml@main
-    with:
-      buildToolArgs: dist
     secrets:
       GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
       JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
