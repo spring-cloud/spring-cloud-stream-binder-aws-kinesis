@@ -5,9 +5,10 @@ on:
   push:
     branches:
       - main
+      - '*.x'
 
 jobs:
   build_snapshot:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@v1
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@v2
     secrets:
       JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
