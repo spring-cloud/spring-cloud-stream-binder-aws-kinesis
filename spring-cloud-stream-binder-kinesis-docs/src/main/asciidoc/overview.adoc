@@ -240,6 +240,11 @@ fanOut::
 The KCL retrieval mode: `true` - fan-out, `false` - polling.
 +
 Default: `true`
+metricsLevel::
+  The level of metrics to be collected by the Kinesis Client Library.
+  Possible values are `NONE`, `SUMMARY`, `DETAILED`.
++
+Default: `DETAILED`
 recordsLimit::
   The maximum number of records to poll per `GetRecords` request.
   Must not be greater than `10000`.

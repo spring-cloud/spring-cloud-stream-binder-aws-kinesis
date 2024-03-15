@@ -93,6 +93,7 @@ import org.springframework.util.StringUtils;
  * @author Dirk Bonhomme
  * @author Asiel Caballero
  * @author Dmytro Danilenkov
+ * @author Minkyu Moon
  *
  */
 public class KinesisMessageChannelBinder extends
@@ -411,6 +412,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setConsumerBackoff(kinesisConsumerProperties.getConsumerBackoff());
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
 		adapter.setFanOut(kinesisConsumerProperties.isFanOut());
+		adapter.setMetricsLevel(kinesisConsumerProperties.getMetricsLevel());
 		if (properties.getExtension().isEmbedHeaders()) {
 			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}

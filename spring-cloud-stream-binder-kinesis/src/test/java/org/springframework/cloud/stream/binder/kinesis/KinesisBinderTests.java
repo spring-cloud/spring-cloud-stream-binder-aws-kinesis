@@ -39,6 +39,7 @@ import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 import software.amazon.awssdk.services.kinesis.model.StreamStatus;
 import software.amazon.kinesis.common.InitialPositionInStream;
 import software.amazon.kinesis.common.InitialPositionInStreamExtended;
+import software.amazon.kinesis.metrics.MetricsLevel;
 
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.cloud.stream.binder.Binding;
@@ -80,6 +81,7 @@ import static org.mockito.Mockito.mock;
  * @author Artem Bilan
  * @author Jacob Severson
  * @author Arnaud Lecollaire
+ * @author Minkyu Moon
  */
 public class KinesisBinderTests extends
 		PartitionCapableBinderTests<KinesisTestBinder, ExtendedConsumerProperties<KinesisConsumerProperties>,
@@ -364,6 +366,25 @@ public class KinesisBinderTests extends
 				.isEqualTo(InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.TRIM_HORIZON));
 
 		assertThat(TestUtils.getPropertyValue(lifecycle, "fanOut", Boolean.class)).isFalse();
+
+		binding.unbind();
+	}
+
+	@Test
+	public void testMetricsLevelOfKcl() throws Exception {
+		KinesisBinderConfigurationProperties configurationProperties = new KinesisBinderConfigurationProperties();
+		configurationProperties.setKplKclEnabled(true);
+		KinesisTestBinder binder = getBinder(configurationProperties);
+		DirectChannel output = createBindableChannel("output", new BindingProperties());
+		ExtendedConsumerProperties<KinesisConsumerProperties> consumerProperties = createConsumerProperties();
+		consumerProperties.setAutoStartup(false);
+		consumerProperties.getExtension().setMetricsLevel(MetricsLevel.NONE);
+		Binding<?> binding = binder.bindConsumer("testKclStream", null, output, consumerProperties);
+
+		Lifecycle lifecycle = TestUtils.getPropertyValue(binding, "lifecycle", Lifecycle.class);
+		assertThat(lifecycle).isInstanceOf(KclMessageDrivenChannelAdapter.class);
+
+		assertThat(TestUtils.getPropertyValue(lifecycle, "metricsLevel", MetricsLevel.class)).isEqualTo(MetricsLevel.NONE);
 
 		binding.unbind();
 	}
