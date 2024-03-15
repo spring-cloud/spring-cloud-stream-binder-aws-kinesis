@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
+import software.amazon.kinesis.metrics.MetricsLevel;
+
 import org.springframework.integration.aws.inbound.kinesis.CheckpointMode;
 import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
 
@@ -27,6 +29,7 @@ import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
  * @author Artem Bilan
  * @author Arnaud Lecollaire
  * @author Dmytro Danilenkov
+ * @author Minkyu Moon
  *
  */
 public class KinesisConsumerProperties {
@@ -65,6 +68,11 @@ public class KinesisConsumerProperties {
 	private boolean fanOut = true;
 
 	private boolean embedHeaders;
+
+	/**
+	 * The {@link MetricsLevel} for emitting (or not) metrics into Cloud Watch.
+	 */
+	private MetricsLevel metricsLevel = MetricsLevel.DETAILED;
 
 	public int getStartTimeout() {
 		return this.startTimeout;
@@ -160,6 +168,14 @@ public class KinesisConsumerProperties {
 
 	public void setFanOut(boolean fanOut) {
 		this.fanOut = fanOut;
+	}
+
+	public MetricsLevel getMetricsLevel() {
+		return this.metricsLevel;
+	}
+
+	public void setMetricsLevel(MetricsLevel metricsLevel) {
+		this.metricsLevel = metricsLevel;
 	}
 
 }
