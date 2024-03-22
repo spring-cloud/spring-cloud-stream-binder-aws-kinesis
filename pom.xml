@@ -19,9 +19,9 @@
 		<spring-cloud-stream.version>4.0.4</spring-cloud-stream.version>
 		<spring-cloud-aws.version>3.0.4</spring-cloud-aws.version>
 		<spring-integration-aws.version>3.0.6-SNAPSHOT</spring-integration-aws.version>
-		<amazon-kinesis-client.version>2.5.4</amazon-kinesis-client.version>
-		<amazon-kinesis-producer.version>0.15.9</amazon-kinesis-producer.version>
-		<testcontainers.version>1.19.3</testcontainers.version>
+		<amazon-kinesis-client.version>2.5.6</amazon-kinesis-client.version>
+		<amazon-kinesis-producer.version>0.15.10</amazon-kinesis-producer.version>
+		<testcontainers.version>1.19.7</testcontainers.version>
 	</properties>
 
 	<modules>
@@ -140,4 +140,39 @@
 			<url>https://repo.spring.io/milestone</url>
 		</pluginRepository>
 	</pluginRepositories>
+	<profiles>
+		<profile>
+			<id>sign</id>
+			<activation>
+				<property>
+					<name>gpg.passphrase</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.0.1</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<configuration>
+									<gpgArguments>
+										<arg>--pinentry-mode</arg>
+										<arg>loopback</arg>
+										<arg>--no-tty</arg>
+									</gpgArguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

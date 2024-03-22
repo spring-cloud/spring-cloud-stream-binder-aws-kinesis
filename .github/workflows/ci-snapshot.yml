@@ -9,6 +9,6 @@ on:
 
 jobs:
   build_snapshot:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@v2
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@main
     secrets:
       JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}

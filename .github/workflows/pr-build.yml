@@ -7,4 +7,4 @@ on:
 
 jobs:
   build:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-maven-pull-request-build.yml@v2
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-maven-pull-request-build.yml@main
