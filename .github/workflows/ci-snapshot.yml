@@ -11,5 +11,4 @@ jobs:
   build_snapshot:
     uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@main
     secrets:
-      ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
