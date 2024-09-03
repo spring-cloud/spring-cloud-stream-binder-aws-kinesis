@@ -367,6 +367,7 @@ Here are the policies statements that your application role need:
             "dynamodb:Scan",
             "dynamodb:Query",
             "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
 	    "dynamodb:DescribeTable"
           ],
           "Resource": [
