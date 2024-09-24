@@ -38,10 +38,8 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.Binding;
 import org.springframework.cloud.stream.binding.BindingService;
-import org.springframework.cloud.stream.config.ConsumerEndpointCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.aws.inbound.kinesis.KclMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisMessageDrivenChannelAdapter;
 import org.springframework.integration.aws.inbound.kinesis.KinesisShardOffset;
 import org.springframework.integration.aws.support.AwsHeaders;
@@ -168,7 +166,6 @@ public class KinesisBinderFunctionalTests implements LocalstackContainerTest {
 	@Configuration
 	@EnableAutoConfiguration
 	static class TestConfiguration {
-
 
 		@Bean
 		public LockRegistry lockRegistry() {
