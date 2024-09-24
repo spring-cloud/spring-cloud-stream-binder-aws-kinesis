@@ -72,6 +72,11 @@ public class KinesisConsumerProperties {
 	 */
 	private boolean emptyRecordList = false;
 
+	/**
+	 * The KCL table name for leases.
+	 */
+	private String leaseTableName;
+
 	private boolean embedHeaders;
 
 	/**
@@ -189,6 +194,14 @@ public class KinesisConsumerProperties {
 
 	public void setEmptyRecordList(boolean emptyRecordList) {
 		this.emptyRecordList = emptyRecordList;
+	}
+
+	public String getLeaseTableName() {
+		return this.leaseTableName;
+	}
+
+	public void setLeaseTableName(String leaseTableName) {
+		this.leaseTableName = leaseTableName;
 	}
 
 }

@@ -414,6 +414,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setFanOut(kinesisConsumerProperties.isFanOut());
 		adapter.setMetricsLevel(kinesisConsumerProperties.getMetricsLevel());
 		adapter.setEmptyRecordList(kinesisConsumerProperties.isEmptyRecordList());
+		adapter.setLeaseTableName(kinesisConsumerProperties.getLeaseTableName());
 		if (properties.getExtension().isEmbedHeaders()) {
 			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
