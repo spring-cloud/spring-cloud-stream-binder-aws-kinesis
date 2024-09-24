@@ -283,6 +283,36 @@ Whether to extract headers and payload from Kinesis record data.
 +
 Default: `false`
 
+emptyRecordList::
+Whether to emit an empty list of records into a consumer.
+Works only in `listenerMode.batch`.
++
+Default: `false`
+
+Starting with version `4.0.4` (basically since `spring-integration-aws-3.0.8`), the `KclMessageDrivenChannelAdapter` can be customized programmatically for the `ConfigsBuilder` parts.
+For example, to set a custom value for the `LeaseManagementConfig.maxLeasesForWorker` property, the `ConsumerEndpointCustomizer<KclMessageDrivenChannelAdapter>` bean has to be provided:
+
+[source,java]
+----
+@Bean
+ConsumerEndpointCustomizer<KclMessageDrivenChannelAdapter> consumerEndpointCustomizer() {
+    return (endpoint, destinationName, group) ->
+                 endpoint.setLeaseManagementConfigCustomizer(leaseManagementConfig ->
+                         leaseManagementConfig.maxLeasesForWorker(10));
+}
+----
+
+Other similar setters on the `KclMessageDrivenChannelAdapter` are:
+
+[source,java]
+----
+setCoordinatorConfigCustomizer(Consumer<CoordinatorConfig> coordinatorConfigCustomizer);
+
+setLifecycleConfigCustomizer(Consumer<LifecycleConfig> lifecycleConfigCustomizer);
+
+setMetricsConfigCustomizer(Consumer<MetricsConfig> metricsConfigCustomizer);
+----
+
 === Kinesis Producer Properties
 
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<bindingTarget>.producer.`.

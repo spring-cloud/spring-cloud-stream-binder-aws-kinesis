@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 the original author or authors.
+ * Copyright 2017-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,11 @@ public class KinesisConsumerProperties {
 	 * The KCL fan-out or polling retrieval mode.
 	 */
 	private boolean fanOut = true;
+
+	/**
+	 * The KCL emptyRecordList option for batch listener mode.
+	 */
+	private boolean emptyRecordList = false;
 
 	private boolean embedHeaders;
 
@@ -176,6 +181,14 @@ public class KinesisConsumerProperties {
 
 	public void setMetricsLevel(MetricsLevel metricsLevel) {
 		this.metricsLevel = metricsLevel;
+	}
+
+	public boolean isEmptyRecordList() {
+		return this.emptyRecordList;
+	}
+
+	public void setEmptyRecordList(boolean emptyRecordList) {
+		this.emptyRecordList = emptyRecordList;
 	}
 
 }
