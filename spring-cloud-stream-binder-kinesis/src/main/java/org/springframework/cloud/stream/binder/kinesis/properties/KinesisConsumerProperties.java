@@ -17,6 +17,7 @@
 package org.springframework.cloud.stream.binder.kinesis.properties;
 
 import software.amazon.kinesis.metrics.MetricsLevel;
+import software.amazon.kinesis.retrieval.polling.PollingConfig;
 
 import org.springframework.integration.aws.inbound.kinesis.CheckpointMode;
 import org.springframework.integration.aws.inbound.kinesis.ListenerMode;
@@ -76,6 +77,16 @@ public class KinesisConsumerProperties {
 	 * The KCL table name for leases.
 	 */
 	private String leaseTableName;
+
+	/**
+	 * The KCL max records for request in polling mode.
+	 */
+	private int pollingMaxRecords = PollingConfig.DEFAULT_MAX_RECORDS;
+
+	/**
+	 * The KCL idle between requests in polling mode.
+	 */
+	private long pollingIdleTime = 1500L;
 
 	private boolean embedHeaders;
 
@@ -202,6 +213,22 @@ public class KinesisConsumerProperties {
 
 	public void setLeaseTableName(String leaseTableName) {
 		this.leaseTableName = leaseTableName;
+	}
+
+	public int getPollingMaxRecords() {
+		return this.pollingMaxRecords;
+	}
+
+	public void setPollingMaxRecords(int pollingMaxRecords) {
+		this.pollingMaxRecords = pollingMaxRecords;
+	}
+
+	public long getPollingIdleTime() {
+		return this.pollingIdleTime;
+	}
+
+	public void setPollingIdleTime(long pollingIdleTime) {
+		this.pollingIdleTime = pollingIdleTime;
 	}
 
 }

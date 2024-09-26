@@ -294,6 +294,16 @@ The KCL table name for leases.
 +
 Default: consumer group
 
+pollingMaxRecords::
+The KCL max records for request in polling mode.
++
+Default: 10000
+
+pollingIdleTime::
+The KCL idle between requests in polling mode.
++
+Default: 1500L
+
 Starting with version `4.0.4` (basically since `spring-integration-aws-3.0.8`), the `KclMessageDrivenChannelAdapter` can be customized programmatically for the `ConfigsBuilder` parts.
 For example, to set a custom value for the `LeaseManagementConfig.maxLeasesForWorker` property, the `ConsumerEndpointCustomizer<KclMessageDrivenChannelAdapter>` bean has to be provided:
 
