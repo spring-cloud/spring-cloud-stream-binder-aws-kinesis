@@ -88,6 +88,11 @@ public class KinesisConsumerProperties {
 	 */
 	private long pollingIdleTime = 1500L;
 
+	/**
+	 * The KCL graceful shutdown timeout in milliseconds.
+	 */
+	private long gracefulShutdownTimeout;
+
 	private boolean embedHeaders;
 
 	/**
@@ -229,6 +234,14 @@ public class KinesisConsumerProperties {
 
 	public void setPollingIdleTime(long pollingIdleTime) {
 		this.pollingIdleTime = pollingIdleTime;
+	}
+
+	public long getGracefulShutdownTimeout() {
+		return this.gracefulShutdownTimeout;
+	}
+
+	public void setGracefulShutdownTimeout(long gracefulShutdownTimeout) {
+		this.gracefulShutdownTimeout = gracefulShutdownTimeout;
 	}
 
 }
