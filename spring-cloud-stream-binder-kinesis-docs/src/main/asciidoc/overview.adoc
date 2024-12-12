@@ -338,10 +338,11 @@ setMetricsConfigCustomizer(Consumer<MetricsConfig> metricsConfigCustomizer);
 The following properties are available for Kinesis producers only and must be prefixed with `spring.cloud.stream.kinesis.bindings.<bindingTarget>.producer.`.
 
 sync::
-  Whether the producer should act in a synchronous manner with respect to writing records into a stream.
+Whether the producer should act in a synchronous manner with respect to writing records into a stream.
 If true, the producer will wait for a response from Kinesis after a `PutRecord` operation.
 +
 Default: `false`
+
 sendTimeout::
   Effective only if `sync` is set to `true`. The amount of time to wait for a response from Kinesis after a `PutRecord` operation, in milliseconds.
 +
@@ -353,6 +354,10 @@ embedHeaders::
 Whether to serialize message headers and payload into Kinesis record data.
 +
 Default: `false`
+
+recordMetadataChannel::
+The bean name of a MessageChannel to which successful send results should be sent.
+Works only for async mode.
 
 [[kinesis-error-channels]]
 == Error Channels

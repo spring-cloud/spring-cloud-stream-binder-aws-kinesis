@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.kinesis.LocalstackContainerTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.aws.support.AwsHeaders;
+import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.config.GlobalChannelInterceptor;
 import org.springframework.integration.metadata.ConcurrentMetadataStore;
 import org.springframework.integration.metadata.SimpleMetadataStore;
@@ -64,6 +66,7 @@ import static org.awaitility.Awaitility.await;
 		properties = {
 				"spring.cloud.function.definition=kinesisSupplier;kinesisConsumer",
 				"spring.cloud.stream.bindings.kinesisSupplier-out-0.destination=" + KinesisBinderObservationTests.KINESIS_STREAM,
+				"spring.cloud.stream.kinesis.bindings.kinesisSupplier-out-0.producer.recordMetadataChannel=producerResultsChannel",
 				"spring.cloud.stream.bindings.kinesisConsumer-in-0.destination=" + KinesisBinderObservationTests.KINESIS_STREAM,
 				"spring.cloud.stream.bindings.kinesisConsumer-in-0.group=observation-group",
 				"spring.cloud.stream.kinesis.binder.enable-observation=true",
@@ -86,6 +89,9 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 	@Autowired
 	private AtomicReference<Message<String>> messageHolder;
 
+	@Autowired
+	QueueChannel producerResultsChannel;
+
 	@Test
 	void observationIsPropagatedFromSupplierToConsumer() throws InterruptedException {
 		assertThat(this.messageBarrier.await(30, TimeUnit.SECONDS)).isTrue();
@@ -94,7 +100,7 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 		assertThat(message.getPayload()).isEqualTo("test data");
 
 		await().until(() -> SPANS.spans().size() == 3);
-		SpansAssert.assertThat(SPANS.spans().stream().map(BraveFinishedSpan::fromBrave).collect(Collectors.toList()))
+		SpansAssert.assertThat(SPANS.spans().stream().map(BraveFinishedSpan::fromBrave).toList())
 				.haveSameTraceId()
 				.hasASpanWithName("kinesisSupplier-out-0 send",
 						spanAssert -> spanAssert.hasKindEqualTo(Span.Kind.PRODUCER)
@@ -103,6 +109,10 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 						spanAssert -> spanAssert.hasKindEqualTo(Span.Kind.CONSUMER)
 								.hasTag(IntegrationObservation.HandlerTags.COMPONENT_TYPE, "handler"))
 				.hasASpanWithName("kinesis-consumer process"); // Function part
+
+		Message<?> producerResultMessage = producerResultsChannel.receive(10_000);
+		assertThat(producerResultMessage.getPayload()).isEqualTo("test data".getBytes());
+		assertThat(producerResultMessage.getHeaders()).containsKeys(AwsHeaders.SHARD, AwsHeaders.SEQUENCE_NUMBER);
 	}
 
 	@Configuration
@@ -141,6 +151,11 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 		}
 
 		@Bean
+		QueueChannel producerResultsChannel() {
+			return new QueueChannel();
+		}
+
+		@Bean
 		@GlobalChannelInterceptor(patterns = "kinesisSupplier-out-0")
 		ChannelInterceptor loggingChannelInterceptor() {
 			return new ChannelInterceptor() {
@@ -162,7 +177,6 @@ public class KinesisBinderObservationTests implements LocalstackContainerTest {
 				messageBarrier().countDown();
 			};
 		}
-
 	}
 
 }

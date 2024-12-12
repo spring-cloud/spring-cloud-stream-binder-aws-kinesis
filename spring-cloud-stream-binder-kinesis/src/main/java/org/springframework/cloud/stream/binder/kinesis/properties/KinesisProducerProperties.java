@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 the original author or authors.
+ * Copyright 2017-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,30 @@ package org.springframework.cloud.stream.binder.kinesis.properties;
  *
  * @author Peter Oates
  * @author Jacob Severson
- *
+ * @author Artem Bilan
  */
 public class KinesisProducerProperties {
 
+	/**
+	 * Whether message handler produces in sync mode.
+	 */
 	private boolean sync;
 
+	/**
+	 * Timeout in milliseconds to wait for future completion in sync mode.
+	 */
 	private long sendTimeout = 10000;
 
+	/**
+	 * Whether to embed headers into Kinesis record.
+	 */
 	private boolean embedHeaders;
+
+	/**
+	 * The bean name of a MessageChannel to which successful send results should be sent.
+	 * Works only for async mode.
+	 */
+	private String recordMetadataChannel;
 
 	public void setSync(boolean sync) {
 		this.sync = sync;
@@ -53,6 +68,14 @@ public class KinesisProducerProperties {
 
 	public void setEmbedHeaders(boolean embedHeaders) {
 		this.embedHeaders = embedHeaders;
+	}
+
+	public String getRecordMetadataChannel() {
+		return this.recordMetadataChannel;
+	}
+
+	public void setRecordMetadataChannel(String recordMetadataChannel) {
+		this.recordMetadataChannel = recordMetadataChannel;
 	}
 
 }

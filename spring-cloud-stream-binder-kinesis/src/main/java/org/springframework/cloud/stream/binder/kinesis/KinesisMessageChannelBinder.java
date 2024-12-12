@@ -235,7 +235,13 @@ public class KinesisMessageChannelBinder extends
 		messageHandler.setAsync(!producerProperties.getExtension().isSync());
 		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
 		messageHandler.setBeanFactory(getBeanFactory());
-		messageHandler.setOutputChannel(new NullChannel());
+		String recordMetadataChannel = producerProperties.getExtension().getRecordMetadataChannel();
+		if (StringUtils.hasText(recordMetadataChannel)) {
+			messageHandler.setOutputChannelName(recordMetadataChannel);
+		}
+		else {
+			messageHandler.setOutputChannel(new NullChannel());
+		}
 
 		if (errorChannel != null) {
 			((InterceptableChannel) channel)
