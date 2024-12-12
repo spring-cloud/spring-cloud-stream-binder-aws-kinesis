@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_snapshot:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@main
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-snapshot.yml@v5
     with:
       mavenArgs: -U
     secrets:

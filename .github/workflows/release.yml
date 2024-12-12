@@ -12,13 +12,13 @@ jobs:
       contents: write
       issues: write
 
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-release.yml@main
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-artifactory-maven-release.yml@v5
     secrets:
       GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
       JF_ARTIFACTORY_SPRING: ${{ secrets.JF_ARTIFACTORY_SPRING }}
       ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
       ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-#      SPRING_RELEASE_SLACK_WEBHOOK_URL: ${{ secrets.SPRING_RELEASE_SLACK_WEBHOOK_URL }}
+      SPRING_RELEASE_CHAT_WEBHOOK_URL: ${{ secrets.SPRING_RELEASE_GCHAT_WEBHOOK_URL }}
       OSSRH_S01_TOKEN_USERNAME: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
       OSSRH_S01_TOKEN_PASSWORD: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
       OSSRH_STAGING_PROFILE_NAME: ${{ secrets.OSSRH_STAGING_PROFILE_NAME }}
