@@ -3,3 +3,8 @@
 This repository contains the code for the Spring Cloud Stream Binder implementation for AWS Kinesis.
 
 See https://github.com/spring-cloud/spring-cloud-stream-binder-aws-kinesis/blob/main/spring-cloud-stream-binder-kinesis-docs/src/main/asciidoc/overview.adoc[AWS Kinesis Binder Reference Manual] for more information.
+
+== Developer Certificate of Origin
+
+All commits must include a __Signed-off-by__ trailer at the end of each commit message to indicate that the contributor agrees to the Developer Certificate of Origin.
+For additional details, please refer to the blog post https://spring.io/blog/2025/01/06/hello-dco-goodbye-cla-simplifying-contributions-to-spring[Hello DCO, Goodbye CLA: Simplifying Contributions to Spring].
