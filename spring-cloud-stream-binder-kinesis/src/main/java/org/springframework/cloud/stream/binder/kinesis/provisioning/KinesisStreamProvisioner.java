@@ -86,11 +86,6 @@ public class KinesisStreamProvisioner implements
 		KinesisProducerProperties kinesisProducerProperties = properties.getExtension();
 		kinesisProducerProperties.setEmbedHeaders(
 				properties.getHeaderMode() == null || HeaderMode.embeddedHeaders.equals(properties.getHeaderMode()));
-		properties.setHeaderMode(HeaderMode.none);
-
-		if (properties.getHeaderMode() == null) {
-			properties.setHeaderMode(HeaderMode.embeddedHeaders);
-		}
 
 		return new KinesisProducerDestination(name, createOrUpdate(name, properties.getPartitionCount()));
 	}
@@ -103,7 +98,6 @@ public class KinesisStreamProvisioner implements
 		KinesisConsumerProperties kinesisConsumerProperties = properties.getExtension();
 		kinesisConsumerProperties.setEmbedHeaders(
 				properties.getHeaderMode() == null || HeaderMode.embeddedHeaders.equals(properties.getHeaderMode()));
-		properties.setHeaderMode(HeaderMode.none);
 		int shardCount = properties.getInstanceCount() * properties.getConcurrency();
 
 		if (!properties.isMultiplex()) {
