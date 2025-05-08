@@ -102,7 +102,7 @@ class KinesisStreamProvisionerTests implements LocalstackContainerTest {
 		assertThat(destination).isInstanceOf(KinesisConsumerDestination.class);
 		assertThat(destination).extracting("shards").asList().hasSize(1);
 		assertThat(extendedConsumerProperties.getExtension().isEmbedHeaders()).isTrue();
-		assertThat(extendedConsumerProperties.getHeaderMode()).isEqualTo(HeaderMode.embeddedHeaders);
+		assertThat(extendedConsumerProperties.getHeaderMode()).isEqualTo(HeaderMode.none);
 	}
 
 	@Test

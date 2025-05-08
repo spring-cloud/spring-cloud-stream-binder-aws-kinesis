@@ -226,11 +226,11 @@ public class KinesisMessageChannelBinder extends
 		AbstractAwsMessageHandler<?> messageHandler;
 		if (this.configurationProperties.isKplKclEnabled()) {
 			messageHandler = createKplMessageHandler(destination, partitionKeyExpression,
-					producerProperties.getExtension().isEmbedHeaders());
+					producerProperties.getExtension().isEmbedHeaders() && !producerProperties.isUseNativeEncoding());
 		}
 		else {
 			messageHandler = createKinesisMessageHandler(destination, partitionKeyExpression,
-					producerProperties.getExtension().isEmbedHeaders());
+					producerProperties.getExtension().isEmbedHeaders() && !producerProperties.isUseNativeEncoding());
 		}
 		messageHandler.setAsync(!producerProperties.getExtension().isSync());
 		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
@@ -424,7 +424,7 @@ public class KinesisMessageChannelBinder extends
 		adapter.setPollingMaxRecords(kinesisConsumerProperties.getPollingMaxRecords());
 		adapter.setPollingIdleTime(kinesisConsumerProperties.getPollingIdleTime());
 		adapter.setGracefulShutdownTimeout(kinesisConsumerProperties.getGracefulShutdownTimeout());
-		if (properties.getExtension().isEmbedHeaders()) {
+		if (properties.getExtension().isEmbedHeaders() && !properties.isUseNativeDecoding()) {
 			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
 
@@ -523,7 +523,7 @@ public class KinesisMessageChannelBinder extends
 						: KinesisShardOffset.trimHorizon());
 
 		adapter.setListenerMode(kinesisConsumerProperties.getListenerMode());
-		if (properties.getExtension().isEmbedHeaders()) {
+		if (properties.getExtension().isEmbedHeaders() && !properties.isUseNativeDecoding()) {
 			adapter.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
 

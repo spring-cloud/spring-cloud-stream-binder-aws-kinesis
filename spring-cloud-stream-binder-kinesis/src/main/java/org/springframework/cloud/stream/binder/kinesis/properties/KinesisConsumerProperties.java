@@ -93,7 +93,7 @@ public class KinesisConsumerProperties {
 	 */
 	private long gracefulShutdownTimeout;
 
-	private boolean embedHeaders;
+	private boolean embedHeaders = true;
 
 	/**
 	 * The {@link MetricsLevel} for emitting (or not) metrics into Cloud Watch.
