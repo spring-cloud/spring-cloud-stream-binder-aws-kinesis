@@ -62,11 +62,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
 		properties = {
 				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.multiplex=true",
-				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.destination=some_other_stream, " + KinesisBinderFunctionalTests.KINESIS_STREAM,
+				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.destination=some_other_stream," + KinesisBinderFunctionalTests.KINESIS_STREAM,
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.idleBetweenPolls = 1",
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.listenerMode = batch",
 				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.checkpointMode = manual",
-				"spring.cloud.stream.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.useNativeDecoding = true",
+				"spring.cloud.stream.kinesis.bindings.eventConsumerBatchProcessingWithHeaders-in-0.consumer.embedHeaders = false",
 				"spring.cloud.stream.kinesis.binder.headers = event.eventType",
 				"spring.cloud.stream.kinesis.binder.autoAddShards = true"})
 @DirtiesContext

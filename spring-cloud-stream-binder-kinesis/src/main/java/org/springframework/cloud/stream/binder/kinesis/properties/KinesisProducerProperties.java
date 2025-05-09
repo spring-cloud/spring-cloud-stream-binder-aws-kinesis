@@ -38,7 +38,7 @@ public class KinesisProducerProperties {
 	/**
 	 * Whether to embed headers into Kinesis record.
 	 */
-	private boolean embedHeaders;
+	private boolean embedHeaders = true;
 
 	/**
 	 * The bean name of a MessageChannel to which successful send results should be sent.

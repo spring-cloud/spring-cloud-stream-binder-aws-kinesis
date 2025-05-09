@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.kinesis.model.ResourceNotFoundException;
 
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
+import org.springframework.cloud.stream.binder.HeaderMode;
 import org.springframework.cloud.stream.binder.kinesis.LocalstackContainerTest;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisBinderConfigurationProperties;
 import org.springframework.cloud.stream.binder.kinesis.properties.KinesisConsumerProperties;
@@ -91,6 +92,7 @@ class KinesisStreamProvisionerTests implements LocalstackContainerTest {
 
 		ExtendedConsumerProperties<KinesisConsumerProperties> extendedConsumerProperties =
 				new ExtendedConsumerProperties<>(new KinesisConsumerProperties());
+		extendedConsumerProperties.setHeaderMode(HeaderMode.embeddedHeaders);
 
 		String group = "test-group";
 		ConsumerDestination destination =
@@ -99,6 +101,8 @@ class KinesisStreamProvisionerTests implements LocalstackContainerTest {
 		assertThat(destination.getName()).isEqualTo(streamName);
 		assertThat(destination).isInstanceOf(KinesisConsumerDestination.class);
 		assertThat(destination).extracting("shards").asList().hasSize(1);
+		assertThat(extendedConsumerProperties.getExtension().isEmbedHeaders()).isTrue();
+		assertThat(extendedConsumerProperties.getHeaderMode()).isEqualTo(HeaderMode.none);
 	}
 
 	@Test
