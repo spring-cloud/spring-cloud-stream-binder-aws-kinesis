@@ -359,6 +359,11 @@ recordMetadataChannel::
 The bean name of a MessageChannel to which successful send results should be sent.
 Works only for async mode.
 
+kplBackPressureThreshold::
+Maximum records in flight for handling backpressure.
+No backpressure by default.
+When backpressure handling is enabled and number of records in flight exceeds the threshold, a `KplBackpressureException` would be thrown.
+
 [[kinesis-error-channels]]
 == Error Channels
 

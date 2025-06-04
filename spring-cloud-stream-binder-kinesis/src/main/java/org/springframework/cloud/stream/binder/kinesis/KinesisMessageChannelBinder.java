@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 the original author or authors.
+ * Copyright 2017-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,18 +224,19 @@ public class KinesisMessageChannelBinder extends
 								? m.getHeaders().get(BinderHeaders.PARTITION_HEADER)
 								: m.getPayload().hashCode());
 		AbstractAwsMessageHandler<?> messageHandler;
+		KinesisProducerProperties kinesisProducerProperties = producerProperties.getExtension();
 		if (this.configurationProperties.isKplKclEnabled()) {
-			messageHandler = createKplMessageHandler(destination, partitionKeyExpression,
-					producerProperties.getExtension().isEmbedHeaders() && !producerProperties.isUseNativeEncoding());
+			messageHandler = createKplMessageHandler(destination, partitionKeyExpression, kinesisProducerProperties,
+					kinesisProducerProperties.isEmbedHeaders() && !producerProperties.isUseNativeEncoding());
 		}
 		else {
 			messageHandler = createKinesisMessageHandler(destination, partitionKeyExpression,
-					producerProperties.getExtension().isEmbedHeaders() && !producerProperties.isUseNativeEncoding());
+					kinesisProducerProperties.isEmbedHeaders() && !producerProperties.isUseNativeEncoding());
 		}
-		messageHandler.setAsync(!producerProperties.getExtension().isSync());
-		messageHandler.setSendTimeout(producerProperties.getExtension().getSendTimeout());
+		messageHandler.setAsync(!kinesisProducerProperties.isSync());
+		messageHandler.setSendTimeout(kinesisProducerProperties.getSendTimeout());
 		messageHandler.setBeanFactory(getBeanFactory());
-		String recordMetadataChannel = producerProperties.getExtension().getRecordMetadataChannel();
+		String recordMetadataChannel = kinesisProducerProperties.getRecordMetadataChannel();
 		if (StringUtils.hasText(recordMetadataChannel)) {
 			messageHandler.setOutputChannelName(recordMetadataChannel);
 		}
@@ -279,11 +280,13 @@ public class KinesisMessageChannelBinder extends
 	}
 
 	private AbstractAwsMessageHandler<?> createKplMessageHandler(ProducerDestination destination,
-			FunctionExpression<Message<?>> partitionKeyExpression, boolean embedHeaders) {
+			FunctionExpression<Message<?>> partitionKeyExpression, KinesisProducerProperties kinesisProducerProperties,
+			boolean embedHeaders) {
 
 		KplMessageHandler messageHandler = new KplMessageHandler(new KinesisProducer(this.kinesisProducerConfiguration));
 		messageHandler.setStream(destination.getName());
 		messageHandler.setPartitionKeyExpression(partitionKeyExpression);
+		messageHandler.setBackPressureThreshold(kinesisProducerProperties.getKplBackPressureThreshold());
 		if (embedHeaders) {
 			messageHandler.setEmbeddedHeadersMapper(this.embeddedHeadersMapper);
 		}
