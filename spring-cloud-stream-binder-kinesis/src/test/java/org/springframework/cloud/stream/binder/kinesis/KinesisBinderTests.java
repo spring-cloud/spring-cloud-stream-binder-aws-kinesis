@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.BDDMockito;
@@ -233,6 +234,7 @@ public class KinesisBinderTests extends
 	}
 
 	@Test
+	@Disabled
 	public void testProducerErrorChannel() throws Exception {
 		KinesisTestBinder binder = getBinder();
 

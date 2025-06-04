@@ -18,10 +18,10 @@
 		<java.version>17</java.version>
 		<spring-cloud-stream.version>4.0.5</spring-cloud-stream.version>
 		<spring-cloud-aws.version>3.0.5</spring-cloud-aws.version>
-		<spring-integration-aws.version>3.0.8</spring-integration-aws.version>
+		<spring-integration-aws.version>3.0.9</spring-integration-aws.version>
 		<amazon-kinesis-client.version>2.5.8</amazon-kinesis-client.version>
-		<amazon-kinesis-producer.version>0.15.11</amazon-kinesis-producer.version>
-		<testcontainers.version>1.20.1</testcontainers.version>
+		<amazon-kinesis-producer.version>0.15.12</amazon-kinesis-producer.version>
+		<testcontainers.version>1.21.1</testcontainers.version>
 	</properties>
 
 	<modules>
