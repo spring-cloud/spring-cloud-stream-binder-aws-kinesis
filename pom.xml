@@ -12,7 +12,7 @@
 
 	<artifactId>spring-cloud-stream-binder-kinesis-parent</artifactId>
 	<name>spring-cloud-stream-binder-kinesis-parent</name>
-	<version>4.0.5-SNAPSHOT</version>
+	<version>4.0.5</version>
 	<packaging>pom</packaging>
 
 	<properties>
