@@ -1,5 +1,12 @@
 = Spring Cloud Stream Binder for AWS Kinesis
 
+# ANNOUNCEMENT
+
+IMPORTANT: This project is now deprecated. 
+Please use https://github.com/awspring/spring-cloud-aws[Spring Cloud AWS] instead starting with its version `4.0.0`.
+All the components from this project are now present in the respective module of the Spring Cloud AWS.
+The dependency for the migration is: `io.awspring.cloud:spring-cloud-aws-kinesis-stream-binder`.
+
 This repository contains the code for the Spring Cloud Stream Binder implementation for AWS Kinesis.
 
 See https://github.com/spring-cloud/spring-cloud-stream-binder-aws-kinesis/blob/main/spring-cloud-stream-binder-kinesis-docs/src/main/asciidoc/overview.adoc[AWS Kinesis Binder Reference Manual] for more information.
